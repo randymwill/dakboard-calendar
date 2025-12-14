@@ -14,15 +14,19 @@
 
   <style>
     :root{
-      --bg: #07101d;             /* page background */
-      --panel: #0b1a2f;          /* calendar panel */
-      --panel2: #091527;         /* subtle gradient depth */
+      --bg: #07101d;
+      --panel: #0b1a2f;
+      --panel2: #091527;
       --grid: rgba(255,255,255,0.10);
       --text: rgba(255,255,255,0.92);
       --muted: rgba(255,255,255,0.62);
       --faint: rgba(255,255,255,0.35);
-      --todayBorder: rgba(56,189,248,0.85);  /* cyan */
-      --eventText: rgba(255,255,255,0.96);
+      --todayBorder: rgba(56,189,248,0.85);
+
+      /* Event colors */
+      --school: #ef4444;   /* red */
+      --sports: #ec4899;   /* pink */
+      --other:  #22c55e;   /* green */
     }
 
     html, body {
@@ -30,11 +34,9 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont,
-                   "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* 75% of display height, full width */
     #calendar-wrapper {
       width: 100vw;
       height: 75vh;
@@ -52,72 +54,43 @@
       box-shadow: 0 14px 34px rgba(0,0,0,0.45);
     }
 
-    /* ===== FullCalendar dark styling ===== */
+    .fc { height: 100%; }
 
-    .fc {
-      height: 100%;
-    }
-
-    /* Toolbar layout */
     .fc .fc-header-toolbar {
-      margin: 10px 12px 6px 12px;
+      margin: 10px 12px 6px;
     }
 
-    /* Title (quiet but clear) */
     .fc .fc-toolbar-title {
       font-size: 1.35em;
       font-weight: 600;
       letter-spacing: 0.03em;
       opacity: 0.95;
-      color: var(--text);
-      padding: 4px 0;
     }
 
-    /* Column headers (Sun/Mon/...) */
     .fc .fc-col-header-cell-cushion {
       color: var(--muted);
       font-weight: 650;
-      font-size: 0.95em;
       padding: 10px 0;
-      letter-spacing: 0.02em;
     }
 
-    /* Borders / grid */
     .fc-theme-standard td,
     .fc-theme-standard th,
     .fc-theme-standard .fc-scrollgrid {
       border-color: var(--grid);
     }
 
-    /* Remove extra background fills */
-    .fc .fc-daygrid-day-frame {
-      background: transparent;
-      padding: 2px;
-    }
-
-    /* Day number */
     .fc .fc-daygrid-day-number {
       color: var(--muted);
       font-size: 0.75em;
       padding: 6px 8px;
-      opacity: 0.9;
     }
 
-    /* Past days dimmed (we add a class via JS) */
-    .fc .is-past-day .fc-daygrid-day-number {
-      color: var(--faint);
-      opacity: 0.75;
-    }
-    .fc .is-past-day .fc-daygrid-event {
-      opacity: 0.72;
-      filter: saturate(0.9);
+    /* Past days */
+    .fc .is-past-day {
+      opacity: 0.65;
     }
 
-    /* Today: subtle border, not a full fill */
-    .fc .fc-day-today {
-      background: transparent !important;
-      position: relative;
-    }
+    /* Today highlight */
     .fc .fc-day-today::after {
       content: "";
       position: absolute;
@@ -128,19 +101,19 @@
       opacity: 0.75;
     }
 
-    /* Events */
+    /* Event base */
     .fc .fc-daygrid-event {
       border: 0;
       border-radius: 8px;
-      padding: 2px 5px;
-      margin: 2px 4px 0 4px;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
+      padding: 2px 6px;
+      margin: 2px 4px 0;
+      color: #fff;
     }
 
-    .fc .fc-event-title,
-    .fc .fc-event-time {
-      color: var(--eventText);
-    }
+    /* Event category colors */
+    .fc .event-school { background: var(--school); }
+    .fc .event-sports { background: var(--sports); }
+    .fc .event-other  { background: var(--other); }
 
     .fc .fc-event-title {
       font-size: 1.05em;
@@ -153,29 +126,18 @@
       opacity: 0.95;
     }
 
-    /* "+ more" link */
-    .fc .fc-daygrid-more-link {
-      color: rgba(255,255,255,0.82);
-      font-weight: 650;
-      letter-spacing: 0.01em;
-    }
-
-    /* Force rows to evenly fill height (no wasted space) */
     .fc-daygrid-body,
     .fc-daygrid-body table {
       height: 100%;
     }
+
     .fc-daygrid-day {
-      height: calc(100% / 4); /* 4-week view */
+      height: calc(100% / 4);
     }
 
-    /* 4K readability tuning */
     body { font-size: 18px; }
     @media (min-width: 3000px) {
       body { font-size: 24px; }
-      .fc .fc-toolbar-title { font-size: 1.55em; }
-      .fc .fc-event-title { font-size: 1.12em; }
-      .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
     }
   </style>
 </head>
@@ -188,93 +150,83 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
 
-      // ✅ Your ICS proxy
       const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
 
-      // Start on Sunday of the current week (local time)
       function startOfCurrentWeekSunday(d = new Date()) {
         const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        const day = date.getDay(); // 0=Sun
-        date.setDate(date.getDate() - day);
+        date.setDate(date.getDate() - date.getDay());
         date.setHours(0,0,0,0);
         return date;
       }
 
-      // Midnight timer helper
-      function msUntilNextLocalMidnight() {
-        const now = new Date();
-        const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        return next.getTime() - now.getTime();
-      }
+      const calendar = new FullCalendar.Calendar(
+        document.getElementById("calendar"), {
+          initialView: "rolling4Weeks",
+          views: {
+            rolling4Weeks: {
+              type: "dayGrid",
+              duration: { weeks: 4 }
+            }
+          },
 
-      const calendarEl = document.getElementById("calendar");
+          firstDay: 0,
+          height: "100%",
+          expandRows: true,
+          showNonCurrentDates: false,
+          fixedWeekCount: false,
+          dayMaxEvents: 3,
 
-      const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "rolling4Weeks",
+          visibleRange: function(currentDate) {
+            const start = startOfCurrentWeekSunday(currentDate);
+            const end = new Date(start);
+            end.setDate(end.getDate() + 28);
+            return { start, end };
+          },
 
-        views: {
-          rolling4Weeks: {
-            type: "dayGrid",
-            duration: { weeks: 4 }
-          }
-        },
+          headerToolbar: {
+            left: "",
+            center: "title",
+            right: ""
+          },
 
-        firstDay: 0, // Sunday
-        height: "100%",
-        contentHeight: "auto",
-        expandRows: true,
+          events: {
+            url: ICS_URL,
+            format: "ics"
+          },
 
-        // Show only current Sunday -> +28 days
-        visibleRange: function(currentDate) {
-          const start = startOfCurrentWeekSunday(currentDate);
-          const end = new Date(start);
-          end.setDate(end.getDate() + 28);
-          return { start, end };
-        },
+          eventDidMount: function(info) {
+            const title = info.event.title.toLowerCase();
 
-        headerToolbar: {
-          left: "",
-          center: "title",
-          right: ""
-        },
+            const isSchool =
+              /school|dismissal|class|winter break|no school/.test(title);
 
-        fixedWeekCount: false,
-        showNonCurrentDates: false,
+            const isSports =
+              /practice|game|vs|basketball|bbal|soccer|pickelball/.test(title);
 
-        // Cleaner wall-display density
-        dayMaxEvents: 3,
+            if (isSchool) {
+              info.el.classList.add("event-school");
+            } else if (isSports) {
+              info.el.classList.add("event-sports");
+            } else {
+              info.el.classList.add("event-other");
+            }
+          },
 
-        events: {
-          url: ICS_URL,
-          format: "ics"
-        },
-
-        // Add "past day" class for dimming
-        dayCellDidMount: function(info) {
-          const cellDate = new Date(info.date.getFullYear(), info.date.getMonth(), info.date.getDate());
-          const today = new Date();
-          const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-          if (cellDate < todayDate) {
-            info.el.classList.add("is-past-day");
+          dayCellDidMount: function(info) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const cellDate = new Date(info.date);
+            cellDate.setHours(0,0,0,0);
+            if (cellDate < today) {
+              info.el.classList.add("is-past-day");
+            }
           }
         }
-      });
+      );
 
       calendar.render();
 
-      // Refresh events every 10 minutes
       setInterval(() => calendar.refetchEvents(), 10 * 60 * 1000);
-
-      // Re-anchor at midnight so the rolling 4-week window advances automatically
-      function scheduleMidnightReanchor() {
-        setTimeout(() => {
-          calendar.today();         // recalculates visibleRange from today
-          calendar.refetchEvents(); // reload data
-          scheduleMidnightReanchor();
-        }, msUntilNextLocalMidnight() + 2000); // +2s cushion
-      }
-      scheduleMidnightReanchor();
-
     });
   </script>
 </body>
