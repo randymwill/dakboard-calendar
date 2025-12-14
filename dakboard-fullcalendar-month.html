@@ -7,83 +7,137 @@
 
   <!-- FullCalendar -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
-
-  <!-- ical.js (required for .ics feeds) -->
+  <!-- ical.js -->
   <script src="https://unpkg.com/ical.js/dist/ical.es5.min.cjs"></script>
-
   <!-- FullCalendar iCalendar plugin -->
   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.19/index.global.min.js"></script>
 
   <style>
-    /* ===== Base layout ===== */
+    :root{
+      --bg: #0b1220;          /* page background */
+      --panel: #0f1b2e;       /* calendar background */
+      --grid: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.65);
+      --today: rgba(56,189,248,0.18);  /* subtle cyan */
+      --eventText: rgba(255,255,255,0.95);
+    }
+
     html, body {
       height: 100%;
       margin: 0;
-      background: #e9eef1; /* neutral dakboard-friendly background */
+      background: var(--bg);
+      color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont,
                    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* Container that controls vertical usage */
+    /* 75% of the display height, full width */
     #calendar-wrapper {
-      width: 100vw;     /* full width */
-      height: 75vh;     /* use top 75% of the screen */
+      width: 100vw;
+      height: 75vh;
+      padding: 10px 14px;
+      box-sizing: border-box;
+      background: var(--bg);
     }
 
     #calendar {
       width: 100%;
       height: 100%;
+      background: var(--panel);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
     }
 
-    /* ===== Typography tuning ===== */
+    /* ===== FullCalendar dark styling ===== */
+    .fc {
+      height: 100%;
+    }
 
-    /* Month title */
+    /* Title */
     .fc .fc-toolbar-title {
-      font-size: 1.8em;
-      font-weight: 600;
-      padding: 10px 0;
+      font-size: 1.5em;
+      font-weight: 650;
+      color: var(--text);
+      padding: 6px 0;
     }
 
-    /* Day numbers (smaller, unobtrusive) */
+    /* Remove extra toolbar padding */
+    .fc .fc-header-toolbar {
+      margin: 10px 12px 6px 12px;
+    }
+
+    /* Day-of-week header (Sun/Mon/...) */
+    .fc .fc-col-header-cell-cushion {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.95em;
+      padding: 8px 0;
+    }
+
+    /* Grid lines / borders */
+    .fc-theme-standard td,
+    .fc-theme-standard th,
+    .fc-theme-standard .fc-scrollgrid {
+      border-color: var(--grid);
+    }
+
+    /* Day cell background */
+    .fc .fc-daygrid-day-frame {
+      background: transparent;
+    }
+
+    /* Day number (smaller) */
     .fc .fc-daygrid-day-number {
+      color: var(--muted);
       font-size: 0.75em;
-      opacity: 0.75;
-      padding: 4px;
-    }
-
-    /* Event titles (bigger, readable at distance) */
-    .fc .fc-event-title {
-      font-size: 1.15em;
-      font-weight: 600;
-      line-height: 1.2;
-    }
-
-    /* Event time slightly smaller */
-    .fc .fc-event-time {
-      font-size: 0.85em;
+      padding: 6px 8px;
       opacity: 0.9;
     }
 
-    /* Reduce vertical padding so events fit better */
+    /* Today highlight */
+    .fc .fc-day-today {
+      background: var(--today) !important;
+    }
+
+    /* Event appearance */
     .fc .fc-daygrid-event {
-      padding: 2px 4px;
-      margin-top: 2px;
+      border: 0;
+      border-radius: 8px;
+      padding: 2px 6px;
+      margin: 2px 6px 0 6px;
     }
 
-    /* Clean up grid spacing */
-    .fc .fc-daygrid-day-frame {
-      padding: 2px;
+    .fc .fc-event-title,
+    .fc .fc-event-time {
+      color: var(--eventText);
     }
 
-    /* ===== 4K optimization ===== */
-    body {
-      font-size: 18px;
+    /* Larger event title */
+    .fc .fc-event-title {
+      font-size: 1.05em;
+      font-weight: 650;
+      line-height: 1.15;
     }
 
+    .fc .fc-event-time {
+      font-size: 0.85em;
+      opacity: 0.95;
+    }
+
+    /* Make "more" link readable */
+    .fc .fc-daygrid-more-link {
+      color: rgba(255,255,255,0.85);
+      font-weight: 600;
+    }
+
+    /* 4K readability */
+    body { font-size: 18px; }
     @media (min-width: 3000px) {
-      body {
-        font-size: 24px; /* ideal for 55" 4K wall display */
-      }
+      body { font-size: 24px; }
+      .fc .fc-toolbar-title { font-size: 1.7em; }
+      .fc .fc-event-title { font-size: 1.1em; }
     }
   </style>
 </head>
@@ -99,35 +153,77 @@
       // ✅ Your Cloudflare Worker ICS proxy
       const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
 
-      const calendar = new FullCalendar.Calendar(
-        document.getElementById("calendar"),
-        {
-          initialView: "dayGridMonth",
+      // Returns the most recent Sunday at 00:00:00 local time
+      function startOfCurrentWeekSunday(d = new Date()) {
+        const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const day = date.getDay(); // 0 = Sunday
+        date.setDate(date.getDate() - day);
+        date.setHours(0,0,0,0);
+        return date;
+      }
 
-          height: "100%",
-          contentHeight: "auto",
-          expandRows: true,
+      const calendarEl = document.getElementById("calendar");
 
-          fixedWeekCount: true,
-          showNonCurrentDates: true,
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        // Custom 4-week rolling view
+        initialView: "rolling4Weeks",
 
-          headerToolbar: {
-            left: "",
-            center: "title",
-            right: ""
-          },
-
-          events: {
-            url: ICS_URL,
-            format: "ics"
+        views: {
+          rolling4Weeks: {
+            type: "dayGrid",
+            duration: { weeks: 4 },
+            buttonText: "4 weeks"
           }
+        },
+
+        firstDay: 0, // Sunday header ordering
+        height: "100%",
+        contentHeight: "auto",
+        expandRows: true,
+
+        // Force the visible range to start Sunday of current week and go 28 days forward
+        visibleRange: function(currentDate) {
+          const start = startOfCurrentWeekSunday(currentDate);
+          const end = new Date(start);
+          end.setDate(end.getDate() + 28); // 4 weeks
+          return { start, end };
+        },
+
+        // Title formatting (shows date range; keep it simple for wall display)
+        titleFormat: { year: "numeric", month: "long" },
+
+        headerToolbar: {
+          left: "",
+          center: "title",
+          right: ""
+        },
+
+        // Keep it from showing rows for “extra” weeks beyond our visibleRange
+        fixedWeekCount: false,
+        showNonCurrentDates: false,
+
+        // Event density control: increase to show more per day before "+ more"
+        dayMaxEvents: 4,
+
+        events: {
+          url: ICS_URL,
+          format: "ics"
         }
-      );
+      });
 
       calendar.render();
 
-      /* Auto-refresh events every 10 minutes (wall-display friendly) */
+      // Refresh: re-pulls events; also rebuilds the rolling window daily
+      function hardRefresh() {
+        calendar.refetchEvents();
+        calendar.today(); // recalculates visibleRange relative to "today"
+      }
+
+      // Refresh events every 10 minutes
       setInterval(() => calendar.refetchEvents(), 10 * 60 * 1000);
+
+      // Re-anchor the 4-week window once per day (just after midnight)
+      setInterval(hardRefresh, 60 * 60 * 1000);
     });
   </script>
 </body>
