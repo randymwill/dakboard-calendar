@@ -23,10 +23,12 @@
       --faint: rgba(255,255,255,0.35);
       --todayBorder: rgba(56,189,248,0.85);
 
-      /* Event colors */
-      --school: #ef4444;   /* red */
-      --sports: #ec4899;   /* pink */
-      --other:  #22c55e;   /* green */
+      /* Color palette */
+      --school: #ef4444;  /* red */
+      --sports: #ec4899;  /* pink */
+      --other:  #22c55e;  /* green */
+      --randy:  #3b82f6;  /* blue */
+      --leslie: #22c55e;  /* green (same as other, but explicit) */
     }
 
     html, body {
@@ -37,6 +39,7 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     }
 
+    /* Top 75% of the screen */
     #calendar-wrapper {
       width: 100vw;
       height: 75vh;
@@ -56,10 +59,10 @@
 
     .fc { height: 100%; }
 
+    /* Title */
     .fc .fc-header-toolbar {
       margin: 10px 12px 6px;
     }
-
     .fc .fc-toolbar-title {
       font-size: 1.35em;
       font-weight: 600;
@@ -67,30 +70,52 @@
       opacity: 0.95;
     }
 
+    /* ============================================
+       FONT TUNING (what you asked for)
+       - Day-of-week header font (Sun/Mon/...)
+       - Date number font (1,2,3...)
+       - Event font
+       Change these 3 blocks to tune sizes
+       ============================================ */
+
+    /* (1) Day headers: Sun Mon Tue... */
     .fc .fc-col-header-cell-cushion {
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
+      font-size: 0.95em; /* <-- adjust this for day headers */
     }
 
+    /* (2) Date numbers in each cell */
+    .fc .fc-daygrid-day-number {
+      color: var(--muted);
+      font-size: 0.75em; /* <-- adjust this for date numbers */
+      padding: 6px 8px;
+    }
+
+    /* (3) Event text */
+    .fc .fc-event-title {
+      font-size: 1.05em; /* <-- adjust this for event titles */
+      font-weight: 650;
+      line-height: 1.1;
+    }
+    .fc .fc-event-time {
+      font-size: 0.85em; /* <-- adjust this for event time */
+      opacity: 0.95;
+    }
+
+    /* Borders */
     .fc-theme-standard td,
     .fc-theme-standard th,
     .fc-theme-standard .fc-scrollgrid {
       border-color: var(--grid);
     }
 
-    .fc .fc-daygrid-day-number {
-      color: var(--muted);
-      font-size: 0.75em;
-      padding: 6px 8px;
-    }
+    /* Past days (dim) */
+    .fc .is-past-day { opacity: 0.65; }
 
-    /* Past days */
-    .fc .is-past-day {
-      opacity: 0.65;
-    }
-
-    /* Today highlight */
+    /* Today highlight (border) */
+    .fc .fc-day-today { position: relative; background: transparent !important; }
     .fc .fc-day-today::after {
       content: "";
       position: absolute;
@@ -101,133 +126,9 @@
       opacity: 0.75;
     }
 
-    /* Event base */
+    /* Events base */
     .fc .fc-daygrid-event {
       border: 0;
       border-radius: 8px;
       padding: 2px 6px;
-      margin: 2px 4px 0;
-      color: #fff;
-    }
-
-    /* Event category colors */
-    .fc .event-school { background: var(--school); }
-    .fc .event-sports { background: var(--sports); }
-    .fc .event-other  { background: var(--other); }
-
-    .fc .fc-event-title {
-      font-size: 1.05em;
-      font-weight: 650;
-      line-height: 1.1;
-    }
-
-    .fc .fc-event-time {
-      font-size: 0.85em;
-      opacity: 0.95;
-    }
-
-    .fc-daygrid-body,
-    .fc-daygrid-body table {
-      height: 100%;
-    }
-
-    .fc-daygrid-day {
-      height: calc(100% / 4);
-    }
-
-    body { font-size: 18px; }
-    @media (min-width: 3000px) {
-      body { font-size: 24px; }
-    }
-  </style>
-</head>
-
-<body>
-  <div id="calendar-wrapper">
-    <div id="calendar"></div>
-  </div>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-
-      const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
-
-      function startOfCurrentWeekSunday(d = new Date()) {
-        const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        date.setDate(date.getDate() - date.getDay());
-        date.setHours(0,0,0,0);
-        return date;
-      }
-
-      const calendar = new FullCalendar.Calendar(
-        document.getElementById("calendar"), {
-          initialView: "rolling4Weeks",
-          views: {
-            rolling4Weeks: {
-              type: "dayGrid",
-              duration: { weeks: 4 }
-            }
-          },
-
-          firstDay: 0,
-          height: "100%",
-          expandRows: true,
-          showNonCurrentDates: false,
-          fixedWeekCount: false,
-          dayMaxEvents: 3,
-
-          visibleRange: function(currentDate) {
-            const start = startOfCurrentWeekSunday(currentDate);
-            const end = new Date(start);
-            end.setDate(end.getDate() + 28);
-            return { start, end };
-          },
-
-          headerToolbar: {
-            left: "",
-            center: "title",
-            right: ""
-          },
-
-          events: {
-            url: ICS_URL,
-            format: "ics"
-          },
-
-          eventDidMount: function(info) {
-            const title = info.event.title.toLowerCase();
-
-            const isSchool =
-              /school|dismissal|class|winter break|no school/.test(title);
-
-            const isSports =
-              /practice|game|vs|basketball|bbal|soccer|pickelball/.test(title);
-
-            if (isSchool) {
-              info.el.classList.add("event-school");
-            } else if (isSports) {
-              info.el.classList.add("event-sports");
-            } else {
-              info.el.classList.add("event-other");
-            }
-          },
-
-          dayCellDidMount: function(info) {
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const cellDate = new Date(info.date);
-            cellDate.setHours(0,0,0,0);
-            if (cellDate < today) {
-              info.el.classList.add("is-past-day");
-            }
-          }
-        }
-      );
-
-      calendar.render();
-
-      setInterval(() => calendar.refetchEvents(), 10 * 60 * 1000);
-    });
-  </script>
-</body>
-</html>
+      margin: 2p
