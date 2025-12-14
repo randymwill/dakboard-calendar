@@ -14,13 +14,15 @@
 
   <style>
     :root{
-      --bg: #0b1220;          /* page background */
-      --panel: #0f1b2e;       /* calendar background */
+      --bg: #07101d;             /* page background */
+      --panel: #0b1a2f;          /* calendar panel */
+      --panel2: #091527;         /* subtle gradient depth */
       --grid: rgba(255,255,255,0.10);
       --text: rgba(255,255,255,0.92);
-      --muted: rgba(255,255,255,0.65);
-      --today: rgba(56,189,248,0.18);  /* subtle cyan */
-      --eventText: rgba(255,255,255,0.95);
+      --muted: rgba(255,255,255,0.62);
+      --faint: rgba(255,255,255,0.35);
+      --todayBorder: rgba(56,189,248,0.85);  /* cyan */
+      --eventText: rgba(255,255,255,0.96);
     }
 
     html, body {
@@ -32,63 +34,68 @@
                    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* 75% of the display height, full width */
+    /* 75% of display height, full width */
     #calendar-wrapper {
       width: 100vw;
       height: 75vh;
       padding: 10px 14px;
       box-sizing: border-box;
-      background: var(--bg);
+      background: linear-gradient(180deg, var(--bg), #050b14);
     }
 
     #calendar {
       width: 100%;
       height: 100%;
-      background: var(--panel);
-      border-radius: 16px;
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border-radius: 18px;
       overflow: hidden;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      box-shadow: 0 14px 34px rgba(0,0,0,0.45);
     }
 
     /* ===== FullCalendar dark styling ===== */
+
     .fc {
       height: 100%;
     }
 
-    /* Title */
-    .fc .fc-toolbar-title {
-      font-size: 1.5em;
-      font-weight: 650;
-      color: var(--text);
-      padding: 6px 0;
-    }
-
-    /* Remove extra toolbar padding */
+    /* Toolbar layout */
     .fc .fc-header-toolbar {
       margin: 10px 12px 6px 12px;
     }
 
-    /* Day-of-week header (Sun/Mon/...) */
-    .fc .fc-col-header-cell-cushion {
-      color: var(--muted);
+    /* Title (quiet but clear) */
+    .fc .fc-toolbar-title {
+      font-size: 1.35em;
       font-weight: 600;
-      font-size: 0.95em;
-      padding: 8px 0;
+      letter-spacing: 0.03em;
+      opacity: 0.95;
+      color: var(--text);
+      padding: 4px 0;
     }
 
-    /* Grid lines / borders */
+    /* Column headers (Sun/Mon/...) */
+    .fc .fc-col-header-cell-cushion {
+      color: var(--muted);
+      font-weight: 650;
+      font-size: 0.95em;
+      padding: 10px 0;
+      letter-spacing: 0.02em;
+    }
+
+    /* Borders / grid */
     .fc-theme-standard td,
     .fc-theme-standard th,
     .fc-theme-standard .fc-scrollgrid {
       border-color: var(--grid);
     }
 
-    /* Day cell background */
+    /* Remove extra background fills */
     .fc .fc-daygrid-day-frame {
       background: transparent;
+      padding: 2px;
     }
 
-    /* Day number (smaller) */
+    /* Day number */
     .fc .fc-daygrid-day-number {
       color: var(--muted);
       font-size: 0.75em;
@@ -96,17 +103,38 @@
       opacity: 0.9;
     }
 
-    /* Today highlight */
-    .fc .fc-day-today {
-      background: var(--today) !important;
+    /* Past days dimmed (we add a class via JS) */
+    .fc .is-past-day .fc-daygrid-day-number {
+      color: var(--faint);
+      opacity: 0.75;
+    }
+    .fc .is-past-day .fc-daygrid-event {
+      opacity: 0.72;
+      filter: saturate(0.9);
     }
 
-    /* Event appearance */
+    /* Today: subtle border, not a full fill */
+    .fc .fc-day-today {
+      background: transparent !important;
+      position: relative;
+    }
+    .fc .fc-day-today::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 2px solid var(--todayBorder);
+      border-radius: 12px;
+      pointer-events: none;
+      opacity: 0.75;
+    }
+
+    /* Events */
     .fc .fc-daygrid-event {
       border: 0;
       border-radius: 8px;
-      padding: 2px 6px;
-      margin: 2px 6px 0 6px;
+      padding: 2px 5px;
+      margin: 2px 4px 0 4px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
     }
 
     .fc .fc-event-title,
@@ -114,11 +142,10 @@
       color: var(--eventText);
     }
 
-    /* Larger event title */
     .fc .fc-event-title {
       font-size: 1.05em;
       font-weight: 650;
-      line-height: 1.15;
+      line-height: 1.1;
     }
 
     .fc .fc-event-time {
@@ -126,18 +153,29 @@
       opacity: 0.95;
     }
 
-    /* Make "more" link readable */
+    /* "+ more" link */
     .fc .fc-daygrid-more-link {
-      color: rgba(255,255,255,0.85);
-      font-weight: 600;
+      color: rgba(255,255,255,0.82);
+      font-weight: 650;
+      letter-spacing: 0.01em;
     }
 
-    /* 4K readability */
+    /* Force rows to evenly fill height (no wasted space) */
+    .fc-daygrid-body,
+    .fc-daygrid-body table {
+      height: 100%;
+    }
+    .fc-daygrid-day {
+      height: calc(100% / 4); /* 4-week view */
+    }
+
+    /* 4K readability tuning */
     body { font-size: 18px; }
     @media (min-width: 3000px) {
       body { font-size: 24px; }
-      .fc .fc-toolbar-title { font-size: 1.7em; }
-      .fc .fc-event-title { font-size: 1.1em; }
+      .fc .fc-toolbar-title { font-size: 1.55em; }
+      .fc .fc-event-title { font-size: 1.12em; }
+      .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
     }
   </style>
 </head>
@@ -150,47 +188,49 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
 
-      // ✅ Your Cloudflare Worker ICS proxy
+      // ✅ Your ICS proxy
       const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
 
-      // Returns the most recent Sunday at 00:00:00 local time
+      // Start on Sunday of the current week (local time)
       function startOfCurrentWeekSunday(d = new Date()) {
         const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        const day = date.getDay(); // 0 = Sunday
+        const day = date.getDay(); // 0=Sun
         date.setDate(date.getDate() - day);
         date.setHours(0,0,0,0);
         return date;
       }
 
+      // Midnight timer helper
+      function msUntilNextLocalMidnight() {
+        const now = new Date();
+        const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        return next.getTime() - now.getTime();
+      }
+
       const calendarEl = document.getElementById("calendar");
 
       const calendar = new FullCalendar.Calendar(calendarEl, {
-        // Custom 4-week rolling view
         initialView: "rolling4Weeks",
 
         views: {
           rolling4Weeks: {
             type: "dayGrid",
-            duration: { weeks: 4 },
-            buttonText: "4 weeks"
+            duration: { weeks: 4 }
           }
         },
 
-        firstDay: 0, // Sunday header ordering
+        firstDay: 0, // Sunday
         height: "100%",
         contentHeight: "auto",
         expandRows: true,
 
-        // Force the visible range to start Sunday of current week and go 28 days forward
+        // Show only current Sunday -> +28 days
         visibleRange: function(currentDate) {
           const start = startOfCurrentWeekSunday(currentDate);
           const end = new Date(start);
-          end.setDate(end.getDate() + 28); // 4 weeks
+          end.setDate(end.getDate() + 28);
           return { start, end };
         },
-
-        // Title formatting (shows date range; keep it simple for wall display)
-        titleFormat: { year: "numeric", month: "long" },
 
         headerToolbar: {
           left: "",
@@ -198,32 +238,43 @@
           right: ""
         },
 
-        // Keep it from showing rows for “extra” weeks beyond our visibleRange
         fixedWeekCount: false,
         showNonCurrentDates: false,
 
-        // Event density control: increase to show more per day before "+ more"
-        dayMaxEvents: 4,
+        // Cleaner wall-display density
+        dayMaxEvents: 3,
 
         events: {
           url: ICS_URL,
           format: "ics"
+        },
+
+        // Add "past day" class for dimming
+        dayCellDidMount: function(info) {
+          const cellDate = new Date(info.date.getFullYear(), info.date.getMonth(), info.date.getDate());
+          const today = new Date();
+          const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          if (cellDate < todayDate) {
+            info.el.classList.add("is-past-day");
+          }
         }
       });
 
       calendar.render();
 
-      // Refresh: re-pulls events; also rebuilds the rolling window daily
-      function hardRefresh() {
-        calendar.refetchEvents();
-        calendar.today(); // recalculates visibleRange relative to "today"
-      }
-
       // Refresh events every 10 minutes
       setInterval(() => calendar.refetchEvents(), 10 * 60 * 1000);
 
-      // Re-anchor the 4-week window once per day (just after midnight)
-      setInterval(hardRefresh, 60 * 60 * 1000);
+      // Re-anchor at midnight so the rolling 4-week window advances automatically
+      function scheduleMidnightReanchor() {
+        setTimeout(() => {
+          calendar.today();         // recalculates visibleRange from today
+          calendar.refetchEvents(); // reload data
+          scheduleMidnightReanchor();
+        }, msUntilNextLocalMidnight() + 2000); // +2s cushion
+      }
+      scheduleMidnightReanchor();
+
     });
   </script>
 </body>
