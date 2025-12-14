@@ -131,4 +131,202 @@
       border: 0;
       border-radius: 8px;
       padding: 2px 6px;
-      margin: 2p
+      margin: 2px 4px 0;
+      color: #fff;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
+    }
+
+    /* Category color classes (applied via JS) */
+    .fc .event-school { background: var(--school); }
+    .fc .event-sports { background: var(--sports); } /* sports (basketball/soccer) */
+    .fc .event-other  { background: var(--other);  }
+    .fc .event-randy  { background: var(--randy);  }
+    .fc .event-leslie { background: var(--leslie); }
+
+    /* Make sure icons + text align nicely */
+    .fc .fc-event-title-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .fc .event-icon {
+      flex: 0 0 auto;
+      font-size: 1.05em;
+      line-height: 1;
+      opacity: 0.95;
+    }
+    .fc .event-title-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Force rows to evenly fill height */
+    .fc-daygrid-body,
+    .fc-daygrid-body table {
+      height: 100%;
+    }
+    .fc-daygrid-day {
+      height: calc(100% / 4);
+    }
+
+    /* 4K readability */
+    body { font-size: 18px; }
+    @media (min-width: 3000px) {
+      body { font-size: 24px; }
+      .fc .fc-toolbar-title { font-size: 1.55em; }
+      .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
+      .fc .fc-event-title { font-size: 1.12em; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="calendar-wrapper">
+    <div id="calendar"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+      // ✅ Your ICS proxy
+      const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
+
+      function startOfCurrentWeekSunday(d = new Date()) {
+        const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        date.setDate(date.getDate() - date.getDay()); // back to Sunday
+        date.setHours(0,0,0,0);
+        return date;
+      }
+
+      // Keyword rules (edit these anytime)
+      const rules = {
+        randy:  /randy/i,
+        leslie: /leslie/i,
+
+        // School
+        school: /school|dismissal|class|winter break|no school/i,
+
+        // Sports breakdown
+        basketball: /basketball|bball|little dribblers/i,
+        soccer:     /soccer|rainbow unicorns/i
+      };
+
+      // Icons
+      const ICON_BBALL  = "🏀";
+      const ICON_SOCCER = "🌈⚽"; // rainbow soccer ball vibe
+
+      const calendar = new FullCalendar.Calendar(
+        document.getElementById("calendar"),
+        {
+          initialView: "rolling4Weeks",
+          views: {
+            rolling4Weeks: { type: "dayGrid", duration: { weeks: 4 } }
+          },
+
+          firstDay: 0, // Sunday
+          height: "100%",
+          expandRows: true,
+          showNonCurrentDates: false,
+          fixedWeekCount: false,
+
+          // ✅ Show more events so you don’t get "+1 more"
+          // If you STILL get "+ more", bump this higher (e.g. 6, 8, 10)
+          dayMaxEvents: 8,
+
+          visibleRange: function(currentDate) {
+            const start = startOfCurrentWeekSunday(currentDate);
+            const end = new Date(start);
+            end.setDate(end.getDate() + 28);
+            return { start, end };
+          },
+
+          headerToolbar: { left: "", center: "title", right: "" },
+
+          events: { url: ICS_URL, format: "ics" },
+
+          // Dim past days
+          dayCellDidMount: function(info) {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const cell = new Date(info.date); cell.setHours(0,0,0,0);
+            if (cell < today) info.el.classList.add("is-past-day");
+          },
+
+          // Color + icon + title formatting
+          eventDidMount: function(info) {
+            const title = (info.event.title || "").trim();
+            const t = title.toLowerCase();
+
+            // Determine category with precedence:
+            // 1) Randy (blue)
+            // 2) Leslie (green)
+            // 3) Basketball (pink + 🏀)
+            // 4) Soccer (pink + 🌈⚽)
+            // 5) School (red)
+            // 6) Other (green)
+            let category = "other";
+            let icon = "";
+
+            if (rules.randy.test(title)) {
+              category = "randy";
+            } else if (rules.leslie.test(title)) {
+              category = "leslie";
+            } else if (rules.basketball.test(title)) {
+              category = "sports";
+              icon = ICON_BBALL;
+            } else if (rules.soccer.test(title)) {
+              category = "sports";
+              icon = ICON_SOCCER;
+            } else if (rules.school.test(title)) {
+              category = "school";
+            } else {
+              category = "other";
+            }
+
+            // Apply background color class
+            info.el.classList.add("event-" + category);
+
+            // Inject icon into the title area (without breaking FullCalendar layout)
+            // FullCalendar structure: .fc-event-title-container contains title/time elements
+            const titleContainer = info.el.querySelector(".fc-event-title-container");
+            if (titleContainer) {
+              // Wrap existing title text so we can prepend icons cleanly
+              const titleEl = info.el.querySelector(".fc-event-title");
+              if (titleEl) {
+                const originalText = titleEl.textContent || title;
+
+                // Build our own title layout
+                titleEl.textContent = "";
+                const wrapper = document.createElement("div");
+                wrapper.className = "fc-event-title-container";
+
+                if (icon) {
+                  const iconEl = document.createElement("span");
+                  iconEl.className = "event-icon";
+                  iconEl.textContent = icon;
+                  wrapper.appendChild(iconEl);
+                }
+
+                const textEl = document.createElement("span");
+                textEl.className = "event-title-text";
+                textEl.textContent = originalText;
+                wrapper.appendChild(textEl);
+
+                // Replace the existing container contents safely
+                titleContainer.innerHTML = "";
+                titleContainer.appendChild(wrapper);
+              }
+            }
+          }
+        }
+      );
+
+      calendar.render();
+
+      // Refresh every 10 minutes
+      setInterval(() => calendar.refetchEvents(), 10 * 60 * 1000);
+    });
+  </script>
+</body>
+</html>
