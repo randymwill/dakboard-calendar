@@ -1,8 +1,8 @@
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Menus)
-Version: v1.8.1
+Version: v1.8.2
 Last Updated: 2025-12-14
-Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu status in badge.
+Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load reliably).
 -->
 
 <!doctype html>
@@ -110,24 +110,24 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
-      font-size: 0.95em; /* <-- day headers */
+      font-size: 0.95em;
     }
 
     /* (2) Date numbers */
     .fc .fc-daygrid-day-number {
       color: var(--muted);
-      font-size: 0.75em; /* <-- date numbers */
+      font-size: 0.75em;
       padding: 6px 8px;
     }
 
     /* (3) Event text */
     .fc .evt-title {
-      font-size: 1.05em; /* <-- event titles */
+      font-size: 1.05em;
       font-weight: 650;
       line-height: 1.1;
     }
     .fc .evt-time {
-      font-size: 0.85em; /* <-- event time */
+      font-size: 0.85em;
       opacity: 0.95;
       font-weight: 700;
     }
@@ -373,7 +373,7 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
       user-select: none;
       pointer-events: none;
       backdrop-filter: blur(2px);
-      min-width: 190px;
+      min-width: 235px;
     }
     #status-badge .ver { font-weight: 900; color: rgba(255,255,255,0.62); }
     #status-badge .ref { color: rgba(255,255,255,0.48); }
@@ -381,6 +381,7 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
     #status-badge .ok { color: var(--ok); font-weight: 800; }
     #status-badge .err { color: var(--err); font-weight: 800; }
     #status-badge .warn { color: var(--warn); font-weight: 800; }
+    #status-badge .dbg { color: rgba(255,255,255,0.35); }
   </style>
 </head>
 
@@ -390,9 +391,10 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.8.1</div>
+    <div class="ver">v1.8.2</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Menu: <span class="warn">loading…</span></div>
+    <div class="dbg" id="menu-debug">Menu range: —</div>
   </div>
 
   <script>
@@ -442,8 +444,6 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
       const ICON_SCHOOL = "🐎";
 
       function classifyEvent(title) {
-        // precedence:
-        // Randy > Leslie > Basketball > Soccer > School > Other
         if (rules.randy.test(title))      return { category: "randy",  icon: "" };
         if (rules.leslie.test(title))     return { category: "leslie", icon: "" };
         if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL };
@@ -457,14 +457,11 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
         return (meal === "breakfast" || meal === "lunch");
       }
 
-      // Parse your menu title format:
-      // "🍳 Breakfast: A / B — Sides: C, D (+X more)"
       function parseMenuTitle(title) {
         const cleaned = (title || "").trim();
         const parts = cleaned.split("— Sides:");
         const left = (parts[0] || "").trim();
         const sides = (parts[1] || "").trim();
-
         const colonIdx = left.indexOf(":");
         const entrees = colonIdx >= 0 ? left.slice(colonIdx + 1).trim() : left;
         return { entrees, sides };
@@ -478,10 +475,11 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
       }
 
       // =========================
-      // Version / refresh badge
+      // Badge / refreshed clock
       // =========================
       const lastRefEl = document.getElementById("last-refreshed");
       const menuStatusEl = document.getElementById("menu-status");
+      const menuDbgEl = document.getElementById("menu-debug");
 
       function formatLocalTime(dt) {
         const mm = dt.getMonth() + 1;
@@ -502,9 +500,9 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
       function setMenuStatus(ok, msg) {
         if (!menuStatusEl) return;
         if (ok === true) {
-          menuStatusEl.innerHTML = `Menu: <span class="ok">OK</span> ${msg ? "- " + escapeHtml(msg) : ""}`;
+          menuStatusEl.innerHTML = `Menu: <span class="ok">OK</span>${msg ? " - " + escapeHtml(msg) : ""}`;
         } else if (ok === false) {
-          menuStatusEl.innerHTML = `Menu: <span class="err">Error</span> ${msg ? "- " + escapeHtml(msg) : ""}`;
+          menuStatusEl.innerHTML = `Menu: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
         } else {
           menuStatusEl.innerHTML = `Menu: <span class="warn">loading…</span>`;
         }
@@ -513,23 +511,28 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
       setLastRefreshed("loaded");
       setMenuStatus(null);
 
-      // =========================
-      // Robust menu fetcher:
-      // - supports valid JSON array
-      // - ALSO supports "obj,obj,obj" (missing brackets) by wrapping it
-      // =========================
+      // ✅ IMPORTANT: normalize dates to YYYY-MM-DD
+      function toYYYYMMDD(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const d = String(dateObj.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
       async function fetchMenuEvents(fetchInfo) {
-        const start = fetchInfo.startStr; // YYYY-MM-DD
-        const end = fetchInfo.endStr;     // YYYY-MM-DD
+        // FullCalendar gives Date objects too — use those and normalize.
+        const start = toYYYYMMDD(fetchInfo.start);
+        const end = toYYYYMMDD(fetchInfo.end);
+
         const url = `${MENU_URL}?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+
+        if (menuDbgEl) menuDbgEl.textContent = `Menu range: ${start} → ${end}`;
 
         const resp = await fetch(url, { cache: "no-store" });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
         const text = (await resp.text()).trim();
 
-        // If your Worker returns: {"...":...},{"...":...}  (no brackets)
-        // FullCalendar can't parse that. We fix it here.
         let jsonText = text;
         if (jsonText.startsWith("{") && jsonText.includes("},{") && !jsonText.startsWith("[")) {
           jsonText = `[${jsonText}]`;
@@ -537,10 +540,7 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
 
         const data = JSON.parse(jsonText);
 
-        // Ensure array
-        if (!Array.isArray(data)) {
-          throw new Error("Menu feed did not return an array");
-        }
+        if (!Array.isArray(data)) throw new Error("Menu feed did not return an array");
 
         setMenuStatus(true, `${data.length} events`);
         return data;
@@ -570,10 +570,7 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
           headerToolbar: { left: "", center: "title", right: "" },
 
           eventSources: [
-            // ICS feed
             { url: ICS_URL, format: "ics" },
-
-            // MENU feed (custom fetcher so it works even if Worker returns invalid JSON array)
             {
               events: async function(fetchInfo, successCallback, failureCallback) {
                 try {
@@ -622,9 +619,8 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
             const isAllDay = arg.event.allDay;
             const timeText = arg.timeText || "";
 
-            // Menu events: 2-line formatted
             if (isMenuEvent(arg.event)) {
-              const meal = arg.event.extendedProps.meal; // "breakfast" or "lunch"
+              const meal = arg.event.extendedProps.meal;
               const { entrees, sides } = parseMenuTitle(title);
 
               const line1 = `
@@ -641,7 +637,6 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
               return { html: `<span class="menu-wrap">${line1}${line2}</span>` };
             }
 
-            // Regular events: icon + optional time + title
             const { icon } = classifyEvent(title);
             const parts = [];
             if (icon) parts.push(`<span class="evt-icon">${icon}</span>`);
@@ -654,7 +649,6 @@ Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu st
 
       calendar.render();
 
-      // Hard refresh every N minutes
       setInterval(() => {
         setMenuStatus(null);
         calendar.refetchEvents();
