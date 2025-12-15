@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DAKboard Calendar</title>
 
+  <!-- FullCalendar -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+  <!-- ical.js -->
   <script src="https://unpkg.com/ical.js/dist/ical.es5.min.cjs"></script>
+  <!-- FullCalendar iCalendar plugin -->
   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.19/index.global.min.js"></script>
 
   <style>
@@ -17,8 +20,10 @@
       --grid: rgba(255,255,255,0.10);
       --text: rgba(255,255,255,0.92);
       --muted: rgba(255,255,255,0.62);
+      --faint: rgba(255,255,255,0.35);
       --todayBorder: rgba(56,189,248,0.85);
 
+      /* Colors */
       --school: #ef4444;  /* red */
       --sports: #ec4899;  /* pink */
       --other:  #22d3ee;  /* cyan */
@@ -62,8 +67,8 @@
     }
 
     /* =========================================================
-       FONT TUNING (edit these 3 blocks)
-       (1) Day headers
+       FONT TUNING
+       (1) Day headers (Sun/Mon/...)
        (2) Date numbers
        (3) Event font
        ========================================================= */
@@ -73,24 +78,24 @@
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
-      font-size: 0.95em; /* <-- change for day headers */
+      font-size: 0.95em; /* <-- day headers */
     }
 
     /* (2) Date numbers */
     .fc .fc-daygrid-day-number {
       color: var(--muted);
-      font-size: 0.75em; /* <-- change for date numbers */
+      font-size: 0.75em; /* <-- date numbers */
       padding: 6px 8px;
     }
 
     /* (3) Event text */
-    .fc .fc-event-title {
-      font-size: 1.05em; /* <-- change for event titles */
+    .fc .fc-event-title {           /* <-- timed + all-day titles (fallback) */
+      font-size: 1.05em;            /* event titles */
       font-weight: 650;
       line-height: 1.1;
     }
     .fc .fc-event-time {
-      font-size: 0.85em; /* <-- change for event time */
+      font-size: 0.85em;            /* event times */
       opacity: 0.95;
     }
 
@@ -100,7 +105,8 @@
       border-color: var(--grid);
     }
 
-    /* Today highlight border */
+    .fc .is-past-day { opacity: 0.65; }
+
     .fc .fc-day-today { position: relative; background: transparent !important; }
     .fc .fc-day-today::after {
       content: "";
@@ -112,7 +118,7 @@
       opacity: 0.75;
     }
 
-    /* Events base */
+    /* Event base */
     .fc .fc-daygrid-event {
       border: 0;
       border-radius: 8px;
@@ -122,14 +128,7 @@
       box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
     }
 
-    /* Category color classes */
-    .fc .event-school { background: var(--school); }
-    .fc .event-sports { background: var(--sports); }
-    .fc .event-other  { background: var(--other);  }
-    .fc .event-randy  { background: var(--randy);  }
-    .fc .event-leslie { background: var(--leslie); }
-
-    /* All-day banner style */
+    /* All-day banner look */
     .fc .fc-daygrid-block-event {
       border-radius: 6px;
       padding: 4px 8px;
@@ -139,15 +138,42 @@
     .fc .fc-daygrid-block-event .fc-event-title {
       font-size: 1.08em;
       font-weight: 700;
-      letter-spacing: 0.01em;
     }
 
-    /* Icon styling (prepended inside the title text) */
-    .fc .event-icon {
-      display: inline-block;
-      margin-right: 6px;
-      transform: translateY(0.5px);
+    /* Category colors */
+    .fc .event-school { background: var(--school); }
+    .fc .event-sports { background: var(--sports); }
+    .fc .event-other  { background: var(--other);  }
+    .fc .event-randy  { background: var(--randy);  }
+    .fc .event-leslie { background: var(--leslie); }
+
+    /* Our custom rendered content (eventContent) */
+    .fc .evt {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .fc .evt-icon {
+      flex: 0 0 auto;
+      font-size: 1.05em;
+      line-height: 1;
       opacity: 0.95;
+    }
+    .fc .evt-time {
+      flex: 0 0 auto;
+      font-weight: 700;
+      opacity: 0.95;
+      font-size: 0.85em;
+    }
+    .fc .evt-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 650;
+      font-size: 1.05em;
+      line-height: 1.1;
     }
 
     /* Force rows to evenly fill height */
@@ -161,4 +187,136 @@
       body { font-size: 24px; }
       .fc .fc-toolbar-title { font-size: 1.55em; }
       .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
-      .fc .fc-event-title { font-size:
+      .fc .evt-title { font-size: 1.12em; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="calendar-wrapper">
+    <div id="calendar"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+      const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
+
+      function startOfCurrentWeekSunday(d = new Date()) {
+        const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        date.setDate(date.getDate() - date.getDay());
+        date.setHours(0,0,0,0);
+        return date;
+      }
+
+      // Rules
+      const rules = {
+        randy:  /randy/i,
+        leslie: /leslie/i,
+        school: /school|dismissal|class|winter break|no school/i,
+        basketball: /basketball|bball|little dribblers/i,
+        soccer: /soccer|rainbow unicorns/i
+      };
+
+      // Icons
+      const ICON_BBALL  = "🏀";
+      const ICON_SOCCER = "🌈⚽";
+      const ICON_SCHOOL = "🐎";
+
+      // Decide category + icon for each event (single source of truth)
+      function classifyEvent(title) {
+        // precedence:
+        // Randy > Leslie > Basketball > Soccer > School > Other
+        if (rules.randy.test(title))   return { category: "randy",  icon: "" };
+        if (rules.leslie.test(title))  return { category: "leslie", icon: "" };
+        if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL };
+        if (rules.soccer.test(title))     return { category: "sports", icon: ICON_SOCCER };
+        if (rules.school.test(title))     return { category: "school", icon: ICON_SCHOOL };
+        return { category: "other", icon: "" };
+      }
+
+      const calendar = new FullCalendar.Calendar(
+        document.getElementById("calendar"),
+        {
+          initialView: "rolling4Weeks",
+          views: { rolling4Weeks: { type: "dayGrid", duration: { weeks: 4 } } },
+
+          firstDay: 0,
+          height: "100%",
+          expandRows: true,
+          showNonCurrentDates: false,
+          fixedWeekCount: false,
+
+          // avoid "+ more"
+          dayMaxEvents: 12,
+
+          visibleRange: function(currentDate) {
+            const start = startOfCurrentWeekSunday(currentDate);
+            const end = new Date(start);
+            end.setDate(end.getDate() + 28);
+            return { start, end };
+          },
+
+          headerToolbar: { left: "", center: "title", right: "" },
+
+          events: { url: ICS_URL, format: "ics" },
+
+          dayCellDidMount: function(info) {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const cell = new Date(info.date); cell.setHours(0,0,0,0);
+            if (cell < today) info.el.classList.add("is-past-day");
+          },
+
+          // Apply background class early
+          eventClassNames: function(arg) {
+            const title = (arg.event.title || "").trim();
+            const { category } = classifyEvent(title);
+            return ["event-" + category];
+          },
+
+          // ✅ Render icon + title reliably for timed AND all-day events
+          eventContent: function(arg) {
+            const title = (arg.event.title || "").trim();
+            const { icon } = classifyEvent(title);
+
+            // FullCalendar supplies timeText already formatted for display (e.g., "7:30p")
+            const timeText = arg.timeText || "";
+            const isAllDay = arg.event.allDay;
+
+            // Build a small HTML fragment. (Safe here because it’s our own strings/icons.)
+            const parts = [];
+
+            // icon
+            if (icon) {
+              parts.push(`<span class="evt-icon">${icon}</span>`);
+            }
+
+            // time (only for timed events)
+            if (!isAllDay && timeText) {
+              parts.push(`<span class="evt-time">${timeText}</span>`);
+            }
+
+            // title
+            parts.push(`<span class="evt-title">${escapeHtml(title)}</span>`);
+
+            return { html: `<span class="evt">${parts.join("")}</span>` };
+          }
+        }
+      );
+
+      calendar.render();
+      setInterval(() => calendar.refetchEvents(), 10 * 60 * 1000);
+
+      // Basic HTML escaping for event titles (defensive)
+      function escapeHtml(str) {
+        return str
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+    });
+  </script>
+</body>
+</html>
