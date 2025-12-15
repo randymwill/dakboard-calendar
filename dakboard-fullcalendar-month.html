@@ -1,12 +1,13 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.9.3
+Version: v1.9.5
 Last Updated: 2025-12-15
 
-Key fix in this version:
-- Meals footer is height-capped so it can't steal avertical space from the calendar grid.
-- Calendar is allowed to show 4 event rows per day before collapsing into "+ more".
+Changes in v1.9.5:
+- Adds SHOW_STATUS_BADGE toggle (bottom-right version box)
+- Rainbow Unicorn games icon updated to 🌈🦄⚽
+- Auto-hide meals footer on non-school days (weekends or when no posted menu today)
 
 Notes:
 - If you want to tune menu text size, search for "MEALS FONT KNOBS".
@@ -82,7 +83,7 @@ Notes:
 
     #calendar-wrapper {
       width: 100vw;
-      height: 75vh; /* calendar area on your 4K panel */
+      height: 75vh; /* calendar area */
       padding: 10px 14px;
       box-sizing: border-box;
       background: linear-gradient(180deg, var(--bg), #050b14);
@@ -105,17 +106,16 @@ Notes:
       min-height: 0;
     }
 
-    /* =========================================================
-       MEALS FOOTER: height-capped so it can't shrink the calendar grid
-       ========================================================= */
+    /* Meals footer is height-capped so it cannot steal calendar space */
     #meals-footer {
       flex: 0 0 auto;
-      max-height: 150px;       /* <-- KEY: prevents footer from growing */
-      overflow: hidden;        /* <-- KEY: keeps calendar space stable */
+      max-height: 150px;
+      overflow: hidden;
       background: linear-gradient(180deg, rgba(255,255,255,0.02), var(--mealsBg));
       border-top: 1px solid var(--mealsBorder);
       padding: 8px 10px 10px;
     }
+    #meals-footer.hidden { display: none !important; }
 
     #meals-grid {
       display: grid;
@@ -134,7 +134,6 @@ Notes:
       min-height: 44px;
     }
 
-    /* Empty day: keep alignment but look like nothing */
     .meal-col.empty {
       border: none !important;
       background: transparent !important;
@@ -167,7 +166,6 @@ Notes:
       margin-top: 1px;
     }
 
-    /* Breakfast: 1 line */
     .meal-text-one {
       flex: 1 1 auto;
       min-width: 0;
@@ -180,7 +178,6 @@ Notes:
       white-space: nowrap;
     }
 
-    /* Lunch: 4 lines total (2 entrees + 2 sides) */
     .meal-lunch-wrap{
       flex: 1 1 auto;
       min-width: 0;
@@ -194,10 +191,8 @@ Notes:
       font-weight: 800;
       font-size: var(--mealsLunchEntreeFont);
       line-height: var(--mealsLunchLineHeight);
-
       overflow: hidden;
       white-space: normal;
-
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
@@ -208,16 +203,13 @@ Notes:
       font-weight: 700;
       font-size: var(--mealsLunchSidesFont);
       line-height: var(--mealsLunchLineHeight);
-
       overflow: hidden;
       white-space: normal;
-
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
     }
 
-    /* FullCalendar base */
     .fc { height: 100%; }
 
     .fc .fc-header-toolbar { margin: 10px 12px 6px; }
@@ -228,32 +220,30 @@ Notes:
       opacity: 0.95;
     }
 
-    /* =========================================================
-       FONT TUNING (calendar)
-       ========================================================= */
+    /* FONT TUNING (calendar) */
     .fc .fc-col-header-cell-cushion {
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
-      font-size: 0.95em; /* day headers */
+      font-size: 0.95em;
     }
     .fc .fc-daygrid-day-number {
       color: var(--muted);
-      font-size: 0.75em; /* date numbers */
+      font-size: 0.75em;
       padding: 6px 8px;
     }
     .fc .evt-title {
-      font-size: 1.05em; /* event titles */
+      font-size: 1.05em;
       font-weight: 650;
       line-height: 1.1;
     }
     .fc .evt-time {
-      font-size: 0.85em; /* event time */
+      font-size: 0.85em;
       opacity: 0.95;
       font-weight: 700;
     }
 
-    /* Stronger grid */
+    /* Grid */
     .fc-theme-standard td,
     .fc-theme-standard th,
     .fc-theme-standard .fc-scrollgrid {
@@ -268,7 +258,7 @@ Notes:
         inset 0 12px 20px rgba(0,0,0,0.18);
     }
 
-    /* Today border */
+    /* Today */
     .fc .fc-day-today { position: relative; background: transparent !important; }
     .fc .fc-day-today::after {
       content: "";
@@ -280,7 +270,7 @@ Notes:
       opacity: 0.78;
     }
 
-    /* Weekend shading + accent line */
+    /* Weekend shading + line */
     .fc .fc-col-header-cell.fc-day-sun,
     .fc .fc-col-header-cell.fc-day-sat {
       background: linear-gradient(180deg, var(--weekendTint), var(--weekendTint2));
@@ -334,7 +324,7 @@ Notes:
       pointer-events: none;
     }
 
-    /* Events base */
+    /* Events */
     .fc .fc-daygrid-event {
       border: 0;
       border-radius: 8px;
@@ -343,8 +333,6 @@ Notes:
       color: #fff;
       box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
     }
-
-    /* All-day banners */
     .fc .fc-daygrid-block-event {
       position: relative;
       border-radius: 6px;
@@ -373,14 +361,12 @@ Notes:
       pointer-events: none;
     }
 
-    /* Category colors */
     .fc .event-school { background: var(--school); }
     .fc .event-sports { background: var(--sports); }
     .fc .event-other  { background: var(--other);  }
     .fc .event-randy  { background: var(--randy);  }
     .fc .event-leslie { background: var(--leslie); }
 
-    /* Sparkle outline for holiday events */
     .fc .holiday-sparkle {
       box-shadow:
         0 0 0 1.5px var(--sparkleOuter),
@@ -389,7 +375,6 @@ Notes:
         0 1px 0 rgba(255,255,255,0.10) inset !important;
     }
 
-    /* eventContent layout */
     .fc .evt {
       display: inline-flex;
       align-items: center;
@@ -409,12 +394,10 @@ Notes:
       text-overflow: ellipsis;
     }
 
-    /* Force 4 rows to fill height */
     .fc-daygrid-body,
     .fc-daygrid-body table { height: 100%; }
     .fc-daygrid-day { height: calc(100% / 4); }
 
-    /* 4K readability */
     body { font-size: 18px; }
     @media (min-width: 3000px) {
       body { font-size: 24px; }
@@ -423,7 +406,7 @@ Notes:
       .fc .evt-title { font-size: 1.12em; }
     }
 
-    /* Version + status badge */
+    /* Status badge */
     #status-badge {
       position: fixed;
       right: 10px;
@@ -444,6 +427,7 @@ Notes:
       backdrop-filter: blur(2px);
       min-width: 260px;
     }
+    #status-badge.hidden { display: none !important; }
     #status-badge .ver { font-weight: 900; color: rgba(255,255,255,0.62); }
     #status-badge .ref { color: rgba(255,255,255,0.48); }
     #status-badge .menu { color: rgba(255,255,255,0.48); }
@@ -464,7 +448,7 @@ Notes:
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.9.3</div>
+    <div class="ver">v1.9.5</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
@@ -472,7 +456,11 @@ Notes:
   <script>
     document.addEventListener("DOMContentLoaded", function () {
 
-      // Your sources
+      // QUICK TOGGLES
+      const SHOW_STATUS_BADGE = false;       // set true only when troubleshooting
+      const AUTO_HIDE_MEALS_FOOTER = true;   // hide footer on weekends or when no posted menu today
+
+      // Sources
       const ICS_URL  = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
 
@@ -480,6 +468,9 @@ Notes:
 
       const BREAKFAST_MAX_ITEMS = 2;
       const LUNCH_MAX_ENTREES = 3;
+
+      const statusBadge = document.getElementById("status-badge");
+      if (statusBadge && !SHOW_STATUS_BADGE) statusBadge.classList.add("hidden");
 
       function startOfCurrentWeekSunday(d = new Date()) {
         const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -526,30 +517,31 @@ Notes:
         return (m === 12 && (d === 24 || d === 25 || d === 31));
       }
 
-      // Rules for your personal calendar events
       const rules = {
         randy:  /randy/i,
         leslie: /leslie/i,
         school: /school|dismissal|class|winter break|no school/i,
         basketball: /basketball|bball|little dribblers/i,
-        soccer:     /soccer|rainbow unicorns/i
+        soccer:     /soccer|rainbow unicorns/i,
+        rainbowUnicorns: /rainbow unicorns/i
       };
 
-      // Icons
       const ICON_BBALL  = "🏀";
-      const ICON_SOCCER = "🌈⚽";
+      const ICON_SOCCER_RU = "🌈🦄⚽";
+      const ICON_SOCCER = "⚽";
       const ICON_SCHOOL = "🐎";
 
       function classifyEvent(title) {
         if (rules.randy.test(title))      return { category: "randy",  icon: "" };
         if (rules.leslie.test(title))     return { category: "leslie", icon: "" };
         if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL };
-        if (rules.soccer.test(title))     return { category: "sports", icon: ICON_SOCCER };
+        if (rules.soccer.test(title)) {
+          return { category: "sports", icon: rules.rainbowUnicorns.test(title) ? ICON_SOCCER_RU : ICON_SOCCER };
+        }
         if (rules.school.test(title))     return { category: "school", icon: ICON_SCHOOL };
         return { category: "other", icon: "" };
       }
 
-      // Status badge
       const lastRefEl = document.getElementById("last-refreshed");
       const menuStatusEl = document.getElementById("menu-status");
 
@@ -573,11 +565,31 @@ Notes:
       setLastRefreshed("loaded");
       setMealsStatus(null);
 
-      // Meals footer
+      const mealsFooter = document.getElementById("meals-footer");
       const mealsGrid = document.getElementById("meals-grid");
 
+      function setMealsFooterVisible(isVisible) {
+        if (!mealsFooter) return;
+        mealsFooter.classList.toggle("hidden", !isVisible);
+      }
+
+      function shouldShowMealsFooter(mealsByDate) {
+        if (!AUTO_HIDE_MEALS_FOOTER) return true;
+
+        const today = new Date();
+        const dow = today.getDay();
+        if (dow === 0 || dow === 6) return false;
+
+        const todayKey = toYYYYMMDD(today);
+        const info = mealsByDate && mealsByDate[todayKey];
+        if (!info) return false;
+
+        const hasBreakfast = (info.breakfastItems || []).length > 0;
+        const hasLunch = (info.lunchEntrees || []).length > 0 || (info.lunchSides || "").length > 0;
+        return hasBreakfast || hasLunch;
+      }
+
       function parseMenuTitleParts(title) {
-        // "🍳 Breakfast: A / B — Sides: C, D (+X more)"
         const cleaned = (title || "").trim();
         const parts = cleaned.split("— Sides:");
         const left = (parts[0] || "").trim();
@@ -668,11 +680,12 @@ Notes:
           }
         }
 
+        setMealsFooterVisible(shouldShowMealsFooter(byDate));
+
         renderMealsFooter(weekStart, byDate);
         setMealsStatus(true, `${data.length} menu events`);
       }
 
-      // FullCalendar
       const calendar = new FullCalendar.Calendar(
         document.getElementById("calendar"),
         {
@@ -685,7 +698,6 @@ Notes:
           showNonCurrentDates: false,
           fixedWeekCount: false,
 
-          // IMPORTANT: allow at least 4 visible event rows before collapsing
           dayMaxEvents: true,
           dayMaxEventRows: 4,
           eventMinHeight: 18,
@@ -700,7 +712,7 @@ Notes:
           headerToolbar: { left: "", center: "title", right: "" },
 
           eventSources: [
-            { url: ICS_URL, format: "ics" }
+            { url: "https://snowy-silence-6676.randywilliams-us.workers.dev/", format: "ics" }
           ],
 
           dayCellDidMount: function(info) {
@@ -742,6 +754,7 @@ Notes:
 
       fetchMealsForCurrentWeek().catch(err => {
         setMealsStatus(false, err && err.message ? err.message : "Unknown");
+        setMealsFooterVisible(true);
       });
 
       setInterval(() => {
@@ -749,7 +762,10 @@ Notes:
         calendar.refetchEvents();
 
         fetchMealsForCurrentWeek()
-          .catch(err => setMealsStatus(false, err && err.message ? err.message : "Unknown"))
+          .catch(err => {
+            setMealsStatus(false, err && err.message ? err.message : "Unknown");
+            setMealsFooterVisible(true);
+          })
           .finally(() => setLastRefreshed(`auto ${AUTO_REFRESH_MINUTES}m`));
 
       }, AUTO_REFRESH_MINUTES * 60 * 1000);
