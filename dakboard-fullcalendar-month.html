@@ -17,11 +17,16 @@
       --bg: #07101d;
       --panel: #0b1a2f;
       --panel2: #091527;
+
       --grid: rgba(255,255,255,0.10);
       --text: rgba(255,255,255,0.92);
       --muted: rgba(255,255,255,0.62);
       --faint: rgba(255,255,255,0.35);
       --todayBorder: rgba(56,189,248,0.85);
+
+      /* Weekend column tint */
+      --weekendTint: rgba(255,255,255,0.04);
+      --weekendTint2: rgba(255,255,255,0.02);
 
       /* Colors */
       --school: #ef4444;  /* red */
@@ -78,25 +83,26 @@
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
-      font-size: 1.0em; /* <-- day headers */
+      font-size: 0.95em; /* <-- day headers */
     }
 
     /* (2) Date numbers */
     .fc .fc-daygrid-day-number {
       color: var(--muted);
-      font-size: 0.8em; /* <-- date numbers */
+      font-size: 0.75em; /* <-- date numbers */
       padding: 6px 8px;
     }
 
-    /* (3) Event text */
-    .fc .fc-event-title {           /* <-- timed + all-day titles (fallback) */
-      font-size: 1.05em;            /* event titles */
+    /* (3) Event text (our eventContent uses .evt-title/.evt-time) */
+    .fc .evt-title {
+      font-size: 1.05em; /* <-- event titles */
       font-weight: 650;
       line-height: 1.1;
     }
-    .fc .fc-event-time {
-      font-size: 0.85em;            /* event times */
+    .fc .evt-time {
+      font-size: 0.85em; /* <-- event time */
       opacity: 0.95;
+      font-weight: 700;
     }
 
     .fc-theme-standard td,
@@ -118,7 +124,25 @@
       opacity: 0.75;
     }
 
-    /* Event base */
+    /* =========================
+       1) Weekend shading (NEW)
+       ========================= */
+
+    /* Column header cells for Sat/Sun */
+    .fc .fc-col-header-cell.fc-day-sun,
+    .fc .fc-col-header-cell.fc-day-sat {
+      background: linear-gradient(180deg, var(--weekendTint), var(--weekendTint2));
+    }
+
+    /* Day cells for Sat/Sun */
+    .fc .fc-daygrid-day.fc-day-sun,
+    .fc .fc-daygrid-day.fc-day-sat {
+      background: linear-gradient(180deg, var(--weekendTint), transparent);
+    }
+
+    /* =========================
+       Events base
+       ========================= */
     .fc .fc-daygrid-event {
       border: 0;
       border-radius: 8px;
@@ -128,18 +152,6 @@
       box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
     }
 
-    /* All-day banner look */
-    .fc .fc-daygrid-block-event {
-      border-radius: 6px;
-      padding: 4px 8px;
-      margin: 3px 4px 0;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset;
-    }
-    .fc .fc-daygrid-block-event .fc-event-title {
-      font-size: 1.08em;
-      font-weight: 700;
-    }
-
     /* Category colors */
     .fc .event-school { background: var(--school); }
     .fc .event-sports { background: var(--sports); }
@@ -147,7 +159,7 @@
     .fc .event-randy  { background: var(--randy);  }
     .fc .event-leslie { background: var(--leslie); }
 
-    /* Our custom rendered content (eventContent) */
+    /* Our custom eventContent layout */
     .fc .evt {
       display: inline-flex;
       align-items: center;
@@ -161,19 +173,55 @@
       line-height: 1;
       opacity: 0.95;
     }
-    .fc .evt-time {
-      flex: 0 0 auto;
-      font-weight: 700;
-      opacity: 0.95;
-      font-size: 0.85em;
-    }
     .fc .evt-title {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-weight: 650;
-      font-size: 1.05em;
-      line-height: 1.1;
+    }
+
+    /* ======================================
+       6) Better all-day banners (NEW)
+       ====================================== */
+
+    /* All-day events render as "block" events */
+    .fc .fc-daygrid-block-event {
+      position: relative;
+      border-radius: 6px;      /* less rounded => banner */
+      padding: 6px 10px;       /* taller */
+      margin: 4px 4px 0;       /* a bit more breathing room */
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.14) inset,
+        0 6px 14px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+
+    /* Subtle gloss/gradient on banners */
+    .fc .fc-daygrid-block-event::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    /* Left accent stripe for banners */
+    .fc .fc-daygrid-block-event::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      background: rgba(255,255,255,0.35);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    /* Make banner text a touch bolder */
+    .fc .fc-daygrid-block-event .evt-title {
+      font-weight: 750;
+      letter-spacing: 0.01em;
     }
 
     /* Force rows to evenly fill height */
@@ -213,9 +261,11 @@
       const rules = {
         randy:  /randy/i,
         leslie: /leslie/i,
+
         school: /school|dismissal|class|winter break|no school/i,
+
         basketball: /basketball|bball|little dribblers/i,
-        soccer: /soccer|rainbow unicorns/i
+        soccer:     /soccer|rainbow unicorns/i
       };
 
       // Icons
@@ -223,12 +273,11 @@
       const ICON_SOCCER = "🌈⚽";
       const ICON_SCHOOL = "🐎";
 
-      // Decide category + icon for each event (single source of truth)
       function classifyEvent(title) {
         // precedence:
         // Randy > Leslie > Basketball > Soccer > School > Other
-        if (rules.randy.test(title))   return { category: "randy",  icon: "" };
-        if (rules.leslie.test(title))  return { category: "leslie", icon: "" };
+        if (rules.randy.test(title))      return { category: "randy",  icon: "" };
+        if (rules.leslie.test(title))     return { category: "leslie", icon: "" };
         if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL };
         if (rules.soccer.test(title))     return { category: "sports", icon: ICON_SOCCER };
         if (rules.school.test(title))     return { category: "school", icon: ICON_SCHOOL };
@@ -247,7 +296,7 @@
           showNonCurrentDates: false,
           fixedWeekCount: false,
 
-          // avoid "+ more"
+          // Avoid "+ more" (raise if needed)
           dayMaxEvents: 12,
 
           visibleRange: function(currentDate) {
@@ -267,36 +316,29 @@
             if (cell < today) info.el.classList.add("is-past-day");
           },
 
-          // Apply background class early
           eventClassNames: function(arg) {
             const title = (arg.event.title || "").trim();
             const { category } = classifyEvent(title);
             return ["event-" + category];
           },
 
-          // ✅ Render icon + title reliably for timed AND all-day events
           eventContent: function(arg) {
             const title = (arg.event.title || "").trim();
             const { icon } = classifyEvent(title);
 
-            // FullCalendar supplies timeText already formatted for display (e.g., "7:30p")
             const timeText = arg.timeText || "";
             const isAllDay = arg.event.allDay;
 
-            // Build a small HTML fragment. (Safe here because it’s our own strings/icons.)
             const parts = [];
 
-            // icon
             if (icon) {
               parts.push(`<span class="evt-icon">${icon}</span>`);
             }
 
-            // time (only for timed events)
             if (!isAllDay && timeText) {
-              parts.push(`<span class="evt-time">${timeText}</span>`);
+              parts.push(`<span class="evt-time">${escapeHtml(timeText)}</span>`);
             }
 
-            // title
             parts.push(`<span class="evt-title">${escapeHtml(title)}</span>`);
 
             return { html: `<span class="evt">${parts.join("")}</span>` };
@@ -307,7 +349,6 @@
       calendar.render();
       setInterval(() => calendar.refetchEvents(), 10 * 60 * 1000);
 
-      // Basic HTML escaping for event titles (defensive)
       function escapeHtml(str) {
         return str
           .replaceAll("&", "&amp;")
