@@ -1,1 +1,545 @@
 
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DAKboard Calendar</title>
+
+  <!-- FullCalendar -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+  <!-- ical.js -->
+  <script src="https://unpkg.com/ical.js/dist/ical.es5.min.cjs"></script>
+  <!-- FullCalendar iCalendar plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.19/index.global.min.js"></script>
+
+  <style>
+    :root{
+      --bg: #07101d;
+      --panel: #0b1a2f;
+      --panel2: #091527;
+
+      /* Grid definition */
+      --grid: rgba(255,255,255,0.20);
+      --gridStrong: rgba(255,255,255,0.30);
+
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.62);
+      --todayBorder: rgba(56,189,248,0.85);
+
+      /* Weekend */
+      --weekendTint: rgba(255,255,255,0.085);
+      --weekendTint2: rgba(255,255,255,0.03);
+      --weekendLine: rgba(255,255,255,0.28);
+
+      /* Category colors */
+      --school: #ef4444;  /* red */
+      --sports: #ec4899;  /* pink */
+      --other:  #22d3ee;  /* cyan */
+      --randy:  #3b82f6;  /* blue */
+      --leslie: #22c55e;  /* green */
+
+      /* Holidays */
+      --holidayGlow: rgba(250, 204, 21, 0.22);
+      --holidayBorder: rgba(250, 204, 21, 0.62);
+      --holidayLabelBg: rgba(0,0,0,0.48);
+
+      /* Sparkle outline */
+      --sparkleOuter: rgba(250, 204, 21, 0.50);
+      --sparkleInner: rgba(255,255,255,0.22);
+
+      /* Menu styling */
+      --menuBg: rgba(255,255,255,0.10);
+      --menuBorder: rgba(255,255,255,0.18);
+      --menuText: rgba(255,255,255,0.90);
+      --menuSubtext: rgba(255,255,255,0.70);
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    #calendar-wrapper {
+      width: 100vw;
+      height: 75vh;
+      padding: 10px 14px;
+      box-sizing: border-box;
+      background: linear-gradient(180deg, var(--bg), #050b14);
+    }
+
+    #calendar {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 14px 34px rgba(0,0,0,0.45);
+    }
+
+    .fc { height: 100%; }
+
+    .fc .fc-header-toolbar { margin: 10px 12px 6px; }
+    .fc .fc-toolbar-title {
+      font-size: 1.35em;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      opacity: 0.95;
+    }
+
+    /* =========================================================
+       FONT TUNING (edit these)
+       ========================================================= */
+
+    /* (1) Day headers */
+    .fc .fc-col-header-cell-cushion {
+      color: var(--muted);
+      font-weight: 650;
+      padding: 10px 0;
+      font-size: 0.95em;
+    }
+
+    /* (2) Date numbers */
+    .fc .fc-daygrid-day-number {
+      color: var(--muted);
+      font-size: 0.75em;
+      padding: 6px 8px;
+    }
+
+    /* (3) Event text */
+    .fc .evt-title {
+      font-size: 1.05em;
+      font-weight: 650;
+      line-height: 1.1;
+    }
+    .fc .evt-time {
+      font-size: 0.85em;
+      opacity: 0.95;
+      font-weight: 700;
+    }
+
+    /* Stronger grid */
+    .fc-theme-standard td,
+    .fc-theme-standard th,
+    .fc-theme-standard .fc-scrollgrid {
+      border-color: var(--grid);
+    }
+    .fc .fc-col-header-cell {
+      border-color: var(--gridStrong) !important;
+    }
+    .fc .fc-daygrid-day-frame {
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.08),
+        inset 0 12px 20px rgba(0,0,0,0.18);
+    }
+
+    /* Today border */
+    .fc .fc-day-today { position: relative; background: transparent !important; }
+    .fc .fc-day-today::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 2px solid var(--todayBorder);
+      border-radius: 12px;
+      pointer-events: none;
+      opacity: 0.78;
+    }
+
+    /* Weekend shading */
+    .fc .fc-col-header-cell.fc-day-sun,
+    .fc .fc-col-header-cell.fc-day-sat {
+      background: linear-gradient(180deg, var(--weekendTint), var(--weekendTint2));
+    }
+    .fc .fc-daygrid-day.fc-day-sun,
+    .fc .fc-daygrid-day.fc-day-sat {
+      background: linear-gradient(180deg, var(--weekendTint), transparent);
+    }
+
+    /* Weekend vertical accent line */
+    .fc .fc-col-header-cell.fc-day-sat,
+    .fc .fc-daygrid-day.fc-day-sat,
+    .fc .fc-col-header-cell.fc-day-sun,
+    .fc .fc-daygrid-day.fc-day-sun {
+      position: relative;
+    }
+    .fc .fc-col-header-cell.fc-day-sat::after,
+    .fc .fc-daygrid-day.fc-day-sat::after,
+    .fc .fc-col-header-cell.fc-day-sun::after,
+    .fc .fc-daygrid-day.fc-day-sun::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--weekendLine);
+      pointer-events: none;
+    }
+
+    /* Holiday day styling */
+    .fc .is-holiday {
+      position: relative;
+      background: linear-gradient(180deg, var(--holidayGlow), transparent) !important;
+    }
+    .fc .is-holiday .fc-daygrid-day-frame {
+      box-shadow:
+        inset 0 0 0 2px var(--holidayBorder),
+        inset 0 18px 26px rgba(0,0,0,0.22);
+    }
+    .fc .is-holiday::before {
+      content: attr(data-holiday-label);
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--holidayLabelBg);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.92);
+      font-size: 0.72em;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Events base */
+    .fc .fc-daygrid-event {
+      border: 0;
+      border-radius: 8px;
+      padding: 2px 6px;
+      margin: 2px 4px 0;
+      color: #fff;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
+    }
+
+    /* All-day banners */
+    .fc .fc-daygrid-block-event {
+      position: relative;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin: 4px 4px 0;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.14) inset,
+        0 6px 14px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+    .fc .fc-daygrid-block-event::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    .fc .fc-daygrid-block-event::after {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 6px;
+      background: rgba(255,255,255,0.35);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .fc .fc-daygrid-block-event .evt-title {
+      font-weight: 750;
+      letter-spacing: 0.01em;
+    }
+
+    /* Category colors */
+    .fc .event-school { background: var(--school); }
+    .fc .event-sports { background: var(--sports); }
+    .fc .event-other  { background: var(--other);  }
+    .fc .event-randy  { background: var(--randy);  }
+    .fc .event-leslie { background: var(--leslie); }
+
+    /* Sparkle outline for holiday events */
+    .fc .holiday-sparkle {
+      box-shadow:
+        0 0 0 1.5px var(--sparkleOuter),
+        0 0 0 4px rgba(250,204,21,0.10),
+        0 0 0 1px var(--sparkleInner) inset,
+        0 1px 0 rgba(255,255,255,0.10) inset !important;
+    }
+
+    /* eventContent layout */
+    .fc .evt {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .fc .evt-icon {
+      flex: 0 0 auto;
+      font-size: 1.05em;
+      line-height: 1;
+      opacity: 0.95;
+    }
+    .fc .evt-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* =======================
+       Menu events (nicely formatted)
+       ======================= */
+    .fc .menu-event {
+      background: var(--menuBg) !important;
+      border: 1px solid var(--menuBorder) !important;
+      color: var(--menuText) !important;
+      box-shadow: none !important;
+      opacity: 0.95;
+    }
+
+    /* Allow menu content to wrap to 2 lines (titles can be long) */
+    .fc .menu-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      white-space: normal;
+      line-height: 1.08;
+    }
+    .fc .menu-line1 {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.96em;
+      font-weight: 750;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .fc .menu-line2 {
+      font-size: 0.82em;
+      color: var(--menuSubtext);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;          /* show up to 2 lines */
+      -webkit-box-orient: vertical;
+    }
+    .fc .menu-pill {
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.14);
+      font-weight: 800;
+      font-size: 0.82em;
+    }
+
+    /* Force 4 rows to fill height */
+    .fc-daygrid-body,
+    .fc-daygrid-body table { height: 100%; }
+    .fc-daygrid-day { height: calc(100% / 4); }
+
+    /* 4K readability */
+    body { font-size: 18px; }
+    @media (min-width: 3000px) {
+      body { font-size: 24px; }
+      .fc .fc-toolbar-title { font-size: 1.55em; }
+      .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
+      .fc .evt-title { font-size: 1.12em; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="calendar-wrapper">
+    <div id="calendar"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+      // Your sources (kept together so future changes don't lose anything)
+      const ICS_URL  = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
+      const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
+
+      function startOfCurrentWeekSunday(d = new Date()) {
+        const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        date.setDate(date.getDate() - date.getDay());
+        date.setHours(0,0,0,0);
+        return date;
+      }
+
+      function holidayLabelForDate(dateObj) {
+        const m = dateObj.getMonth() + 1;
+        const d = dateObj.getDate();
+        if (m === 12 && d === 24) return "🎄 Christmas Eve";
+        if (m === 12 && d === 25) return "🎁 Christmas Day";
+        if (m === 12 && d === 31) return "🥂 New Year’s Eve";
+        return "";
+      }
+
+      function isBigHolidayDate(dateObj) {
+        const m = dateObj.getMonth() + 1;
+        const d = dateObj.getDate();
+        return (m === 12 && (d === 24 || d === 25 || d === 31));
+      }
+
+      // Rules for your personal calendar events
+      const rules = {
+        randy:  /randy/i,
+        leslie: /leslie/i,
+        school: /school|dismissal|class|winter break|no school/i,
+        basketball: /basketball|bball|little dribblers/i,
+        soccer:     /soccer|rainbow unicorns/i
+      };
+
+      // Icons
+      const ICON_BBALL  = "🏀";
+      const ICON_SOCCER = "🌈⚽";
+      const ICON_SCHOOL = "🐎";
+
+      function classifyEvent(title) {
+        // precedence:
+        // Randy > Leslie > Basketball > Soccer > School > Other
+        if (rules.randy.test(title))      return { category: "randy",  icon: "" };
+        if (rules.leslie.test(title))     return { category: "leslie", icon: "" };
+        if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL };
+        if (rules.soccer.test(title))     return { category: "sports", icon: ICON_SOCCER };
+        if (rules.school.test(title))     return { category: "school", icon: ICON_SCHOOL };
+        return { category: "other", icon: "" };
+      }
+
+      function isMenuEvent(eventObj) {
+        const meal = eventObj.extendedProps && eventObj.extendedProps.meal;
+        return (meal === "breakfast" || meal === "lunch");
+      }
+
+      // Parse your menu title format:
+      // "🍳 Breakfast: A / B — Sides: C, D (+X more)"
+      function parseMenuTitle(title) {
+        const cleaned = (title || "").trim();
+
+        // Remove leading emoji if present; keep meal label from extendedProps instead.
+        // We'll split on "— Sides:" to separate entree vs sides.
+        const parts = cleaned.split("— Sides:");
+        const left = (parts[0] || "").trim();   // "🍳 Breakfast: Entree1 / Entree2"
+        const sides = (parts[1] || "").trim();  // "side1, side2..."
+
+        // Extract the entree text after the first colon
+        const colonIdx = left.indexOf(":");
+        const entrees = colonIdx >= 0 ? left.slice(colonIdx + 1).trim() : left;
+
+        return { entrees, sides };
+      }
+
+      function mealLabel(meal) {
+        return meal === "breakfast" ? "Breakfast" : "Lunch";
+      }
+
+      function mealEmoji(meal) {
+        return meal === "breakfast" ? "🍳" : "🥪";
+      }
+
+      const calendar = new FullCalendar.Calendar(
+        document.getElementById("calendar"),
+        {
+          initialView: "rolling4Weeks",
+          views: { rolling4Weeks: { type: "dayGrid", duration: { weeks: 4 } } },
+
+          firstDay: 0,
+          height: "100%",
+          expandRows: true,
+          showNonCurrentDates: false,
+          fixedWeekCount: false,
+
+          dayMaxEvents: 12,
+
+          visibleRange: function(currentDate) {
+            const start = startOfCurrentWeekSunday(currentDate);
+            const end = new Date(start);
+            end.setDate(end.getDate() + 28);
+            return { start, end };
+          },
+
+          headerToolbar: { left: "", center: "title", right: "" },
+
+          eventSources: [
+            { url: ICS_URL, format: "ics" },
+            { url: MENU_URL, format: "json" }
+          ],
+
+          dayCellDidMount: function(info) {
+            const cell = new Date(info.date); cell.setHours(0,0,0,0);
+
+            const label = holidayLabelForDate(cell);
+            if (label) {
+              info.el.classList.add("is-holiday");
+              info.el.setAttribute("data-holiday-label", label);
+            }
+          },
+
+          eventClassNames: function(arg) {
+            const classes = [];
+
+            if (isMenuEvent(arg.event)) {
+              classes.push("menu-event");
+            } else {
+              const title = (arg.event.title || "").trim();
+              const { category } = classifyEvent(title);
+              classes.push("event-" + category);
+            }
+
+            const start = arg.event.start;
+            if (start && isBigHolidayDate(start)) classes.push("holiday-sparkle");
+
+            return classes;
+          },
+
+          eventContent: function(arg) {
+            const title = (arg.event.title || "").trim();
+            const isAllDay = arg.event.allDay;
+            const timeText = arg.timeText || "";
+
+            // Menu events: 2-line formatted
+            if (isMenuEvent(arg.event)) {
+              const meal = arg.event.extendedProps.meal; // "breakfast" or "lunch"
+              const { entrees, sides } = parseMenuTitle(title);
+
+              const line1 = `
+                <span class="menu-line1">
+                  <span class="menu-pill">${mealEmoji(meal)} ${mealLabel(meal)}</span>
+                  <span>${escapeHtml(entrees)}</span>
+                </span>
+              `;
+
+              const line2 = sides
+                ? `<span class="menu-line2">Sides: ${escapeHtml(sides)}</span>`
+                : "";
+
+              return { html: `<span class="menu-wrap">${line1}${line2}</span>` };
+            }
+
+            // Regular events: icon + optional time + title
+            const { icon } = classifyEvent(title);
+            const parts = [];
+            if (icon) parts.push(`<span class="evt-icon">${icon}</span>`);
+            if (!isAllDay && timeText) parts.push(`<span class="evt-time">${escapeHtml(timeText)}</span>`);
+            parts.push(`<span class="evt-title">${escapeHtml(title)}</span>`);
+            return { html: `<span class="evt">${parts.join("")}</span>` };
+          }
+        }
+      );
+
+      calendar.render();
+      setInterval(() => calendar.refetchEvents(), 10 * 60 * 1000);
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+    });
+  </script>
+</body>
+</html>
