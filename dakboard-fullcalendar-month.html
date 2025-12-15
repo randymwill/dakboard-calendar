@@ -19,19 +19,17 @@
       --panel2: #091527;
 
       /* Grid definition (stronger) */
-      --grid: rgba(255,255,255,0.18);        /* main border */
-      --gridStrong: rgba(255,255,255,0.26);  /* header borders */
-      --cellInset: rgba(0,0,0,0.35);         /* inset shadow */
-      --cellEdge: rgba(255,255,255,0.08);    /* inset highlight */
+      --grid: rgba(255,255,255,0.20);
+      --gridStrong: rgba(255,255,255,0.30);
 
       --text: rgba(255,255,255,0.92);
       --muted: rgba(255,255,255,0.62);
       --faint: rgba(255,255,255,0.35);
       --todayBorder: rgba(56,189,248,0.85);
 
-      /* Weekend tint */
-      --weekendTint: rgba(255,255,255,0.05);
-      --weekendTint2: rgba(255,255,255,0.02);
+      /* Weekend column tint (STRONGER) */
+      --weekendTint: rgba(255,255,255,0.085);
+      --weekendTint2: rgba(255,255,255,0.03);
 
       /* Category colors */
       --school: #ef4444;  /* red */
@@ -41,10 +39,13 @@
       --leslie: #22c55e;  /* green */
 
       /* Holiday styling */
-      --holidayGlow: rgba(250, 204, 21, 0.18);   /* gold */
-      --holidayGlow2: rgba(239, 68, 68, 0.10);   /* red */
-      --holidayBorder: rgba(250, 204, 21, 0.55);
-      --holidayLabelBg: rgba(0,0,0,0.45);
+      --holidayGlow: rgba(250, 204, 21, 0.22);   /* gold */
+      --holidayBorder: rgba(250, 204, 21, 0.62);
+      --holidayLabelBg: rgba(0,0,0,0.48);
+
+      /* Sparkle outline for events on holiday dates */
+      --sparkleOuter: rgba(250, 204, 21, 0.50);
+      --sparkleInner: rgba(255,255,255,0.22);
     }
 
     html, body {
@@ -116,38 +117,24 @@
       font-weight: 700;
     }
 
-    /* =========================
-       Stronger grid definition
-       ========================= */
-
+    /* Stronger grid */
     .fc-theme-standard td,
     .fc-theme-standard th,
     .fc-theme-standard .fc-scrollgrid {
       border-color: var(--grid);
     }
-
-    /* Make header border a touch stronger */
     .fc .fc-col-header-cell {
       border-color: var(--gridStrong) !important;
     }
-
-    /* Give each day cell a subtle inset outline so it reads from distance */
     .fc .fc-daygrid-day-frame {
       box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.06),
+        inset 0 0 0 1px rgba(255,255,255,0.08),
         inset 0 12px 20px rgba(0,0,0,0.18);
     }
 
-    /* Optional: slightly stronger vertical/horizontal dividers */
-    .fc .fc-scrollgrid-section-body td,
-    .fc .fc-scrollgrid-section-body th {
-      border-color: var(--grid);
-    }
-
-    /* Past days (dim) */
     .fc .is-past-day { opacity: 0.65; }
 
-    /* Today highlight (border) */
+    /* Today border */
     .fc .fc-day-today { position: relative; background: transparent !important; }
     .fc .fc-day-today::after {
       content: "";
@@ -156,12 +143,10 @@
       border: 2px solid var(--todayBorder);
       border-radius: 12px;
       pointer-events: none;
-      opacity: 0.75;
+      opacity: 0.78;
     }
 
-    /* =========================
-       Weekend shading
-       ========================= */
+    /* Weekend shading (stronger) */
     .fc .fc-col-header-cell.fc-day-sun,
     .fc .fc-col-header-cell.fc-day-sat {
       background: linear-gradient(180deg, var(--weekendTint), var(--weekendTint2));
@@ -171,22 +156,16 @@
       background: linear-gradient(180deg, var(--weekendTint), transparent);
     }
 
-    /* =========================
-       Holiday day styling (NEW)
-       ========================= */
+    /* Holiday day styling */
     .fc .is-holiday {
       position: relative;
       background: linear-gradient(180deg, var(--holidayGlow), transparent) !important;
     }
-
-    /* A warm festive border inset */
     .fc .is-holiday .fc-daygrid-day-frame {
       box-shadow:
         inset 0 0 0 2px var(--holidayBorder),
         inset 0 18px 26px rgba(0,0,0,0.22);
     }
-
-    /* Corner label */
     .fc .is-holiday::before {
       content: attr(data-holiday-label);
       position: absolute;
@@ -198,13 +177,11 @@
       border: 1px solid rgba(255,255,255,0.18);
       color: rgba(255,255,255,0.92);
       font-size: 0.72em;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.02em;
       z-index: 3;
       pointer-events: none;
     }
-
-    /* Make the date number slightly brighter on holidays */
     .fc .is-holiday .fc-daygrid-day-number {
       color: rgba(255,255,255,0.92);
       opacity: 0.95;
@@ -260,6 +237,15 @@
     .fc .event-randy  { background: var(--randy);  }
     .fc .event-leslie { background: var(--leslie); }
 
+    /* Sparkle outline for holiday events (subtle) */
+    .fc .holiday-sparkle {
+      box-shadow:
+        0 0 0 1.5px var(--sparkleOuter),
+        0 0 0 4px rgba(250,204,21,0.10),
+        0 0 0 1px var(--sparkleInner) inset,
+        0 1px 0 rgba(255,255,255,0.10) inset !important;
+    }
+
     /* eventContent layout */
     .fc .evt {
       display: inline-flex;
@@ -313,16 +299,19 @@
         return date;
       }
 
-      // Holiday helper: returns a label (or empty string) for the big holidays you listed
       function holidayLabelForDate(dateObj) {
-        const m = dateObj.getMonth() + 1; // 1-12
+        const m = dateObj.getMonth() + 1;
         const d = dateObj.getDate();
-
-        // Christmas Eve / Christmas Day / New Year's Eve
         if (m === 12 && d === 24) return "🎄 Christmas Eve";
         if (m === 12 && d === 25) return "🎁 Christmas Day";
         if (m === 12 && d === 31) return "🥂 New Year’s Eve";
         return "";
+      }
+
+      function isBigHolidayDate(dateObj) {
+        const m = dateObj.getMonth() + 1;
+        const d = dateObj.getDate();
+        return (m === 12 && (d === 24 || d === 25 || d === 31));
       }
 
       // Rules
@@ -340,8 +329,6 @@
       const ICON_SCHOOL = "🐎";
 
       function classifyEvent(title) {
-        // precedence:
-        // Randy > Leslie > Basketball > Soccer > School > Other
         if (rules.randy.test(title))      return { category: "randy",  icon: "" };
         if (rules.leslie.test(title))     return { category: "leslie", icon: "" };
         if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL };
@@ -376,12 +363,10 @@
           events: { url: ICS_URL, format: "ics" },
 
           dayCellDidMount: function(info) {
-            // Dim past days
             const today = new Date(); today.setHours(0,0,0,0);
             const cell = new Date(info.date); cell.setHours(0,0,0,0);
             if (cell < today) info.el.classList.add("is-past-day");
 
-            // Holiday styling by DATE (works even if your calendar doesn't have holiday events)
             const label = holidayLabelForDate(cell);
             if (label) {
               info.el.classList.add("is-holiday");
@@ -392,7 +377,17 @@
           eventClassNames: function(arg) {
             const title = (arg.event.title || "").trim();
             const { category } = classifyEvent(title);
-            return ["event-" + category];
+
+            const classes = ["event-" + category];
+
+            // Add sparkle class if the event occurs on a big holiday date
+            // (use event start date; all-day and timed both work)
+            const start = arg.event.start;
+            if (start && isBigHolidayDate(start)) {
+              classes.push("holiday-sparkle");
+            }
+
+            return classes;
           },
 
           eventContent: function(arg) {
