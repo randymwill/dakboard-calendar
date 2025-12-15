@@ -31,6 +31,8 @@
       --weekendTint: rgba(255,255,255,0.085);
       --weekendTint2: rgba(255,255,255,0.03);
 
+      
+
       /* Category colors */
       --school: #ef4444;  /* red */
       --sports: #ec4899;  /* pink */
@@ -155,6 +157,29 @@
     .fc .fc-daygrid-day.fc-day-sat {
       background: linear-gradient(180deg, var(--weekendTint), transparent);
     }
+
+    /* Weekend vertical accent line */
+.fc .fc-col-header-cell.fc-day-sat,
+.fc .fc-daygrid-day.fc-day-sat,
+.fc .fc-col-header-cell.fc-day-sun,
+.fc .fc-daygrid-day.fc-day-sun {
+  position: relative;
+}
+
+.fc .fc-col-header-cell.fc-day-sat::after,
+.fc .fc-daygrid-day.fc-day-sat::after,
+.fc .fc-col-header-cell.fc-day-sun::after,
+.fc .fc-daygrid-day.fc-day-sun::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;                     /* thin line */
+  background: rgba(255,255,255,0.18);
+  pointer-events: none;
+}
+
 
     /* Holiday day styling */
     .fc .is-holiday {
