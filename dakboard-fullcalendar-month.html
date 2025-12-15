@@ -1,16 +1,16 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.9.2
+Version: v1.9.3
 Last Updated: 2025-12-15
-Changes in this version:
-- Meals row stays under the calendar (current week only)
-- Empty menu days are invisible (keeps alignment, no box)
-- Breakfast is 1 line (main items only)
-- Lunch is 4 lines total:
-    - Entrees: up to 2 lines
-    - Sides: up to 2 lines
-- Easy font-size knobs: search for "MEALS FONT KNOBS" below
+
+Key fix in this version:
+- Meals footer is height-capped so it can't steal avertical space from the calendar grid.
+- Calendar is allowed to show 4 event rows per day before collapsing into "+ more".
+
+Notes:
+- If you want to tune menu text size, search for "MEALS FONT KNOBS".
+- If you want to tune calendar fonts, search for "FONT TUNING (calendar)".
 -->
 
 <html lang="en">
@@ -82,7 +82,7 @@ Changes in this version:
 
     #calendar-wrapper {
       width: 100vw;
-      height: 75vh;
+      height: 75vh; /* calendar area on your 4K panel */
       padding: 10px 14px;
       box-sizing: border-box;
       background: linear-gradient(180deg, var(--bg), #050b14);
@@ -105,11 +105,16 @@ Changes in this version:
       min-height: 0;
     }
 
+    /* =========================================================
+       MEALS FOOTER: height-capped so it can't shrink the calendar grid
+       ========================================================= */
     #meals-footer {
       flex: 0 0 auto;
+      max-height: 150px;       /* <-- KEY: prevents footer from growing */
+      overflow: hidden;        /* <-- KEY: keeps calendar space stable */
       background: linear-gradient(180deg, rgba(255,255,255,0.02), var(--mealsBg));
       border-top: 1px solid var(--mealsBorder);
-      padding: 10px 10px 12px;
+      padding: 8px 10px 10px;
     }
 
     #meals-grid {
@@ -129,6 +134,7 @@ Changes in this version:
       min-height: 44px;
     }
 
+    /* Empty day: keep alignment but look like nothing */
     .meal-col.empty {
       border: none !important;
       background: transparent !important;
@@ -161,6 +167,7 @@ Changes in this version:
       margin-top: 1px;
     }
 
+    /* Breakfast: 1 line */
     .meal-text-one {
       flex: 1 1 auto;
       min-width: 0;
@@ -173,6 +180,7 @@ Changes in this version:
       white-space: nowrap;
     }
 
+    /* Lunch: 4 lines total (2 entrees + 2 sides) */
     .meal-lunch-wrap{
       flex: 1 1 auto;
       min-width: 0;
@@ -209,6 +217,7 @@ Changes in this version:
       -webkit-line-clamp: 2;
     }
 
+    /* FullCalendar base */
     .fc { height: 100%; }
 
     .fc .fc-header-toolbar { margin: 10px 12px 6px; }
@@ -219,28 +228,32 @@ Changes in this version:
       opacity: 0.95;
     }
 
+    /* =========================================================
+       FONT TUNING (calendar)
+       ========================================================= */
     .fc .fc-col-header-cell-cushion {
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
-      font-size: 0.95em;
+      font-size: 0.95em; /* day headers */
     }
     .fc .fc-daygrid-day-number {
       color: var(--muted);
-      font-size: 0.75em;
+      font-size: 0.75em; /* date numbers */
       padding: 6px 8px;
     }
     .fc .evt-title {
-      font-size: 1.05em;
+      font-size: 1.05em; /* event titles */
       font-weight: 650;
       line-height: 1.1;
     }
     .fc .evt-time {
-      font-size: 0.85em;
+      font-size: 0.85em; /* event time */
       opacity: 0.95;
       font-weight: 700;
     }
 
+    /* Stronger grid */
     .fc-theme-standard td,
     .fc-theme-standard th,
     .fc-theme-standard .fc-scrollgrid {
@@ -255,6 +268,7 @@ Changes in this version:
         inset 0 12px 20px rgba(0,0,0,0.18);
     }
 
+    /* Today border */
     .fc .fc-day-today { position: relative; background: transparent !important; }
     .fc .fc-day-today::after {
       content: "";
@@ -266,6 +280,7 @@ Changes in this version:
       opacity: 0.78;
     }
 
+    /* Weekend shading + accent line */
     .fc .fc-col-header-cell.fc-day-sun,
     .fc .fc-col-header-cell.fc-day-sat {
       background: linear-gradient(180deg, var(--weekendTint), var(--weekendTint2));
@@ -292,6 +307,7 @@ Changes in this version:
       pointer-events: none;
     }
 
+    /* Holiday day styling */
     .fc .is-holiday {
       position: relative;
       background: linear-gradient(180deg, var(--holidayGlow), transparent) !important;
@@ -318,6 +334,7 @@ Changes in this version:
       pointer-events: none;
     }
 
+    /* Events base */
     .fc .fc-daygrid-event {
       border: 0;
       border-radius: 8px;
@@ -327,6 +344,7 @@ Changes in this version:
       box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
     }
 
+    /* All-day banners */
     .fc .fc-daygrid-block-event {
       position: relative;
       border-radius: 6px;
@@ -355,12 +373,14 @@ Changes in this version:
       pointer-events: none;
     }
 
+    /* Category colors */
     .fc .event-school { background: var(--school); }
     .fc .event-sports { background: var(--sports); }
     .fc .event-other  { background: var(--other);  }
     .fc .event-randy  { background: var(--randy);  }
     .fc .event-leslie { background: var(--leslie); }
 
+    /* Sparkle outline for holiday events */
     .fc .holiday-sparkle {
       box-shadow:
         0 0 0 1.5px var(--sparkleOuter),
@@ -369,6 +389,7 @@ Changes in this version:
         0 1px 0 rgba(255,255,255,0.10) inset !important;
     }
 
+    /* eventContent layout */
     .fc .evt {
       display: inline-flex;
       align-items: center;
@@ -388,10 +409,12 @@ Changes in this version:
       text-overflow: ellipsis;
     }
 
+    /* Force 4 rows to fill height */
     .fc-daygrid-body,
     .fc-daygrid-body table { height: 100%; }
     .fc-daygrid-day { height: calc(100% / 4); }
 
+    /* 4K readability */
     body { font-size: 18px; }
     @media (min-width: 3000px) {
       body { font-size: 24px; }
@@ -400,6 +423,7 @@ Changes in this version:
       .fc .evt-title { font-size: 1.12em; }
     }
 
+    /* Version + status badge */
     #status-badge {
       position: fixed;
       right: 10px;
@@ -440,13 +464,15 @@ Changes in this version:
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.9.2</div>
+    <div class="ver">v1.9.3</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+
+      // Your sources
       const ICS_URL  = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
 
@@ -500,6 +526,7 @@ Changes in this version:
         return (m === 12 && (d === 24 || d === 25 || d === 31));
       }
 
+      // Rules for your personal calendar events
       const rules = {
         randy:  /randy/i,
         leslie: /leslie/i,
@@ -508,6 +535,7 @@ Changes in this version:
         soccer:     /soccer|rainbow unicorns/i
       };
 
+      // Icons
       const ICON_BBALL  = "🏀";
       const ICON_SOCCER = "🌈⚽";
       const ICON_SCHOOL = "🐎";
@@ -521,6 +549,7 @@ Changes in this version:
         return { category: "other", icon: "" };
       }
 
+      // Status badge
       const lastRefEl = document.getElementById("last-refreshed");
       const menuStatusEl = document.getElementById("menu-status");
 
@@ -544,9 +573,11 @@ Changes in this version:
       setLastRefreshed("loaded");
       setMealsStatus(null);
 
+      // Meals footer
       const mealsGrid = document.getElementById("meals-grid");
 
       function parseMenuTitleParts(title) {
+        // "🍳 Breakfast: A / B — Sides: C, D (+X more)"
         const cleaned = (title || "").trim();
         const parts = cleaned.split("— Sides:");
         const left = (parts[0] || "").trim();
@@ -641,6 +672,7 @@ Changes in this version:
         setMealsStatus(true, `${data.length} menu events`);
       }
 
+      // FullCalendar
       const calendar = new FullCalendar.Calendar(
         document.getElementById("calendar"),
         {
@@ -652,7 +684,11 @@ Changes in this version:
           expandRows: true,
           showNonCurrentDates: false,
           fixedWeekCount: false,
-          dayMaxEvents: 12,
+
+          // IMPORTANT: allow at least 4 visible event rows before collapsing
+          dayMaxEvents: true,
+          dayMaxEventRows: 4,
+          eventMinHeight: 18,
 
           visibleRange: function(currentDate) {
             const start = startOfCurrentWeekSunday(currentDate);
