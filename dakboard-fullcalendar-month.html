@@ -1,15 +1,18 @@
+<!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.9.1
+Version: v1.9.2
 Last Updated: 2025-12-15
-Notes:
-- Meals footer: hides empty days (keeps alignment but no visible box)
-- Removes meals header (day/date) since it's already under correct weekday
-- Breakfast: 1 line (main items only)
-- Lunch: 2 lines (entrees line + sides line)
+Changes in this version:
+- Meals row stays under the calendar (current week only)
+- Empty menu days are invisible (keeps alignment, no box)
+- Breakfast is 1 line (main items only)
+- Lunch is 4 lines total:
+    - Entrees: up to 2 lines
+    - Sides: up to 2 lines
+- Easy font-size knobs: search for "MEALS FONT KNOBS" below
 -->
 
-<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -29,7 +32,6 @@ Notes:
       --panel: #0b1a2f;
       --panel2: #091527;
 
-      /* Grid definition */
       --grid: rgba(255,255,255,0.20);
       --gridStrong: rgba(255,255,255,0.30);
 
@@ -37,37 +39,37 @@ Notes:
       --muted: rgba(255,255,255,0.62);
       --todayBorder: rgba(56,189,248,0.85);
 
-      /* Weekend */
       --weekendTint: rgba(255,255,255,0.11);
       --weekendTint2: rgba(255,255,255,0.03);
       --weekendLine: rgba(255,255,255,0.28);
 
-      /* Category colors */
       --school: #ef4444;  /* red */
       --sports: #ec4899;  /* pink */
       --other:  #22d3ee;  /* cyan */
       --randy:  #3b82f6;  /* blue */
       --leslie: #22c55e;  /* green */
 
-      /* Holidays */
       --holidayGlow: rgba(250, 204, 21, 0.22);
       --holidayBorder: rgba(250, 204, 21, 0.62);
       --holidayLabelBg: rgba(0,0,0,0.48);
 
-      /* Sparkle outline */
       --sparkleOuter: rgba(250, 204, 21, 0.50);
       --sparkleInner: rgba(255,255,255,0.22);
 
-      /* Meals footer */
       --mealsBg: rgba(0,0,0,0.18);
       --mealsBorder: rgba(255,255,255,0.14);
-      --mealsText: rgba(255,255,255,0.88);
-      --mealsSub: rgba(255,255,255,0.62);
 
-      /* Status colors */
       --ok: rgba(34,197,94,0.85);
       --warn: rgba(250,204,21,0.85);
       --err: rgba(239,68,68,0.85);
+
+      /* =========================================================
+         MEALS FONT KNOBS (edit these)
+         ========================================================= */
+      --mealsBreakfastFont: 0.88em;     /* breakfast 1 line */
+      --mealsLunchEntreeFont: 0.88em;  /* lunch line 1-2 */
+      --mealsLunchSidesFont: 0.82em;   /* lunch line 3-4 */
+      --mealsLunchLineHeight: 1.12;    /* affects clamped height */
     }
 
     html, body {
@@ -86,7 +88,6 @@ Notes:
       background: linear-gradient(180deg, var(--bg), #050b14);
     }
 
-    /* Card that contains calendar + footer */
     #calendar-card {
       width: 100%;
       height: 100%;
@@ -99,13 +100,11 @@ Notes:
       min-height: 0;
     }
 
-    /* Calendar takes most of the card */
     #calendar {
       flex: 1 1 auto;
       min-height: 0;
     }
 
-    /* Footer row for meals (7 columns) */
     #meals-footer {
       flex: 0 0 auto;
       background: linear-gradient(180deg, rgba(255,255,255,0.02), var(--mealsBg));
@@ -120,7 +119,6 @@ Notes:
       align-items: stretch;
     }
 
-    /* Meal "box" */
     .meal-col {
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 12px;
@@ -128,17 +126,16 @@ Notes:
       background: rgba(0,0,0,0.14);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
       min-width: 0;
-      min-height: 44px; /* gives a consistent row height when there IS content */
+      min-height: 44px;
     }
 
-    /* Empty day: occupy grid slot but LOOK like nothing */
     .meal-col.empty {
       border: none !important;
       background: transparent !important;
       box-shadow: none !important;
       padding: 0 !important;
       min-height: 0 !important;
-      opacity: 0 !important;         /* fully invisible */
+      opacity: 0 !important;
       pointer-events: none !important;
     }
 
@@ -164,20 +161,18 @@ Notes:
       margin-top: 1px;
     }
 
-    /* Breakfast: 1 line */
     .meal-text-one {
       flex: 1 1 auto;
       min-width: 0;
-      color: var(--mealsText);
+      color: rgba(255,255,255,0.90);
       font-weight: 750;
-      font-size: 0.88em;
+      font-size: var(--mealsBreakfastFont);
       line-height: 1.1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    /* Lunch: 2 lines total (entrees line + sides line) */
     .meal-lunch-wrap{
       flex: 1 1 auto;
       min-width: 0;
@@ -185,28 +180,35 @@ Notes:
       flex-direction: column;
       gap: 2px;
     }
+
     .meal-lunch-entrees{
-      color: var(--mealsText);
+      color: rgba(255,255,255,0.92);
       font-weight: 800;
-      font-size: 0.88em;
-      line-height: 1.1;
+      font-size: var(--mealsLunchEntreeFont);
+      line-height: var(--mealsLunchLineHeight);
+
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      white-space: normal;
+
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
     }
+
     .meal-lunch-sides{
-      color: var(--mealsSub);
+      color: rgba(255,255,255,0.66);
       font-weight: 700;
-      font-size: 0.82em;
-      line-height: 1.1;
-      overflow: hidden;
+      font-size: var(--mealsLunchSidesFont);
+      line-height: var(--mealsLunchLineHeight);
 
-      /* clamp sides to 1 line visually (so total lunch becomes 2 lines) */
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow: hidden;
+      white-space: normal;
+
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
     }
 
-    /* FullCalendar base */
     .fc { height: 100%; }
 
     .fc .fc-header-toolbar { margin: 10px 12px 6px; }
@@ -217,38 +219,28 @@ Notes:
       opacity: 0.95;
     }
 
-    /* =========================================================
-       FONT TUNING (edit these)
-       ========================================================= */
-
-    /* (1) Day headers */
     .fc .fc-col-header-cell-cushion {
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
-      font-size: 0.95em; /* <-- day headers */
+      font-size: 0.95em;
     }
-
-    /* (2) Date numbers */
     .fc .fc-daygrid-day-number {
       color: var(--muted);
-      font-size: 0.75em; /* <-- date numbers */
+      font-size: 0.75em;
       padding: 6px 8px;
     }
-
-    /* (3) Event text */
     .fc .evt-title {
-      font-size: 1.05em; /* <-- event titles */
+      font-size: 1.05em;
       font-weight: 650;
       line-height: 1.1;
     }
     .fc .evt-time {
-      font-size: 0.85em; /* <-- event time */
+      font-size: 0.85em;
       opacity: 0.95;
       font-weight: 700;
     }
 
-    /* Stronger grid */
     .fc-theme-standard td,
     .fc-theme-standard th,
     .fc-theme-standard .fc-scrollgrid {
@@ -263,7 +255,6 @@ Notes:
         inset 0 12px 20px rgba(0,0,0,0.18);
     }
 
-    /* Today border */
     .fc .fc-day-today { position: relative; background: transparent !important; }
     .fc .fc-day-today::after {
       content: "";
@@ -275,7 +266,6 @@ Notes:
       opacity: 0.78;
     }
 
-    /* Weekend shading + accent line */
     .fc .fc-col-header-cell.fc-day-sun,
     .fc .fc-col-header-cell.fc-day-sat {
       background: linear-gradient(180deg, var(--weekendTint), var(--weekendTint2));
@@ -302,7 +292,6 @@ Notes:
       pointer-events: none;
     }
 
-    /* Holiday day styling */
     .fc .is-holiday {
       position: relative;
       background: linear-gradient(180deg, var(--holidayGlow), transparent) !important;
@@ -329,7 +318,6 @@ Notes:
       pointer-events: none;
     }
 
-    /* Events base */
     .fc .fc-daygrid-event {
       border: 0;
       border-radius: 8px;
@@ -339,7 +327,6 @@ Notes:
       box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
     }
 
-    /* All-day banners */
     .fc .fc-daygrid-block-event {
       position: relative;
       border-radius: 6px;
@@ -368,14 +355,12 @@ Notes:
       pointer-events: none;
     }
 
-    /* Category colors */
     .fc .event-school { background: var(--school); }
     .fc .event-sports { background: var(--sports); }
     .fc .event-other  { background: var(--other);  }
     .fc .event-randy  { background: var(--randy);  }
     .fc .event-leslie { background: var(--leslie); }
 
-    /* Sparkle outline for holiday events */
     .fc .holiday-sparkle {
       box-shadow:
         0 0 0 1.5px var(--sparkleOuter),
@@ -384,7 +369,6 @@ Notes:
         0 1px 0 rgba(255,255,255,0.10) inset !important;
     }
 
-    /* eventContent layout */
     .fc .evt {
       display: inline-flex;
       align-items: center;
@@ -404,26 +388,18 @@ Notes:
       text-overflow: ellipsis;
     }
 
-    /* Force 4 rows to fill height */
     .fc-daygrid-body,
     .fc-daygrid-body table { height: 100%; }
     .fc-daygrid-day { height: calc(100% / 4); }
 
-    /* 4K readability */
     body { font-size: 18px; }
     @media (min-width: 3000px) {
       body { font-size: 24px; }
       .fc .fc-toolbar-title { font-size: 1.55em; }
       .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
       .fc .evt-title { font-size: 1.12em; }
-      .meal-text-one { font-size: 0.92em; }
-      .meal-lunch-entrees { font-size: 0.92em; }
-      .meal-lunch-sides { font-size: 0.86em; }
     }
 
-    /* =========================================================
-       VERSION + STATUS BADGE (bottom-right)
-       ========================================================= */
     #status-badge {
       position: fixed;
       right: 10px;
@@ -464,24 +440,20 @@ Notes:
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.9.1</div>
+    <div class="ver">v1.9.2</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-
-      // Your sources
       const ICS_URL  = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
 
-      // Refresh settings
       const AUTO_REFRESH_MINUTES = 10;
 
-      // Meals footer behavior
-      const BREAKFAST_MAX_ITEMS = 2;  // breakfast main items only
-      const LUNCH_MAX_ENTREES = 3;    // lunch entrees (line 1)
+      const BREAKFAST_MAX_ITEMS = 2;
+      const LUNCH_MAX_ENTREES = 3;
 
       function startOfCurrentWeekSunday(d = new Date()) {
         const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -528,7 +500,6 @@ Notes:
         return (m === 12 && (d === 24 || d === 25 || d === 31));
       }
 
-      // Rules for your personal calendar events
       const rules = {
         randy:  /randy/i,
         leslie: /leslie/i,
@@ -537,14 +508,11 @@ Notes:
         soccer:     /soccer|rainbow unicorns/i
       };
 
-      // Icons
       const ICON_BBALL  = "🏀";
       const ICON_SOCCER = "🌈⚽";
       const ICON_SCHOOL = "🐎";
 
       function classifyEvent(title) {
-        // precedence:
-        // Randy > Leslie > Basketball > Soccer > School > Other
         if (rules.randy.test(title))      return { category: "randy",  icon: "" };
         if (rules.leslie.test(title))     return { category: "leslie", icon: "" };
         if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL };
@@ -553,9 +521,6 @@ Notes:
         return { category: "other", icon: "" };
       }
 
-      // =========================
-      // Status badge
-      // =========================
       const lastRefEl = document.getElementById("last-refreshed");
       const menuStatusEl = document.getElementById("menu-status");
 
@@ -579,22 +544,15 @@ Notes:
       setLastRefreshed("loaded");
       setMealsStatus(null);
 
-      // =========================
-      // Meals footer rendering
-      // =========================
       const mealsGrid = document.getElementById("meals-grid");
 
       function parseMenuTitleParts(title) {
-        // Expected format from your worker:
-        // "🍳 Breakfast: A / B — Sides: C, D (+X more)"
         const cleaned = (title || "").trim();
         const parts = cleaned.split("— Sides:");
         const left = (parts[0] || "").trim();
-        const sides = (parts[1] || "").trim(); // keep as raw string
+        const sides = (parts[1] || "").trim();
         const colonIdx = left.indexOf(":");
         const afterColon = colonIdx >= 0 ? left.slice(colonIdx + 1).trim() : left;
-
-        // items separated by " / "
         const items = afterColon.split(" / ").map(s => s.trim()).filter(Boolean);
         return { items, sides };
       }
@@ -604,9 +562,7 @@ Notes:
         mealsGrid.innerHTML = "";
 
         for (let i = 0; i < 7; i++) {
-          const dayDate = addDays(weekStart, i);
-          const key = toYYYYMMDD(dayDate);
-
+          const key = toYYYYMMDD(addDays(weekStart, i));
           const info = mealsByDate[key] || {};
           const bItems = info.breakfastItems || [];
           const lEntrees = info.lunchEntrees || [];
@@ -614,12 +570,10 @@ Notes:
 
           const hasAny = (bItems.length > 0) || (lEntrees.length > 0) || (lSides && lSides.length > 0);
 
-          // If no menu posted: create an invisible placeholder so the grid stays aligned
           const col = document.createElement("div");
           col.className = "meal-col" + (hasAny ? "" : " empty");
 
           if (hasAny) {
-            // Breakfast (1 line)
             if (bItems.length) {
               const row = document.createElement("div");
               row.className = "meal-row";
@@ -630,7 +584,6 @@ Notes:
               col.appendChild(row);
             }
 
-            // Lunch (2 lines: entrees + sides)
             if (lEntrees.length || lSides) {
               const row = document.createElement("div");
               row.className = "meal-row";
@@ -655,7 +608,6 @@ Notes:
 
         const start = toYYYYMMDD(weekStart);
         const end = toYYYYMMDD(weekEnd);
-
         const url = `${MENU_URL}?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
 
         setMealsStatus(null);
@@ -678,10 +630,8 @@ Notes:
           if (!byDate[dateKey]) byDate[dateKey] = { breakfastItems: [], lunchEntrees: [], lunchSides: "" };
 
           if (meal === "breakfast") {
-            // breakfast: main items only, 1 line
             byDate[dateKey].breakfastItems = items.slice(0, BREAKFAST_MAX_ITEMS);
           } else {
-            // lunch: line 1 entrees, line 2 sides
             byDate[dateKey].lunchEntrees = items.slice(0, LUNCH_MAX_ENTREES);
             byDate[dateKey].lunchSides = sides || "";
           }
@@ -691,9 +641,6 @@ Notes:
         setMealsStatus(true, `${data.length} menu events`);
       }
 
-      // =========================
-      // FullCalendar setup (NO menu events in grid)
-      // =========================
       const calendar = new FullCalendar.Calendar(
         document.getElementById("calendar"),
         {
@@ -757,12 +704,10 @@ Notes:
 
       calendar.render();
 
-      // Initial meals fetch
       fetchMealsForCurrentWeek().catch(err => {
         setMealsStatus(false, err && err.message ? err.message : "Unknown");
       });
 
-      // Hard refresh every N minutes (calendar + meals)
       setInterval(() => {
         setLastRefreshed("refreshing…");
         calendar.refetchEvents();
