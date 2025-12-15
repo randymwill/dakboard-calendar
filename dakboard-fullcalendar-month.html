@@ -1,12 +1,12 @@
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.9.0
-Last Updated: 2025-12-14
+Version: v1.9.1
+Last Updated: 2025-12-15
 Notes:
-- Removes menu items from calendar grid (less busy)
-- Adds a "Meals" footer row (Sun-Sat) for CURRENT WEEK only
-- Breakfast shows MAIN items only (no sides), limited to first 2
-- Lunch shows MAIN items only (no sides), limited to first 3
+- Meals footer: hides empty days (keeps alignment but no visible box)
+- Removes meals header (day/date) since it's already under correct weekday
+- Breakfast: 1 line (main items only)
+- Lunch: 2 lines (entrees line + sides line)
 -->
 
 <!doctype html>
@@ -61,7 +61,6 @@ Notes:
       /* Meals footer */
       --mealsBg: rgba(0,0,0,0.18);
       --mealsBorder: rgba(255,255,255,0.14);
-      --mealsTitle: rgba(255,255,255,0.70);
       --mealsText: rgba(255,255,255,0.88);
       --mealsSub: rgba(255,255,255,0.62);
 
@@ -121,6 +120,7 @@ Notes:
       align-items: stretch;
     }
 
+    /* Meal "box" */
     .meal-col {
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 12px;
@@ -128,25 +128,18 @@ Notes:
       background: rgba(0,0,0,0.14);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
       min-width: 0;
+      min-height: 44px; /* gives a consistent row height when there IS content */
     }
 
-    .meal-col .day {
-      font-weight: 800;
-      font-size: 0.86em;
-      color: var(--mealsTitle);
-      letter-spacing: 0.03em;
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 6px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid rgba(255,255,255,0.10);
-    }
-
-    .meal-col .date {
-      font-weight: 700;
-      font-size: 0.78em;
-      color: rgba(255,255,255,0.46);
+    /* Empty day: occupy grid slot but LOOK like nothing */
+    .meal-col.empty {
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      min-height: 0 !important;
+      opacity: 0 !important;         /* fully invisible */
+      pointer-events: none !important;
     }
 
     .meal-row {
@@ -167,31 +160,50 @@ Notes:
       font-size: 0.74em;
       color: rgba(255,255,255,0.72);
       letter-spacing: 0.02em;
+      line-height: 1.1;
+      margin-top: 1px;
     }
 
-    .meal-text {
+    /* Breakfast: 1 line */
+    .meal-text-one {
       flex: 1 1 auto;
       min-width: 0;
       color: var(--mealsText);
-      font-weight: 700;
-      font-size: 0.86em;
+      font-weight: 750;
+      font-size: 0.88em;
       line-height: 1.1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .meal-empty {
-      color: rgba(255,255,255,0.40);
-      font-weight: 650;
-      font-size: 0.82em;
-      margin-top: 6px;
+    /* Lunch: 2 lines total (entrees line + sides line) */
+    .meal-lunch-wrap{
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
+    .meal-lunch-entrees{
+      color: var(--mealsText);
+      font-weight: 800;
+      font-size: 0.88em;
+      line-height: 1.1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .meal-lunch-sides{
+      color: var(--mealsSub);
+      font-weight: 700;
+      font-size: 0.82em;
+      line-height: 1.1;
+      overflow: hidden;
 
-    /* Weekend columns slightly different so it's easier to spot */
-    .meal-col.weekend {
-      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.16));
-      border-color: rgba(255,255,255,0.14);
+      /* clamp sides to 1 line visually (so total lunch becomes 2 lines) */
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* FullCalendar base */
@@ -404,7 +416,9 @@ Notes:
       .fc .fc-toolbar-title { font-size: 1.55em; }
       .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
       .fc .evt-title { font-size: 1.12em; }
-      .meal-text { font-size: 0.90em; }
+      .meal-text-one { font-size: 0.92em; }
+      .meal-lunch-entrees { font-size: 0.92em; }
+      .meal-lunch-sides { font-size: 0.86em; }
     }
 
     /* =========================================================
@@ -450,7 +464,7 @@ Notes:
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.9.0</div>
+    <div class="ver">v1.9.1</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
@@ -465,9 +479,9 @@ Notes:
       // Refresh settings
       const AUTO_REFRESH_MINUTES = 10;
 
-      // Meals footer behavior (you asked for breakfast main items only)
-      const BREAKFAST_MAX_ITEMS = 2;
-      const LUNCH_MAX_ITEMS = 3;
+      // Meals footer behavior
+      const BREAKFAST_MAX_ITEMS = 2;  // breakfast main items only
+      const LUNCH_MAX_ENTREES = 3;    // lunch entrees (line 1)
 
       function startOfCurrentWeekSunday(d = new Date()) {
         const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -570,67 +584,65 @@ Notes:
       // =========================
       const mealsGrid = document.getElementById("meals-grid");
 
-      function splitMainItemsOnly(title) {
-        // title format from your worker:
+      function parseMenuTitleParts(title) {
+        // Expected format from your worker:
         // "🍳 Breakfast: A / B — Sides: C, D (+X more)"
-        // We want: A / B (main items only, no sides)
         const cleaned = (title || "").trim();
-        const mainPart = cleaned.split("— Sides:")[0].trim();   // keep left side only
-        const colonIdx = mainPart.indexOf(":");
-        const afterColon = colonIdx >= 0 ? mainPart.slice(colonIdx + 1).trim() : mainPart;
-        // items are separated by " / "
+        const parts = cleaned.split("— Sides:");
+        const left = (parts[0] || "").trim();
+        const sides = (parts[1] || "").trim(); // keep as raw string
+        const colonIdx = left.indexOf(":");
+        const afterColon = colonIdx >= 0 ? left.slice(colonIdx + 1).trim() : left;
+
+        // items separated by " / "
         const items = afterColon.split(" / ").map(s => s.trim()).filter(Boolean);
-        return items;
+        return { items, sides };
       }
 
       function renderMealsFooter(weekStart, mealsByDate) {
         if (!mealsGrid) return;
         mealsGrid.innerHTML = "";
 
-        const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
         for (let i = 0; i < 7; i++) {
           const dayDate = addDays(weekStart, i);
           const key = toYYYYMMDD(dayDate);
-          const isWeekend = (i === 0 || i === 6);
-
-          const col = document.createElement("div");
-          col.className = "meal-col" + (isWeekend ? " weekend" : "");
-
-          const header = document.createElement("div");
-          header.className = "day";
-          header.innerHTML = `<span>${dayNames[i]}</span><span class="date">${key}</span>`;
-          col.appendChild(header);
 
           const info = mealsByDate[key] || {};
           const bItems = info.breakfastItems || [];
-          const lItems = info.lunchItems || [];
+          const lEntrees = info.lunchEntrees || [];
+          const lSides = info.lunchSides || "";
 
-          if (bItems.length) {
-            const row = document.createElement("div");
-            row.className = "meal-row";
-            row.innerHTML = `
-              <span class="meal-pill">🍳</span>
-              <span class="meal-text">${escapeHtml(bItems.join(" / "))}</span>
-            `;
-            col.appendChild(row);
-          }
+          const hasAny = (bItems.length > 0) || (lEntrees.length > 0) || (lSides && lSides.length > 0);
 
-          if (lItems.length) {
-            const row = document.createElement("div");
-            row.className = "meal-row";
-            row.innerHTML = `
-              <span class="meal-pill">🥪</span>
-              <span class="meal-text">${escapeHtml(lItems.join(" / "))}</span>
-            `;
-            col.appendChild(row);
-          }
+          // If no menu posted: create an invisible placeholder so the grid stays aligned
+          const col = document.createElement("div");
+          col.className = "meal-col" + (hasAny ? "" : " empty");
 
-          if (!bItems.length && !lItems.length) {
-            const empty = document.createElement("div");
-            empty.className = "meal-empty";
-            empty.textContent = "No menu posted";
-            col.appendChild(empty);
+          if (hasAny) {
+            // Breakfast (1 line)
+            if (bItems.length) {
+              const row = document.createElement("div");
+              row.className = "meal-row";
+              row.innerHTML = `
+                <span class="meal-pill">🍳</span>
+                <span class="meal-text-one">${escapeHtml(bItems.join(" / "))}</span>
+              `;
+              col.appendChild(row);
+            }
+
+            // Lunch (2 lines: entrees + sides)
+            if (lEntrees.length || lSides) {
+              const row = document.createElement("div");
+              row.className = "meal-row";
+              row.innerHTML = `
+                <span class="meal-pill">🥪</span>
+                <span class="meal-lunch-wrap">
+                  <span class="meal-lunch-entrees">${escapeHtml(lEntrees.join(" / "))}</span>
+                  <span class="meal-lunch-sides">${lSides ? "Sides: " + escapeHtml(lSides) : ""}</span>
+                </span>
+              `;
+              col.appendChild(row);
+            }
           }
 
           mealsGrid.appendChild(col);
@@ -654,7 +666,6 @@ Notes:
         const data = await resp.json();
         if (!Array.isArray(data)) throw new Error("Meals feed did not return an array");
 
-        // Build map: YYYY-MM-DD -> { breakfastItems:[], lunchItems:[] }
         const byDate = {};
         for (const ev of data) {
           const dateKey = (ev && ev.start) ? String(ev.start).slice(0,10) : null;
@@ -663,13 +674,16 @@ Notes:
 
           if (!dateKey || (meal !== "breakfast" && meal !== "lunch")) continue;
 
-          const items = splitMainItemsOnly(title);
-          if (!byDate[dateKey]) byDate[dateKey] = { breakfastItems: [], lunchItems: [] };
+          const { items, sides } = parseMenuTitleParts(title);
+          if (!byDate[dateKey]) byDate[dateKey] = { breakfastItems: [], lunchEntrees: [], lunchSides: "" };
 
           if (meal === "breakfast") {
+            // breakfast: main items only, 1 line
             byDate[dateKey].breakfastItems = items.slice(0, BREAKFAST_MAX_ITEMS);
           } else {
-            byDate[dateKey].lunchItems = items.slice(0, LUNCH_MAX_ITEMS);
+            // lunch: line 1 entrees, line 2 sides
+            byDate[dateKey].lunchEntrees = items.slice(0, LUNCH_MAX_ENTREES);
+            byDate[dateKey].lunchSides = sides || "";
           }
         }
 
@@ -678,7 +692,7 @@ Notes:
       }
 
       // =========================
-      // FullCalendar setup (NO menu event source now)
+      // FullCalendar setup (NO menu events in grid)
       // =========================
       const calendar = new FullCalendar.Calendar(
         document.getElementById("calendar"),
@@ -693,7 +707,6 @@ Notes:
           fixedWeekCount: false,
           dayMaxEvents: 12,
 
-          // Calendar shows 4 weeks (as you like), but meals footer only shows CURRENT week.
           visibleRange: function(currentDate) {
             const start = startOfCurrentWeekSunday(currentDate);
             const end = new Date(start);
