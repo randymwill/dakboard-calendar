@@ -1,17 +1,17 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.10.0
+Version: v1.10.1
 Last Updated: 2025-12-15
 
-New in v1.10.0:
+New in v1.10.1:
 - Today Focus mode:
   - Subtle highlight for today's column
   - Larger event text for today
   - Past-today timed events dimmed
 - Countdown chips:
   - "Game in …" chips for Sports events (basketball/soccer)
-  - Christmas countdown (to Dec 25) chip near title
+  - Christmas countdown chip is now a live running countdown (d/h/m/s)
 - Still includes:
   - SHOW_STATUS_BADGE toggle
   - Rainbow Unicorn games icon 🌈🦄⚽
@@ -532,7 +532,7 @@ Notes:
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.10.0</div>
+    <div class="ver">v1.10.1</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
@@ -555,7 +555,7 @@ Notes:
 
       // Refresh behavior
       const AUTO_REFRESH_MINUTES = 10;
-      const COUNTDOWN_REFRESH_SECONDS = 60;
+      const COUNTDOWN_REFRESH_SECONDS = 1;
 
       // Meals formatting limits
       const BREAKFAST_MAX_ITEMS = 2;
@@ -838,18 +838,29 @@ Notes:
 
         const now = new Date();
         const year = now.getFullYear();
-        let christmas = new Date(year, 11, 25, 0, 0, 0, 0);
+
+        // Count down to Dec 25 00:00:00 local time (next year's if already passed)
+        let christmas = new Date(year, 11, 25, 0, 0, 0, 0); // Dec=11
         if (now > christmas) christmas = new Date(year + 1, 11, 25, 0, 0, 0, 0);
 
-        const diff = christmas.getTime() - now.getTime();
-        const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+        const diffMs = christmas.getTime() - now.getTime();
 
-        const chipHtml = `<span class="title-chip">🎄 <span class="muted">Christmas</span> ${days}d</span>`;
+        const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        const pad2 = (n) => String(n).padStart(2, "0");
+        const countdown = `${days}d ${pad2(hours)}h ${pad2(minutes)}m ${pad2(seconds)}s`;
+
+        const chipHtml = `<span class="title-chip">🎄 <span class="muted">Christmas</span> ${countdown}</span>`;
         const titleEl = document.querySelector(".fc-toolbar-title");
         if (!titleEl) return;
 
         const existing = titleEl.querySelector(".title-chip");
         if (existing) existing.remove();
+
         titleEl.insertAdjacentHTML("beforeend", chipHtml);
       }
 
