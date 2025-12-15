@@ -1,11 +1,12 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.11.0
+Version: v1.11.2
 Last Updated: 2025-12-15
 
-New in v1.11.0:
+New in v1.11.2:
 - Holiday mode (auto theme accents for seasonal/holiday periods)
+- Fix: Sidebar/calendar initialization bug (JS syntax + status functions)
 - Today Focus Sidebar (today's agenda + upcoming games countdowns)
 - Christmas countdown remains a live running countdown (d/h/m/s)
 
@@ -703,7 +704,7 @@ Notes:
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.11.0</div>
+    <div class="ver">v1.11.2</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
@@ -755,8 +756,6 @@ Notes:
         const text = `Last refreshed: ${formatLocalTime(now)}${suffix}`;
         if (lastRefEl) lastRefEl.textContent = text;
         if (sideLastRefEl) sideLastRefEl.textContent = formatLocalTime(now);
-      })` : "";
-        if (lastRefEl) lastRefEl.textContent = `Last refreshed: ${formatLocalTime(now)}${suffix}`;
       }
 
       function setMealsStatus(ok, msg) {
@@ -774,12 +773,6 @@ Notes:
           if (ok === true) sideMealsStatusEl.innerHTML = `Meals: <span class="ok">OK</span>${msg ? " - " + escapeHtml(msg) : ""}`;
           else if (ok === false) sideMealsStatusEl.innerHTML = `Meals: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
           else sideMealsStatusEl.innerHTML = `Meals: <span class="warn">loading…</span>`;
-        }
-      }`;
-        } else if (ok === false) {
-          menuStatusEl.innerHTML = `Meals: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
-        } else {
-          menuStatusEl.innerHTML = `Meals: <span class="warn">loading…</span>`;
         }
       }
 
