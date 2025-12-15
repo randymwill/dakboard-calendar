@@ -26,9 +26,9 @@
       /* Color palette */
       --school: #ef4444;  /* red */
       --sports: #ec4899;  /* pink */
-      --other:  #22c55e;  /* green */
+      --other:  #22d3ee;  /* cyan (new default) */
       --randy:  #3b82f6;  /* blue */
-      --leslie: #22c55e;  /* green (same as other, but explicit) */
+      --leslie: #22c55e;  /* green */
     }
 
     html, body {
@@ -60,9 +60,7 @@
     .fc { height: 100%; }
 
     /* Title */
-    .fc .fc-header-toolbar {
-      margin: 10px 12px 6px;
-    }
+    .fc .fc-header-toolbar { margin: 10px 12px 6px; }
     .fc .fc-toolbar-title {
       font-size: 1.35em;
       font-weight: 600;
@@ -70,37 +68,36 @@
       opacity: 0.95;
     }
 
-    /* ============================================
-       FONT TUNING (what you asked for)
-       - Day-of-week header font (Sun/Mon/...)
-       - Date number font (1,2,3...)
-       - Event font
-       Change these 3 blocks to tune sizes
-       ============================================ */
+    /* =========================================================
+       FONT TUNING (edit these 3 blocks to tweak typography)
+       (1) Day headers (Sun/Mon/...)
+       (2) Date numbers (1,2,3...)
+       (3) Event font (title/time)
+       ========================================================= */
 
-    /* (1) Day headers: Sun Mon Tue... */
+    /* (1) Day headers */
     .fc .fc-col-header-cell-cushion {
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
-      font-size: 0.95em; /* <-- adjust this for day headers */
+      font-size: 0.95em; /* <-- change for day headers */
     }
 
-    /* (2) Date numbers in each cell */
+    /* (2) Date numbers */
     .fc .fc-daygrid-day-number {
       color: var(--muted);
-      font-size: 0.75em; /* <-- adjust this for date numbers */
+      font-size: 0.75em; /* <-- change for date numbers */
       padding: 6px 8px;
     }
 
     /* (3) Event text */
     .fc .fc-event-title {
-      font-size: 1.05em; /* <-- adjust this for event titles */
+      font-size: 1.05em; /* <-- change for event titles */
       font-weight: 650;
       line-height: 1.1;
     }
     .fc .fc-event-time {
-      font-size: 0.85em; /* <-- adjust this for event time */
+      font-size: 0.85em; /* <-- change for event time */
       opacity: 0.95;
     }
 
@@ -136,14 +133,14 @@
       box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
     }
 
-    /* Category color classes (applied via JS) */
+    /* Category colors (applied via JS) */
     .fc .event-school { background: var(--school); }
-    .fc .event-sports { background: var(--sports); } /* sports (basketball/soccer) */
-    .fc .event-other  { background: var(--other);  }
+    .fc .event-sports { background: var(--sports); }
+    .fc .event-other  { background: var(--other);  }  /* cyan default */
     .fc .event-randy  { background: var(--randy);  }
     .fc .event-leslie { background: var(--leslie); }
 
-    /* Make sure icons + text align nicely */
+    /* Make icons + text align nicely */
     .fc .fc-event-title-container {
       display: flex;
       align-items: center;
@@ -162,14 +159,27 @@
       text-overflow: ellipsis;
     }
 
+    /* ===== All-day event "banner" styling =====
+       FullCalendar marks all-day dayGrid events with .fc-daygrid-block-event
+       We make these thicker and a bit less rounded so they look like banners.
+    */
+    .fc .fc-daygrid-block-event {
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin: 3px 4px 0;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset;
+    }
+    /* Slightly larger title for all-day banners */
+    .fc .fc-daygrid-block-event .fc-event-title {
+      font-size: 1.08em;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
     /* Force rows to evenly fill height */
     .fc-daygrid-body,
-    .fc-daygrid-body table {
-      height: 100%;
-    }
-    .fc-daygrid-day {
-      height: calc(100% / 4);
-    }
+    .fc-daygrid-body table { height: 100%; }
+    .fc-daygrid-day { height: calc(100% / 4); }
 
     /* 4K readability */
     body { font-size: 18px; }
@@ -200,22 +210,21 @@
         return date;
       }
 
-      // Keyword rules (edit these anytime)
+      // Keyword rules (edit anytime)
       const rules = {
         randy:  /randy/i,
         leslie: /leslie/i,
 
-        // School
         school: /school|dismissal|class|winter break|no school/i,
 
-        // Sports breakdown
         basketball: /basketball|bball|little dribblers/i,
         soccer:     /soccer|rainbow unicorns/i
       };
 
       // Icons
-      const ICON_BBALL  = "🏀";
-      const ICON_SOCCER = "🌈⚽"; // rainbow soccer ball vibe
+      const ICON_BBALL   = "🏀";
+      const ICON_SOCCER  = "🌈⚽";
+      const ICON_SCHOOL  = "🐎";   // mustang icon (horse)
 
       const calendar = new FullCalendar.Calendar(
         document.getElementById("calendar"),
@@ -231,9 +240,8 @@
           showNonCurrentDates: false,
           fixedWeekCount: false,
 
-          // ✅ Show more events so you don’t get "+1 more"
-          // If you STILL get "+ more", bump this higher (e.g. 6, 8, 10)
-          dayMaxEvents: 8,
+          // ✅ Avoid "+ more" (raise this if you ever see it again)
+          dayMaxEvents: 12,
 
           visibleRange: function(currentDate) {
             const start = startOfCurrentWeekSunday(currentDate);
@@ -256,15 +264,14 @@
           // Color + icon + title formatting
           eventDidMount: function(info) {
             const title = (info.event.title || "").trim();
-            const t = title.toLowerCase();
 
-            // Determine category with precedence:
-            // 1) Randy (blue)
-            // 2) Leslie (green)
-            // 3) Basketball (pink + 🏀)
-            // 4) Soccer (pink + 🌈⚽)
-            // 5) School (red)
-            // 6) Other (green)
+            // Determine category + icon with precedence:
+            // 1) Randy -> blue
+            // 2) Leslie -> green
+            // 3) Basketball -> pink + 🏀
+            // 4) Soccer -> pink + 🌈⚽
+            // 5) School -> red + 🐎
+            // 6) Other -> cyan
             let category = "other";
             let icon = "";
 
@@ -280,43 +287,38 @@
               icon = ICON_SOCCER;
             } else if (rules.school.test(title)) {
               category = "school";
+              icon = ICON_SCHOOL;
             } else {
               category = "other";
             }
 
-            // Apply background color class
             info.el.classList.add("event-" + category);
 
-            // Inject icon into the title area (without breaking FullCalendar layout)
-            // FullCalendar structure: .fc-event-title-container contains title/time elements
+            // Inject icon into the title area
             const titleContainer = info.el.querySelector(".fc-event-title-container");
-            if (titleContainer) {
-              // Wrap existing title text so we can prepend icons cleanly
-              const titleEl = info.el.querySelector(".fc-event-title");
-              if (titleEl) {
-                const originalText = titleEl.textContent || title;
+            const titleEl = info.el.querySelector(".fc-event-title");
 
-                // Build our own title layout
-                titleEl.textContent = "";
-                const wrapper = document.createElement("div");
-                wrapper.className = "fc-event-title-container";
+            if (titleContainer && titleEl) {
+              const originalText = titleEl.textContent || title;
 
-                if (icon) {
-                  const iconEl = document.createElement("span");
-                  iconEl.className = "event-icon";
-                  iconEl.textContent = icon;
-                  wrapper.appendChild(iconEl);
-                }
+              titleEl.textContent = "";
+              const wrapper = document.createElement("div");
+              wrapper.className = "fc-event-title-container";
 
-                const textEl = document.createElement("span");
-                textEl.className = "event-title-text";
-                textEl.textContent = originalText;
-                wrapper.appendChild(textEl);
-
-                // Replace the existing container contents safely
-                titleContainer.innerHTML = "";
-                titleContainer.appendChild(wrapper);
+              if (icon) {
+                const iconEl = document.createElement("span");
+                iconEl.className = "event-icon";
+                iconEl.textContent = icon;
+                wrapper.appendChild(iconEl);
               }
+
+              const textEl = document.createElement("span");
+              textEl.className = "event-title-text";
+              textEl.textContent = originalText;
+              wrapper.appendChild(textEl);
+
+              titleContainer.innerHTML = "";
+              titleContainer.appendChild(wrapper);
             }
           }
         }
