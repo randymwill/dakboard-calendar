@@ -1,21 +1,13 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.10.1
+Version: v1.11.0
 Last Updated: 2025-12-15
 
-New in v1.10.1:
-- Today Focus mode:
-  - Subtle highlight for today's column
-  - Larger event text for today
-  - Past-today timed events dimmed
-- Countdown chips:
-  - "Game in …" chips for Sports events (basketball/soccer)
-  - Christmas countdown chip is now a live running countdown (d/h/m/s)
-- Still includes:
-  - SHOW_STATUS_BADGE toggle
-  - Rainbow Unicorn games icon 🌈🦄⚽
-  - Auto-hide meals footer on non-school days
+New in v1.11.0:
+- Holiday mode (auto theme accents for seasonal/holiday periods)
+- Today Focus Sidebar (today's agenda + upcoming games countdowns)
+- Christmas countdown remains a live running countdown (d/h/m/s)
 
 Notes:
 - Tune menu text size: search "MEALS FONT KNOBS"
@@ -518,13 +510,192 @@ Notes:
     #status-badge .ok { color: var(--ok); font-weight: 800; }
     #status-badge .err { color: var(--err); font-weight: 800; }
     #status-badge .warn { color: var(--warn); font-weight: 800; }
+  
+    /* =========================================================
+       SIDEBAR (Today Focus)
+       ========================================================= */
+    #main-row{
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      gap: 12px;
+      padding: 0 10px 8px;
+      box-sizing: border-box;
+    }
+    #calendar{
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+    }
+    #sidebar{
+      flex: 0 0 22vw;
+      max-width: 560px;
+      min-width: 340px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 4px 2px 0 0;
+      box-sizing: border-box;
+    }
+    @media (max-width: 1200px){
+      #sidebar{ display:none; }
+      #main-row{ padding-right: 10px; }
+    }
+
+    .side-card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.12));
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 16px;
+      box-shadow: 0 12px 26px rgba(0,0,0,0.28);
+      padding: 12px 12px 10px;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .side-card-small{
+      padding: 10px 12px;
+      opacity: 0.92;
+    }
+    .side-title{
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .side-title-strong{
+      font-weight: 850;
+      letter-spacing: 0.02em;
+      color: rgba(255,255,255,0.92);
+      font-size: 1.02em;
+    }
+    .side-title-muted{
+      color: rgba(255,255,255,0.58);
+      font-weight: 750;
+      font-size: 0.82em;
+      white-space: nowrap;
+    }
+    .side-sub{
+      color: rgba(255,255,255,0.70);
+      font-weight: 750;
+      font-size: 0.88em;
+      margin-bottom: 10px;
+      line-height: 1.25;
+    }
+    .side-section{
+      margin-top: 10px;
+      min-height: 0;
+    }
+    .side-section-title{
+      color: rgba(255,255,255,0.66);
+      font-weight: 900;
+      font-size: 0.74em;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .side-list{
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+    }
+    .side-item{
+      display:flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.20);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      min-width: 0;
+    }
+    .side-item .dot{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-top: 4px;
+      flex: 0 0 auto;
+      background: rgba(255,255,255,0.35);
+    }
+    .side-item .txt{
+      min-width: 0;
+      display:flex;
+      flex-direction: column;
+      gap: 1px;
+      flex: 1 1 auto;
+    }
+    .side-item .line1{
+      color: rgba(255,255,255,0.92);
+      font-weight: 820;
+      font-size: 0.90em;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .side-item .line2{
+      color: rgba(255,255,255,0.62);
+      font-weight: 760;
+      font-size: 0.78em;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* =========================================================
+       HOLIDAY MODE (accent-only theme overrides)
+       ========================================================= */
+    .holiday-accent-glow{
+      position: absolute;
+      inset: -40px -40px auto -40px;
+      height: 120px;
+      background: radial-gradient(closest-side, rgba(255,255,255,0.08), transparent 70%);
+      pointer-events: none;
+      opacity: 0.85;
+      mix-blend-mode: screen;
+    }
+
   </style>
 </head>
 
 <body>
   <div id="calendar-wrapper">
     <div id="calendar-card">
-      <div id="calendar"></div>
+      <div class="holiday-accent-glow" id="holiday-accent-glow"></div>
+      
+      <div id="main-row">
+        <div id="calendar"></div>
+
+        <aside id="sidebar" aria-label="Today Focus Sidebar">
+          <div class="side-card">
+            <div class="side-title">
+              <span class="side-title-strong">Today</span>
+              <span class="side-title-muted" id="today-date-label">—</span>
+            </div>
+            <div class="side-sub" id="today-summary">Loading…</div>
+
+            <div class="side-section">
+              <div class="side-section-title">Next up</div>
+              <div id="today-upcoming" class="side-list"></div>
+            </div>
+
+            <div class="side-section">
+              <div class="side-section-title">Games</div>
+              <div id="today-games" class="side-list"></div>
+            </div>
+          </div>
+
+          <div class="side-card side-card-small">
+            <div class="side-title">
+              <span class="side-title-strong">Status</span>
+              <span class="side-title-muted" id="side-last-refresh">—</span>
+            </div>
+            <div class="side-sub" id="side-meals-status">Meals: —</div>
+          </div>
+        </aside>
+      </div>
+
       <div id="meals-footer">
         <div id="meals-grid"></div>
       </div>
@@ -532,7 +703,7 @@ Notes:
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.10.1</div>
+    <div class="ver">v1.11.0</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
@@ -548,6 +719,10 @@ Notes:
       const ENABLE_TODAY_FOCUS = true;         // highlight today's column + bigger event text
       const ENABLE_COUNTDOWN_CHIPS = true;     // "Game in…" chips
       const ENABLE_CHRISTMAS_COUNTDOWN = true; // chip next to title
+
+      const ENABLE_HOLIDAY_MODE = true;        // auto seasonal accents
+      const HOLIDAY_MODE_PREVIEW = "";         // e.g. "christmas" | "halloween" | "newyear" | "" (auto)
+
 
       // Sources
       const ICS_URL  = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
@@ -570,18 +745,37 @@ Notes:
       if (statusBadge && !SHOW_STATUS_BADGE) statusBadge.classList.add("hidden");
 
       const lastRefEl = document.getElementById("last-refreshed");
+      const sideLastRefEl = document.getElementById("side-last-refresh");
+      const sideMealsStatusEl = document.getElementById("side-meals-status");
       const menuStatusEl = document.getElementById("menu-status");
 
       function setLastRefreshed(reason) {
         const now = new Date();
         const suffix = reason ? ` (${reason})` : "";
+        const text = `Last refreshed: ${formatLocalTime(now)}${suffix}`;
+        if (lastRefEl) lastRefEl.textContent = text;
+        if (sideLastRefEl) sideLastRefEl.textContent = formatLocalTime(now);
+      })` : "";
         if (lastRefEl) lastRefEl.textContent = `Last refreshed: ${formatLocalTime(now)}${suffix}`;
       }
 
       function setMealsStatus(ok, msg) {
-        if (!menuStatusEl) return;
-        if (ok === true) {
-          menuStatusEl.innerHTML = `Meals: <span class="ok">OK</span>${msg ? " - " + escapeHtml(msg) : ""}`;
+        if (menuStatusEl) {
+          if (ok === true) {
+            menuStatusEl.innerHTML = `Meals: <span class="ok">OK</span>${msg ? " - " + escapeHtml(msg) : ""}`;
+          } else if (ok === false) {
+            menuStatusEl.innerHTML = `Meals: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
+          } else {
+            menuStatusEl.innerHTML = `Meals: <span class="warn">loading…</span>`;
+          }
+        }
+
+        if (sideMealsStatusEl) {
+          if (ok === true) sideMealsStatusEl.innerHTML = `Meals: <span class="ok">OK</span>${msg ? " - " + escapeHtml(msg) : ""}`;
+          else if (ok === false) sideMealsStatusEl.innerHTML = `Meals: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
+          else sideMealsStatusEl.innerHTML = `Meals: <span class="warn">loading…</span>`;
+        }
+      }`;
         } else if (ok === false) {
           menuStatusEl.innerHTML = `Meals: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
         } else {
@@ -591,6 +785,8 @@ Notes:
 
       setLastRefreshed("loaded");
       setMealsStatus(null);
+
+      applyHolidayMode();
 
       // Date helpers
       function startOfCurrentWeekSunday(d = new Date()) {
@@ -767,6 +963,8 @@ Notes:
 
         setMealsStatus(null);
 
+      applyHolidayMode();
+
         const resp = await fetch(url, { cache: "no-store" });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
@@ -797,7 +995,229 @@ Notes:
         setMealsStatus(true, `${data.length} menu events`);
       }
 
-      // Countdown logic
+      
+      // =========================================================
+      // Holiday Mode (accent themes)
+      // =========================================================
+      function applyThemeVars(vars){
+        const root = document.documentElement;
+        for (const [k,v] of Object.entries(vars || {})) {
+          root.style.setProperty(k, v);
+        }
+      }
+
+      function getHolidayThemeKey(now){
+        if (HOLIDAY_MODE_PREVIEW) return HOLIDAY_MODE_PREVIEW;
+
+        const m = now.getMonth() + 1;
+        const d = now.getDate();
+
+        // Christmas season: Dec 10 -> Jan 2
+        if ((m === 12 && d >= 10) || (m === 1 && d <= 2)) return "christmas";
+        // Halloween season: Oct 15 -> Nov 1
+        if ((m === 10 && d >= 15) || (m === 11 && d <= 1)) return "halloween";
+        // New Year week: Dec 28 -> Jan 3 (handled by christmas, but keep for future)
+        return "";
+      }
+
+      function applyHolidayMode(){
+        if (!ENABLE_HOLIDAY_MODE) return;
+
+        const now = new Date();
+        const key = getHolidayThemeKey(now);
+
+        const glow = document.getElementById("holiday-accent-glow");
+        if (glow) glow.style.opacity = key ? "0.95" : "0.65";
+
+        if (key === "christmas") {
+          applyThemeVars({
+            "--todayBorder": "rgba(34,197,94,0.78)",     /* green */
+            "--weekendLine": "rgba(239,68,68,0.55)",     /* red */
+            "--holidayGlow": "rgba(34,197,94,0.18)",
+            "--holidayBorder": "rgba(239,68,68,0.58)",
+            "--chipBorder": "rgba(239,68,68,0.20)",
+            "--chipBg": "rgba(0,0,0,0.36)"
+          });
+          if (glow) glow.style.background = "radial-gradient(closest-side, rgba(34,197,94,0.16), transparent 70%), radial-gradient(closest-side, rgba(239,68,68,0.12), transparent 70%)";
+        } else if (key === "halloween") {
+          applyThemeVars({
+            "--todayBorder": "rgba(249,115,22,0.78)",    /* orange */
+            "--weekendLine": "rgba(168,85,247,0.55)",    /* purple */
+            "--holidayGlow": "rgba(249,115,22,0.20)",
+            "--holidayBorder": "rgba(168,85,247,0.55)"
+          });
+          if (glow) glow.style.background = "radial-gradient(closest-side, rgba(249,115,22,0.18), transparent 70%), radial-gradient(closest-side, rgba(168,85,247,0.12), transparent 70%)";
+        } else {
+          // default (no override)
+          applyThemeVars({});
+          if (glow) glow.style.background = "radial-gradient(closest-side, rgba(255,255,255,0.10), transparent 70%)";
+        }
+      }
+
+      // =========================================================
+      // Today Focus Sidebar
+      // =========================================================
+      const todayDateLabelEl = document.getElementById("today-date-label");
+      const todaySummaryEl = document.getElementById("today-summary");
+      const todayUpcomingEl = document.getElementById("today-upcoming");
+      const todayGamesEl = document.getElementById("today-games");
+
+      function formatPrettyDate(d){
+        return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+      }
+
+      function formatTimeShort(d){
+        return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      }
+
+      function minutesUntil(dt){
+        return Math.round((dt.getTime() - Date.now()) / 60000);
+      }
+
+      function humanWhen(dt){
+        const mins = minutesUntil(dt);
+        if (mins <= 0) return "now";
+        if (mins < 60) return `in ${mins}m`;
+        const hrs = Math.floor(mins/60);
+        const rem = mins % 60;
+        if (hrs < 24) return `in ${hrs}h ${rem}m`;
+        const days = Math.floor(hrs/24);
+        const hr = hrs % 24;
+        return `in ${days}d ${hr}h`;
+      }
+
+      function dotColorForCategory(cat){
+        if (cat === "school") return "var(--school)";
+        if (cat === "sports") return "var(--sports)";
+        if (cat === "leslie") return "var(--leslie)";
+        if (cat === "randy") return "var(--randy)";
+        return "var(--other)";
+      }
+
+      function renderSideList(container, items){
+        if (!container) return;
+        container.innerHTML = "";
+
+        if (!items || items.length === 0){
+          container.innerHTML = `<div class="side-item"><span class="dot" style="background:rgba(255,255,255,0.25)"></span><div class="txt"><div class="line1">Nothing scheduled</div><div class="line2">Enjoy the quiet 😌</div></div></div>`;
+          return;
+        }
+
+        for (const it of items){
+          const dot = dotColorForCategory(it.category);
+          container.insertAdjacentHTML("beforeend", `
+            <div class="side-item">
+              <span class="dot" style="background:${dot}"></span>
+              <div class="txt">
+                <div class="line1">${escapeHtml(it.line1)}</div>
+                <div class="line2">${escapeHtml(it.line2)}</div>
+              </div>
+            </div>
+          `);
+        }
+      }
+
+      function buildSidebarFromCalendar(){
+        // If sidebar is hidden by media query, skip work.
+        const sb = document.getElementById("sidebar");
+        if (!sb || getComputedStyle(sb).display === "none") return;
+
+        const now = new Date();
+        if (todayDateLabelEl) todayDateLabelEl.textContent = formatPrettyDate(now);
+
+        // Pull visible events from FullCalendar
+        const events = calendar.getEvents ? calendar.getEvents() : [];
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0,0);
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23,59,59,999);
+
+        const todays = [];
+        const upcoming = [];
+        const games = [];
+
+        for (const ev of events){
+          const title = (ev.title || "").trim();
+          const meta = classifyEvent(title);
+          const st = ev.start;
+          if (!st) continue;
+
+          const en = ev.end || new Date(st.getTime() + 60*60*1000);
+
+          const isToday = (st.getTime() >= todayStart.getTime() && st.getTime() <= todayEnd.getTime()) ||
+                          (en.getTime() >= todayStart.getTime() && en.getTime() <= todayEnd.getTime());
+
+          const isFuture = en.getTime() >= now.getTime();
+
+          if (isToday){
+            todays.push({ ev, meta, st, en });
+          } else if (isFuture){
+            upcoming.push({ ev, meta, st, en });
+          }
+
+          if (meta.category === "sports" && isFuture){
+            games.push({ ev, meta, st, en });
+          }
+        }
+
+        // Sort
+        todays.sort((a,b) => (a.st.getTime() - b.st.getTime()));
+        upcoming.sort((a,b) => (a.st.getTime() - b.st.getTime()));
+        games.sort((a,b) => (a.st.getTime() - b.st.getTime()));
+
+        const nextUp = [];
+        const maxUp = 6;
+
+        // Prioritize remaining events today, then earliest future
+        for (const t of todays){
+          if (t.en.getTime() < now.getTime()) continue;
+          const time = t.ev.allDay ? "All day" : `${formatTimeShort(t.st)}`;
+          nextUp.push({
+            category: t.meta.category,
+            line1: `${t.meta.icon ? t.meta.icon + " " : ""}${t.ev.title}`,
+            line2: `${time} • ${humanWhen(t.st)}`
+          });
+          if (nextUp.length >= maxUp) break;
+        }
+        if (nextUp.length < maxUp){
+          for (const u of upcoming){
+            if (nextUp.length >= maxUp) break;
+            const time = u.ev.allDay ? "All day" : `${formatPrettyDate(u.st)} ${formatTimeShort(u.st)}`;
+            nextUp.push({
+              category: u.meta.category,
+              line1: `${u.meta.icon ? u.meta.icon + " " : ""}${u.ev.title}`,
+              line2: `${time} • ${humanWhen(u.st)}`
+            });
+          }
+        }
+
+        const gameItems = [];
+        const maxGames = 3;
+        for (const g of games){
+          if (gameItems.length >= maxGames) break;
+          // Only show games within next 14 days (matches chips)
+          const horizon = new Date(); horizon.setDate(horizon.getDate() + COUNTDOWN_LOOKAHEAD_DAYS);
+          if (g.st.getTime() > horizon.getTime()) continue;
+
+          const when = `${formatPrettyDate(g.st)} ${formatTimeShort(g.st)}`;
+          gameItems.push({
+            category: "sports",
+            line1: `${g.meta.icon ? g.meta.icon + " " : ""}${g.ev.title}`,
+            line2: `${when} • ${humanWhen(g.st)}`
+          });
+        }
+
+        // Summary line
+        if (todaySummaryEl){
+          const remainingToday = todays.filter(t => t.en.getTime() >= now.getTime()).length;
+          const nextGame = games.find(g => g.st.getTime() >= now.getTime());
+          const gameText = nextGame ? `${nextGame.meta.icon ? nextGame.meta.icon + " " : ""}${humanWhen(nextGame.st)}` : "no games soon";
+          todaySummaryEl.textContent = `${remainingToday} remaining today • next game ${gameText}`;
+        }
+
+        renderSideList(todayUpcomingEl, nextUp);
+        renderSideList(todayGamesEl, gameItems);
+      }
+
+// Countdown logic
       const dayChipElsByKey = new Map();
       let cachedSportsEvents = [];
 
@@ -1019,16 +1439,20 @@ Notes:
 
             const view = calendar.view;
             if (view) updateGameDayChips(view.currentStart, view.currentEnd);
+        buildSidebarFromCalendar();
+            buildSidebarFromCalendar();
           },
 
           datesSet: function(info) {
             updateChristmasChip();
             updateGameDayChips(info.start, info.end);
+            buildSidebarFromCalendar();
           }
         }
       );
 
       calendar.render();
+      buildSidebarFromCalendar();
       updateChristmasChip();
 
       // Fetch meals
@@ -1041,6 +1465,7 @@ Notes:
       setInterval(() => {
         setLastRefreshed("refreshing…");
         calendar.refetchEvents();
+        buildSidebarFromCalendar();
 
         fetchMealsForCurrentWeek()
           .catch(err => {
@@ -1057,6 +1482,8 @@ Notes:
         updateChristmasChip();
         const view = calendar.view;
         if (view) updateGameDayChips(view.currentStart, view.currentEnd);
+        buildSidebarFromCalendar();
+            buildSidebarFromCalendar();
       }, COUNTDOWN_REFRESH_SECONDS * 1000);
 
       function escapeHtml(str) {
