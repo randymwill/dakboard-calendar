@@ -27,11 +27,10 @@
       --faint: rgba(255,255,255,0.35);
       --todayBorder: rgba(56,189,248,0.85);
 
-      /* Weekend column tint (STRONGER) */
+      /* Weekend column tint (stronger) */
       --weekendTint: rgba(255,255,255,0.085);
       --weekendTint2: rgba(255,255,255,0.03);
-
-      
+      --weekendLine: rgba(255,255,255,0.28);
 
       /* Category colors */
       --school: #ef4444;  /* red */
@@ -41,13 +40,18 @@
       --leslie: #22c55e;  /* green */
 
       /* Holiday styling */
-      --holidayGlow: rgba(250, 204, 21, 0.22);   /* gold */
+      --holidayGlow: rgba(250, 204, 21, 0.22);
       --holidayBorder: rgba(250, 204, 21, 0.62);
       --holidayLabelBg: rgba(0,0,0,0.48);
 
       /* Sparkle outline for events on holiday dates */
       --sparkleOuter: rgba(250, 204, 21, 0.50);
       --sparkleInner: rgba(255,255,255,0.22);
+
+      /* Menu styling */
+      --menuBg: rgba(255,255,255,0.10);
+      --menuBorder: rgba(255,255,255,0.18);
+      --menuText: rgba(255,255,255,0.88);
     }
 
     html, body {
@@ -111,7 +115,7 @@
     .fc .evt-title {
       font-size: 1.05em; /* <-- event titles */
       font-weight: 650;
-      line-height: 1.3;
+      line-height: 1.1;
     }
     .fc .evt-time {
       font-size: 0.85em; /* <-- event time */
@@ -158,28 +162,26 @@
       background: linear-gradient(180deg, var(--weekendTint), transparent);
     }
 
-    /* Weekend vertical accent line */
-.fc .fc-col-header-cell.fc-day-sat,
-.fc .fc-daygrid-day.fc-day-sat,
-.fc .fc-col-header-cell.fc-day-sun,
-.fc .fc-daygrid-day.fc-day-sun {
-  position: relative;
-}
-
-.fc .fc-col-header-cell.fc-day-sat::after,
-.fc .fc-daygrid-day.fc-day-sat::after,
-.fc .fc-col-header-cell.fc-day-sun::after,
-.fc .fc-daygrid-day.fc-day-sun::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 2px;                     /* thin line */
-  background: rgba(255,255,255,0.18);
-  pointer-events: none;
-}
-
+    /* Weekend vertical accent line (thin) */
+    .fc .fc-col-header-cell.fc-day-sat,
+    .fc .fc-daygrid-day.fc-day-sat,
+    .fc .fc-col-header-cell.fc-day-sun,
+    .fc .fc-daygrid-day.fc-day-sun {
+      position: relative;
+    }
+    .fc .fc-col-header-cell.fc-day-sat::after,
+    .fc .fc-daygrid-day.fc-day-sat::after,
+    .fc .fc-col-header-cell.fc-day-sun::after,
+    .fc .fc-daygrid-day.fc-day-sun::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--weekendLine);
+      pointer-events: none;
+    }
 
     /* Holiday day styling */
     .fc .is-holiday {
@@ -262,7 +264,7 @@
     .fc .event-randy  { background: var(--randy);  }
     .fc .event-leslie { background: var(--leslie); }
 
-    /* Sparkle outline for holiday events (subtle) */
+    /* Sparkle outline for holiday events */
     .fc .holiday-sparkle {
       box-shadow:
         0 0 0 1.5px var(--sparkleOuter),
@@ -270,6 +272,17 @@
         0 0 0 1px var(--sparkleInner) inset,
         0 1px 0 rgba(255,255,255,0.10) inset !important;
     }
+
+    /* Menu events (breakfast/lunch) – subtle + smaller so they don’t compete */
+    .fc .menu-event {
+      background: var(--menuBg) !important;
+      border: 1px solid var(--menuBorder) !important;
+      color: var(--menuText) !important;
+      box-shadow: none !important;
+      opacity: 0.92;
+    }
+    .fc .menu-event .evt-title { font-size: 0.95em; font-weight: 650; }
+    .fc .menu-event .evt-time { display: none; } /* always all-day, hide time */
 
     /* eventContent layout */
     .fc .evt {
@@ -315,7 +328,11 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
 
+      // ICS events (your existing ICS proxy/worker)
       const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
+
+      // Menu events (your Nutrislice -> FullCalendar JSON worker)
+      const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
 
       function startOfCurrentWeekSunday(d = new Date()) {
         const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -339,7 +356,7 @@
         return (m === 12 && (d === 24 || d === 25 || d === 31));
       }
 
-      // Rules
+      // Keyword rules for your personal calendar
       const rules = {
         randy:  /randy/i,
         leslie: /leslie/i,
@@ -354,12 +371,24 @@
       const ICON_SCHOOL = "🐎";
 
       function classifyEvent(title) {
+        // precedence:
+        // Randy > Leslie > Basketball > Soccer > School > Other
         if (rules.randy.test(title))      return { category: "randy",  icon: "" };
         if (rules.leslie.test(title))     return { category: "leslie", icon: "" };
         if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL };
         if (rules.soccer.test(title))     return { category: "sports", icon: ICON_SOCCER };
         if (rules.school.test(title))     return { category: "school", icon: ICON_SCHOOL };
         return { category: "other", icon: "" };
+      }
+
+      function isMenuEvent(eventObj) {
+        // Preferred: Worker sets extendedProps.meal = "breakfast" or "lunch"
+        const meal = eventObj.extendedProps && eventObj.extendedProps.meal;
+        if (meal === "breakfast" || meal === "lunch") return true;
+
+        // Fallback: title prefix
+        const t = (eventObj.title || "").toLowerCase();
+        return t.startsWith("🍳 breakfast") || t.startsWith("🥪 lunch") || t.startsWith("breakfast") || t.startsWith("lunch");
       }
 
       const calendar = new FullCalendar.Calendar(
@@ -385,7 +414,11 @@
 
           headerToolbar: { left: "", center: "title", right: "" },
 
-          events: { url: ICS_URL, format: "ics" },
+          // ✅ BOTH sources so nothing gets lost later
+          eventSources: [
+            { url: ICS_URL, format: "ics" },
+            { url: MENU_URL, format: "json" }
+          ],
 
           dayCellDidMount: function(info) {
             const today = new Date(); today.setHours(0,0,0,0);
@@ -400,30 +433,42 @@
           },
 
           eventClassNames: function(arg) {
-            const title = (arg.event.title || "").trim();
-            const { category } = classifyEvent(title);
+            const classes = [];
 
-            const classes = ["event-" + category];
-
-            // Add sparkle class if the event occurs on a big holiday date
-            // (use event start date; all-day and timed both work)
-            const start = arg.event.start;
-            if (start && isBigHolidayDate(start)) {
-              classes.push("holiday-sparkle");
+            // Menu events: keep them subtle and distinct
+            if (isMenuEvent(arg.event)) {
+              classes.push("menu-event");
+            } else {
+              // Regular calendar styling
+              const title = (arg.event.title || "").trim();
+              const { category } = classifyEvent(title);
+              classes.push("event-" + category);
             }
+
+            // Holiday sparkle for any event on those dates (menus included)
+            const start = arg.event.start;
+            if (start && isBigHolidayDate(start)) classes.push("holiday-sparkle");
 
             return classes;
           },
 
           eventContent: function(arg) {
             const title = (arg.event.title || "").trim();
+            const isAllDay = arg.event.allDay;
+            const timeText = arg.timeText || "";
+
+            // Menu events: show a small plate icon to differentiate
+            if (isMenuEvent(arg.event)) {
+              // Keep the title, but make it compact. Your Worker already formats.
+              return {
+                html: `<span class="evt"><span class="evt-icon">🍽️</span><span class="evt-title">${escapeHtml(title)}</span></span>`
+              };
+            }
+
+            // Regular events: use your icon rules
             const { icon } = classifyEvent(title);
 
-            const timeText = arg.timeText || "";
-            const isAllDay = arg.event.allDay;
-
             const parts = [];
-
             if (icon) parts.push(`<span class="evt-icon">${icon}</span>`);
             if (!isAllDay && timeText) parts.push(`<span class="evt-time">${escapeHtml(timeText)}</span>`);
             parts.push(`<span class="evt-title">${escapeHtml(title)}</span>`);
