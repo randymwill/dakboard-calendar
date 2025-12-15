@@ -1,8 +1,8 @@
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Menus)
-Version: v1.8.0
+Version: v1.8.1
 Last Updated: 2025-12-14
-Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rules/features.
+Notes: Fix menu feed parsing (handles missing JSON array brackets); adds menu status in badge.
 -->
 
 <!doctype html>
@@ -59,6 +59,11 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
       --menuBorder: rgba(255,255,255,0.18);
       --menuText: rgba(255,255,255,0.90);
       --menuSubtext: rgba(255,255,255,0.70);
+
+      /* Status colors */
+      --ok: rgba(34,197,94,0.85);
+      --warn: rgba(250,204,21,0.85);
+      --err: rgba(239,68,68,0.85);
     }
 
     html, body {
@@ -250,10 +255,6 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
       opacity: 0.35;
       pointer-events: none;
     }
-    .fc .fc-daygrid-block-event .evt-title {
-      font-weight: 750;
-      letter-spacing: 0.01em;
-    }
 
     /* Category colors */
     .fc .event-school { background: var(--school); }
@@ -291,9 +292,7 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
       text-overflow: ellipsis;
     }
 
-    /* =======================
-       Menu events (nicely formatted)
-       ======================= */
+    /* Menu events */
     .fc .menu-event {
       background: var(--menuBg) !important;
       border: 1px solid var(--menuBorder) !important;
@@ -326,7 +325,7 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
       color: var(--menuSubtext);
       overflow: hidden;
       display: -webkit-box;
-      -webkit-line-clamp: 2;          /* show up to 2 lines */
+      -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
     }
     .fc .menu-pill {
@@ -354,8 +353,7 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
     }
 
     /* =========================================================
-       VERSION + LAST REFRESHED BADGE (bottom-right)
-       - You can safely rely on this to verify your commit deployed.
+       VERSION + STATUS BADGE (bottom-right)
        ========================================================= */
     #status-badge {
       position: fixed;
@@ -375,9 +373,14 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
       user-select: none;
       pointer-events: none;
       backdrop-filter: blur(2px);
+      min-width: 190px;
     }
-    #status-badge .ver { font-weight: 800; color: rgba(255,255,255,0.55); }
-    #status-badge .ref { color: rgba(255,255,255,0.45); }
+    #status-badge .ver { font-weight: 900; color: rgba(255,255,255,0.62); }
+    #status-badge .ref { color: rgba(255,255,255,0.48); }
+    #status-badge .menu { color: rgba(255,255,255,0.48); }
+    #status-badge .ok { color: var(--ok); font-weight: 800; }
+    #status-badge .err { color: var(--err); font-weight: 800; }
+    #status-badge .warn { color: var(--warn); font-weight: 800; }
   </style>
 </head>
 
@@ -386,16 +389,16 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
     <div id="calendar"></div>
   </div>
 
-  <!-- Visible version + last refreshed (helps confirm commits actually deployed) -->
   <div id="status-badge">
-    <div class="ver">v1.8.0</div>
+    <div class="ver">v1.8.1</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
+    <div class="menu" id="menu-status">Menu: <span class="warn">loading…</span></div>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
 
-      // Your sources (kept together so future changes don't lose anything)
+      // Your sources
       const ICS_URL  = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
 
@@ -475,12 +478,12 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
       }
 
       // =========================
-      // Last refreshed "clock"
+      // Version / refresh badge
       // =========================
       const lastRefEl = document.getElementById("last-refreshed");
+      const menuStatusEl = document.getElementById("menu-status");
 
       function formatLocalTime(dt) {
-        // Example: "12/14 3:07 PM"
         const mm = dt.getMonth() + 1;
         const dd = dt.getDate();
         let hh = dt.getHours();
@@ -496,8 +499,52 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
         if (lastRefEl) lastRefEl.textContent = `Last refreshed: ${formatLocalTime(now)}${suffix}`;
       }
 
-      // initial stamp so you can confirm the page loaded the newest version
+      function setMenuStatus(ok, msg) {
+        if (!menuStatusEl) return;
+        if (ok === true) {
+          menuStatusEl.innerHTML = `Menu: <span class="ok">OK</span> ${msg ? "- " + escapeHtml(msg) : ""}`;
+        } else if (ok === false) {
+          menuStatusEl.innerHTML = `Menu: <span class="err">Error</span> ${msg ? "- " + escapeHtml(msg) : ""}`;
+        } else {
+          menuStatusEl.innerHTML = `Menu: <span class="warn">loading…</span>`;
+        }
+      }
+
       setLastRefreshed("loaded");
+      setMenuStatus(null);
+
+      // =========================
+      // Robust menu fetcher:
+      // - supports valid JSON array
+      // - ALSO supports "obj,obj,obj" (missing brackets) by wrapping it
+      // =========================
+      async function fetchMenuEvents(fetchInfo) {
+        const start = fetchInfo.startStr; // YYYY-MM-DD
+        const end = fetchInfo.endStr;     // YYYY-MM-DD
+        const url = `${MENU_URL}?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+
+        const resp = await fetch(url, { cache: "no-store" });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        const text = (await resp.text()).trim();
+
+        // If your Worker returns: {"...":...},{"...":...}  (no brackets)
+        // FullCalendar can't parse that. We fix it here.
+        let jsonText = text;
+        if (jsonText.startsWith("{") && jsonText.includes("},{") && !jsonText.startsWith("[")) {
+          jsonText = `[${jsonText}]`;
+        }
+
+        const data = JSON.parse(jsonText);
+
+        // Ensure array
+        if (!Array.isArray(data)) {
+          throw new Error("Menu feed did not return an array");
+        }
+
+        setMenuStatus(true, `${data.length} events`);
+        return data;
+      }
 
       const calendar = new FullCalendar.Calendar(
         document.getElementById("calendar"),
@@ -523,11 +570,23 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
           headerToolbar: { left: "", center: "title", right: "" },
 
           eventSources: [
+            // ICS feed
             { url: ICS_URL, format: "ics" },
-            { url: MENU_URL, format: "json" }
+
+            // MENU feed (custom fetcher so it works even if Worker returns invalid JSON array)
+            {
+              events: async function(fetchInfo, successCallback, failureCallback) {
+                try {
+                  const events = await fetchMenuEvents(fetchInfo);
+                  successCallback(events);
+                } catch (e) {
+                  setMenuStatus(false, e && e.message ? e.message : "Unknown");
+                  failureCallback(e);
+                }
+              }
+            }
           ],
 
-          // Called once sources are done fetching (success or failure)
           loading: function(isLoading) {
             if (!isLoading) setLastRefreshed(`auto ${AUTO_REFRESH_MINUTES}m`);
           },
@@ -597,9 +656,8 @@ Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rul
 
       // Hard refresh every N minutes
       setInterval(() => {
+        setMenuStatus(null);
         calendar.refetchEvents();
-        // We'll update the badge when loading() flips back to false,
-        // but we can also show an immediate hint:
         setLastRefreshed("refreshing…");
       }, AUTO_REFRESH_MINUTES * 60 * 1000);
 
