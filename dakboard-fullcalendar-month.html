@@ -18,22 +18,33 @@
       --panel: #0b1a2f;
       --panel2: #091527;
 
-      --grid: rgba(255,255,255,0.10);
+      /* Grid definition (stronger) */
+      --grid: rgba(255,255,255,0.18);        /* main border */
+      --gridStrong: rgba(255,255,255,0.26);  /* header borders */
+      --cellInset: rgba(0,0,0,0.35);         /* inset shadow */
+      --cellEdge: rgba(255,255,255,0.08);    /* inset highlight */
+
       --text: rgba(255,255,255,0.92);
       --muted: rgba(255,255,255,0.62);
       --faint: rgba(255,255,255,0.35);
       --todayBorder: rgba(56,189,248,0.85);
 
-      /* Weekend column tint */
-      --weekendTint: rgba(255,255,255,0.04);
+      /* Weekend tint */
+      --weekendTint: rgba(255,255,255,0.05);
       --weekendTint2: rgba(255,255,255,0.02);
 
-      /* Colors */
+      /* Category colors */
       --school: #ef4444;  /* red */
       --sports: #ec4899;  /* pink */
       --other:  #22d3ee;  /* cyan */
       --randy:  #3b82f6;  /* blue */
       --leslie: #22c55e;  /* green */
+
+      /* Holiday styling */
+      --holidayGlow: rgba(250, 204, 21, 0.18);   /* gold */
+      --holidayGlow2: rgba(239, 68, 68, 0.10);   /* red */
+      --holidayBorder: rgba(250, 204, 21, 0.55);
+      --holidayLabelBg: rgba(0,0,0,0.45);
     }
 
     html, body {
@@ -93,7 +104,7 @@
       padding: 6px 8px;
     }
 
-    /* (3) Event text (our eventContent uses .evt-title/.evt-time) */
+    /* (3) Event text (eventContent uses .evt-title/.evt-time) */
     .fc .evt-title {
       font-size: 1.05em; /* <-- event titles */
       font-weight: 650;
@@ -105,14 +116,38 @@
       font-weight: 700;
     }
 
+    /* =========================
+       Stronger grid definition
+       ========================= */
+
     .fc-theme-standard td,
     .fc-theme-standard th,
     .fc-theme-standard .fc-scrollgrid {
       border-color: var(--grid);
     }
 
+    /* Make header border a touch stronger */
+    .fc .fc-col-header-cell {
+      border-color: var(--gridStrong) !important;
+    }
+
+    /* Give each day cell a subtle inset outline so it reads from distance */
+    .fc .fc-daygrid-day-frame {
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.06),
+        inset 0 12px 20px rgba(0,0,0,0.18);
+    }
+
+    /* Optional: slightly stronger vertical/horizontal dividers */
+    .fc .fc-scrollgrid-section-body td,
+    .fc .fc-scrollgrid-section-body th {
+      border-color: var(--grid);
+    }
+
+    /* Past days (dim) */
     .fc .is-past-day { opacity: 0.65; }
 
+    /* Today highlight (border) */
     .fc .fc-day-today { position: relative; background: transparent !important; }
     .fc .fc-day-today::after {
       content: "";
@@ -125,24 +160,57 @@
     }
 
     /* =========================
-       1) Weekend shading (NEW)
+       Weekend shading
        ========================= */
-
-    /* Column header cells for Sat/Sun */
     .fc .fc-col-header-cell.fc-day-sun,
     .fc .fc-col-header-cell.fc-day-sat {
       background: linear-gradient(180deg, var(--weekendTint), var(--weekendTint2));
     }
-
-    /* Day cells for Sat/Sun */
     .fc .fc-daygrid-day.fc-day-sun,
     .fc .fc-daygrid-day.fc-day-sat {
       background: linear-gradient(180deg, var(--weekendTint), transparent);
     }
 
     /* =========================
-       Events base
+       Holiday day styling (NEW)
        ========================= */
+    .fc .is-holiday {
+      position: relative;
+      background: linear-gradient(180deg, var(--holidayGlow), transparent) !important;
+    }
+
+    /* A warm festive border inset */
+    .fc .is-holiday .fc-daygrid-day-frame {
+      box-shadow:
+        inset 0 0 0 2px var(--holidayBorder),
+        inset 0 18px 26px rgba(0,0,0,0.22);
+    }
+
+    /* Corner label */
+    .fc .is-holiday::before {
+      content: attr(data-holiday-label);
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--holidayLabelBg);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.92);
+      font-size: 0.72em;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Make the date number slightly brighter on holidays */
+    .fc .is-holiday .fc-daygrid-day-number {
+      color: rgba(255,255,255,0.92);
+      opacity: 0.95;
+    }
+
+    /* Events base */
     .fc .fc-daygrid-event {
       border: 0;
       border-radius: 8px;
@@ -152,6 +220,39 @@
       box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
     }
 
+    /* All-day banners */
+    .fc .fc-daygrid-block-event {
+      position: relative;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin: 4px 4px 0;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.14) inset,
+        0 6px 14px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+    .fc .fc-daygrid-block-event::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    .fc .fc-daygrid-block-event::after {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 6px;
+      background: rgba(255,255,255,0.35);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .fc .fc-daygrid-block-event .evt-title {
+      font-weight: 750;
+      letter-spacing: 0.01em;
+    }
+
     /* Category colors */
     .fc .event-school { background: var(--school); }
     .fc .event-sports { background: var(--sports); }
@@ -159,7 +260,7 @@
     .fc .event-randy  { background: var(--randy);  }
     .fc .event-leslie { background: var(--leslie); }
 
-    /* Our custom eventContent layout */
+    /* eventContent layout */
     .fc .evt {
       display: inline-flex;
       align-items: center;
@@ -179,52 +280,7 @@
       text-overflow: ellipsis;
     }
 
-    /* ======================================
-       6) Better all-day banners (NEW)
-       ====================================== */
-
-    /* All-day events render as "block" events */
-    .fc .fc-daygrid-block-event {
-      position: relative;
-      border-radius: 6px;      /* less rounded => banner */
-      padding: 6px 10px;       /* taller */
-      margin: 4px 4px 0;       /* a bit more breathing room */
-      box-shadow:
-        0 1px 0 rgba(255,255,255,0.14) inset,
-        0 6px 14px rgba(0,0,0,0.18);
-      overflow: hidden;
-    }
-
-    /* Subtle gloss/gradient on banners */
-    .fc .fc-daygrid-block-event::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
-      opacity: 0.25;
-      pointer-events: none;
-    }
-
-    /* Left accent stripe for banners */
-    .fc .fc-daygrid-block-event::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 6px;
-      background: rgba(255,255,255,0.35);
-      opacity: 0.35;
-      pointer-events: none;
-    }
-
-    /* Make banner text a touch bolder */
-    .fc .fc-daygrid-block-event .evt-title {
-      font-weight: 750;
-      letter-spacing: 0.01em;
-    }
-
-    /* Force rows to evenly fill height */
+    /* Force 4 rows to fill height */
     .fc-daygrid-body,
     .fc-daygrid-body table { height: 100%; }
     .fc-daygrid-day { height: calc(100% / 4); }
@@ -257,13 +313,23 @@
         return date;
       }
 
+      // Holiday helper: returns a label (or empty string) for the big holidays you listed
+      function holidayLabelForDate(dateObj) {
+        const m = dateObj.getMonth() + 1; // 1-12
+        const d = dateObj.getDate();
+
+        // Christmas Eve / Christmas Day / New Year's Eve
+        if (m === 12 && d === 24) return "🎄 Christmas Eve";
+        if (m === 12 && d === 25) return "🎁 Christmas Day";
+        if (m === 12 && d === 31) return "🥂 New Year’s Eve";
+        return "";
+      }
+
       // Rules
       const rules = {
         randy:  /randy/i,
         leslie: /leslie/i,
-
         school: /school|dismissal|class|winter break|no school/i,
-
         basketball: /basketball|bball|little dribblers/i,
         soccer:     /soccer|rainbow unicorns/i
       };
@@ -296,7 +362,6 @@
           showNonCurrentDates: false,
           fixedWeekCount: false,
 
-          // Avoid "+ more" (raise if needed)
           dayMaxEvents: 12,
 
           visibleRange: function(currentDate) {
@@ -311,9 +376,17 @@
           events: { url: ICS_URL, format: "ics" },
 
           dayCellDidMount: function(info) {
+            // Dim past days
             const today = new Date(); today.setHours(0,0,0,0);
             const cell = new Date(info.date); cell.setHours(0,0,0,0);
             if (cell < today) info.el.classList.add("is-past-day");
+
+            // Holiday styling by DATE (works even if your calendar doesn't have holiday events)
+            const label = holidayLabelForDate(cell);
+            if (label) {
+              info.el.classList.add("is-holiday");
+              info.el.setAttribute("data-holiday-label", label);
+            }
           },
 
           eventClassNames: function(arg) {
@@ -331,14 +404,8 @@
 
             const parts = [];
 
-            if (icon) {
-              parts.push(`<span class="evt-icon">${icon}</span>`);
-            }
-
-            if (!isAllDay && timeText) {
-              parts.push(`<span class="evt-time">${escapeHtml(timeText)}</span>`);
-            }
-
+            if (icon) parts.push(`<span class="evt-icon">${icon}</span>`);
+            if (!isAllDay && timeText) parts.push(`<span class="evt-time">${escapeHtml(timeText)}</span>`);
             parts.push(`<span class="evt-title">${escapeHtml(title)}</span>`);
 
             return { html: `<span class="evt">${parts.join("")}</span>` };
