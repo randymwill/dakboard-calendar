@@ -1,3 +1,9 @@
+<!--
+DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Menus)
+Version: v1.8.0
+Last Updated: 2025-12-14
+Notes: Added version badge + "Last refreshed" clock; keeps ALL prior styling/rules/features.
+-->
 
 <!doctype html>
 <html lang="en">
@@ -99,24 +105,24 @@
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
-      font-size: 0.95em;
+      font-size: 0.95em; /* <-- day headers */
     }
 
     /* (2) Date numbers */
     .fc .fc-daygrid-day-number {
       color: var(--muted);
-      font-size: 0.75em;
+      font-size: 0.75em; /* <-- date numbers */
       padding: 6px 8px;
     }
 
     /* (3) Event text */
     .fc .evt-title {
-      font-size: 1.05em;
+      font-size: 1.05em; /* <-- event titles */
       font-weight: 650;
       line-height: 1.1;
     }
     .fc .evt-time {
-      font-size: 0.85em;
+      font-size: 0.85em; /* <-- event time */
       opacity: 0.95;
       font-weight: 700;
     }
@@ -296,7 +302,7 @@
       opacity: 0.95;
     }
 
-    /* Allow menu content to wrap to 2 lines (titles can be long) */
+    /* Allow menu content to wrap to 2 lines */
     .fc .menu-wrap {
       display: flex;
       flex-direction: column;
@@ -330,6 +336,7 @@
       border: 1px solid rgba(255,255,255,0.14);
       font-weight: 800;
       font-size: 0.82em;
+      flex: 0 0 auto;
     }
 
     /* Force 4 rows to fill height */
@@ -345,6 +352,32 @@
       .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
       .fc .evt-title { font-size: 1.12em; }
     }
+
+    /* =========================================================
+       VERSION + LAST REFRESHED BADGE (bottom-right)
+       - You can safely rely on this to verify your commit deployed.
+       ========================================================= */
+    #status-badge {
+      position: fixed;
+      right: 10px;
+      bottom: 8px;
+      display: inline-flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.50);
+      font-size: 0.70em;
+      letter-spacing: 0.04em;
+      z-index: 9999;
+      user-select: none;
+      pointer-events: none;
+      backdrop-filter: blur(2px);
+    }
+    #status-badge .ver { font-weight: 800; color: rgba(255,255,255,0.55); }
+    #status-badge .ref { color: rgba(255,255,255,0.45); }
   </style>
 </head>
 
@@ -353,12 +386,21 @@
     <div id="calendar"></div>
   </div>
 
+  <!-- Visible version + last refreshed (helps confirm commits actually deployed) -->
+  <div id="status-badge">
+    <div class="ver">v1.8.0</div>
+    <div class="ref" id="last-refreshed">Last refreshed: —</div>
+  </div>
+
   <script>
     document.addEventListener("DOMContentLoaded", function () {
 
       // Your sources (kept together so future changes don't lose anything)
       const ICS_URL  = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
+
+      // Refresh settings
+      const AUTO_REFRESH_MINUTES = 10;
 
       function startOfCurrentWeekSunday(d = new Date()) {
         const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -416,27 +458,46 @@
       // "🍳 Breakfast: A / B — Sides: C, D (+X more)"
       function parseMenuTitle(title) {
         const cleaned = (title || "").trim();
-
-        // Remove leading emoji if present; keep meal label from extendedProps instead.
-        // We'll split on "— Sides:" to separate entree vs sides.
         const parts = cleaned.split("— Sides:");
-        const left = (parts[0] || "").trim();   // "🍳 Breakfast: Entree1 / Entree2"
-        const sides = (parts[1] || "").trim();  // "side1, side2..."
+        const left = (parts[0] || "").trim();
+        const sides = (parts[1] || "").trim();
 
-        // Extract the entree text after the first colon
         const colonIdx = left.indexOf(":");
         const entrees = colonIdx >= 0 ? left.slice(colonIdx + 1).trim() : left;
-
         return { entrees, sides };
       }
 
       function mealLabel(meal) {
         return meal === "breakfast" ? "Breakfast" : "Lunch";
       }
-
       function mealEmoji(meal) {
         return meal === "breakfast" ? "🍳" : "🥪";
       }
+
+      // =========================
+      // Last refreshed "clock"
+      // =========================
+      const lastRefEl = document.getElementById("last-refreshed");
+
+      function formatLocalTime(dt) {
+        // Example: "12/14 3:07 PM"
+        const mm = dt.getMonth() + 1;
+        const dd = dt.getDate();
+        let hh = dt.getHours();
+        const ampm = hh >= 12 ? "PM" : "AM";
+        hh = hh % 12; if (hh === 0) hh = 12;
+        const min = String(dt.getMinutes()).padStart(2, "0");
+        return `${mm}/${dd} ${hh}:${min} ${ampm}`;
+      }
+
+      function setLastRefreshed(reason) {
+        const now = new Date();
+        const suffix = reason ? ` (${reason})` : "";
+        if (lastRefEl) lastRefEl.textContent = `Last refreshed: ${formatLocalTime(now)}${suffix}`;
+      }
+
+      // initial stamp so you can confirm the page loaded the newest version
+      setLastRefreshed("loaded");
 
       const calendar = new FullCalendar.Calendar(
         document.getElementById("calendar"),
@@ -466,9 +527,13 @@
             { url: MENU_URL, format: "json" }
           ],
 
+          // Called once sources are done fetching (success or failure)
+          loading: function(isLoading) {
+            if (!isLoading) setLastRefreshed(`auto ${AUTO_REFRESH_MINUTES}m`);
+          },
+
           dayCellDidMount: function(info) {
             const cell = new Date(info.date); cell.setHours(0,0,0,0);
-
             const label = holidayLabelForDate(cell);
             if (label) {
               info.el.classList.add("is-holiday");
@@ -529,7 +594,14 @@
       );
 
       calendar.render();
-      setInterval(() => calendar.refetchEvents(), 10 * 60 * 1000);
+
+      // Hard refresh every N minutes
+      setInterval(() => {
+        calendar.refetchEvents();
+        // We'll update the badge when loading() flips back to false,
+        // but we can also show an immediate hint:
+        setLastRefreshed("refreshing…");
+      }, AUTO_REFRESH_MINUTES * 60 * 1000);
 
       function escapeHtml(str) {
         return String(str)
