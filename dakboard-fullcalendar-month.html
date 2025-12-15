@@ -1,8 +1,12 @@
 <!--
-DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Menus)
-Version: v1.8.2
+DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
+Version: v1.9.0
 Last Updated: 2025-12-14
-Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load reliably).
+Notes:
+- Removes menu items from calendar grid (less busy)
+- Adds a "Meals" footer row (Sun-Sat) for CURRENT WEEK only
+- Breakfast shows MAIN items only (no sides), limited to first 2
+- Lunch shows MAIN items only (no sides), limited to first 3
 -->
 
 <!doctype html>
@@ -34,7 +38,7 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       --todayBorder: rgba(56,189,248,0.85);
 
       /* Weekend */
-      --weekendTint: rgba(255,255,255,0.085);
+      --weekendTint: rgba(255,255,255,0.11);
       --weekendTint2: rgba(255,255,255,0.03);
       --weekendLine: rgba(255,255,255,0.28);
 
@@ -54,11 +58,12 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       --sparkleOuter: rgba(250, 204, 21, 0.50);
       --sparkleInner: rgba(255,255,255,0.22);
 
-      /* Menu styling */
-      --menuBg: rgba(255,255,255,0.10);
-      --menuBorder: rgba(255,255,255,0.18);
-      --menuText: rgba(255,255,255,0.90);
-      --menuSubtext: rgba(255,255,255,0.70);
+      /* Meals footer */
+      --mealsBg: rgba(0,0,0,0.18);
+      --mealsBorder: rgba(255,255,255,0.14);
+      --mealsTitle: rgba(255,255,255,0.70);
+      --mealsText: rgba(255,255,255,0.88);
+      --mealsSub: rgba(255,255,255,0.62);
 
       /* Status colors */
       --ok: rgba(34,197,94,0.85);
@@ -82,15 +87,114 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       background: linear-gradient(180deg, var(--bg), #050b14);
     }
 
-    #calendar {
+    /* Card that contains calendar + footer */
+    #calendar-card {
       width: 100%;
       height: 100%;
       background: linear-gradient(180deg, var(--panel), var(--panel2));
       border-radius: 18px;
       overflow: hidden;
       box-shadow: 0 14px 34px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
+    /* Calendar takes most of the card */
+    #calendar {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    /* Footer row for meals (7 columns) */
+    #meals-footer {
+      flex: 0 0 auto;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), var(--mealsBg));
+      border-top: 1px solid var(--mealsBorder);
+      padding: 10px 10px 12px;
+    }
+
+    #meals-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .meal-col {
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      padding: 10px 10px 8px;
+      background: rgba(0,0,0,0.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      min-width: 0;
+    }
+
+    .meal-col .day {
+      font-weight: 800;
+      font-size: 0.86em;
+      color: var(--mealsTitle);
+      letter-spacing: 0.03em;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .meal-col .date {
+      font-weight: 700;
+      font-size: 0.78em;
+      color: rgba(255,255,255,0.46);
+    }
+
+    .meal-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin: 6px 0;
+      min-width: 0;
+    }
+
+    .meal-pill {
+      flex: 0 0 auto;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-weight: 900;
+      font-size: 0.74em;
+      color: rgba(255,255,255,0.72);
+      letter-spacing: 0.02em;
+    }
+
+    .meal-text {
+      flex: 1 1 auto;
+      min-width: 0;
+      color: var(--mealsText);
+      font-weight: 700;
+      font-size: 0.86em;
+      line-height: 1.1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .meal-empty {
+      color: rgba(255,255,255,0.40);
+      font-weight: 650;
+      font-size: 0.82em;
+      margin-top: 6px;
+    }
+
+    /* Weekend columns slightly different so it's easier to spot */
+    .meal-col.weekend {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.16));
+      border-color: rgba(255,255,255,0.14);
+    }
+
+    /* FullCalendar base */
     .fc { height: 100%; }
 
     .fc .fc-header-toolbar { margin: 10px 12px 6px; }
@@ -110,24 +214,24 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       color: var(--muted);
       font-weight: 650;
       padding: 10px 0;
-      font-size: 0.95em;
+      font-size: 0.95em; /* <-- day headers */
     }
 
     /* (2) Date numbers */
     .fc .fc-daygrid-day-number {
       color: var(--muted);
-      font-size: 0.75em;
+      font-size: 0.75em; /* <-- date numbers */
       padding: 6px 8px;
     }
 
     /* (3) Event text */
     .fc .evt-title {
-      font-size: 1.05em;
+      font-size: 1.05em; /* <-- event titles */
       font-weight: 650;
       line-height: 1.1;
     }
     .fc .evt-time {
-      font-size: 0.85em;
+      font-size: 0.85em; /* <-- event time */
       opacity: 0.95;
       font-weight: 700;
     }
@@ -159,7 +263,7 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       opacity: 0.78;
     }
 
-    /* Weekend shading */
+    /* Weekend shading + accent line */
     .fc .fc-col-header-cell.fc-day-sun,
     .fc .fc-col-header-cell.fc-day-sat {
       background: linear-gradient(180deg, var(--weekendTint), var(--weekendTint2));
@@ -168,8 +272,6 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
     .fc .fc-daygrid-day.fc-day-sat {
       background: linear-gradient(180deg, var(--weekendTint), transparent);
     }
-
-    /* Weekend vertical accent line */
     .fc .fc-col-header-cell.fc-day-sat,
     .fc .fc-daygrid-day.fc-day-sat,
     .fc .fc-col-header-cell.fc-day-sun,
@@ -182,9 +284,7 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
     .fc .fc-daygrid-day.fc-day-sun::after {
       content: "";
       position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
+      left: 0; top: 0; bottom: 0;
       width: 2px;
       background: var(--weekendLine);
       pointer-events: none;
@@ -292,52 +392,6 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       text-overflow: ellipsis;
     }
 
-    /* Menu events */
-    .fc .menu-event {
-      background: var(--menuBg) !important;
-      border: 1px solid var(--menuBorder) !important;
-      color: var(--menuText) !important;
-      box-shadow: none !important;
-      opacity: 0.95;
-    }
-
-    /* Allow menu content to wrap to 2 lines */
-    .fc .menu-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-      white-space: normal;
-      line-height: 1.08;
-    }
-    .fc .menu-line1 {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.96em;
-      font-weight: 750;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .fc .menu-line2 {
-      font-size: 0.82em;
-      color: var(--menuSubtext);
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
-    .fc .menu-pill {
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.28);
-      border: 1px solid rgba(255,255,255,0.14);
-      font-weight: 800;
-      font-size: 0.82em;
-      flex: 0 0 auto;
-    }
-
     /* Force 4 rows to fill height */
     .fc-daygrid-body,
     .fc-daygrid-body table { height: 100%; }
@@ -350,6 +404,7 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       .fc .fc-toolbar-title { font-size: 1.55em; }
       .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
       .fc .evt-title { font-size: 1.12em; }
+      .meal-text { font-size: 0.90em; }
     }
 
     /* =========================================================
@@ -373,7 +428,7 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       user-select: none;
       pointer-events: none;
       backdrop-filter: blur(2px);
-      min-width: 235px;
+      min-width: 260px;
     }
     #status-badge .ver { font-weight: 900; color: rgba(255,255,255,0.62); }
     #status-badge .ref { color: rgba(255,255,255,0.48); }
@@ -381,20 +436,23 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
     #status-badge .ok { color: var(--ok); font-weight: 800; }
     #status-badge .err { color: var(--err); font-weight: 800; }
     #status-badge .warn { color: var(--warn); font-weight: 800; }
-    #status-badge .dbg { color: rgba(255,255,255,0.35); }
   </style>
 </head>
 
 <body>
   <div id="calendar-wrapper">
-    <div id="calendar"></div>
+    <div id="calendar-card">
+      <div id="calendar"></div>
+      <div id="meals-footer">
+        <div id="meals-grid"></div>
+      </div>
+    </div>
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.8.2</div>
+    <div class="ver">v1.9.0</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
-    <div class="menu" id="menu-status">Menu: <span class="warn">loading…</span></div>
-    <div class="dbg" id="menu-debug">Menu range: —</div>
+    <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
 
   <script>
@@ -407,11 +465,38 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       // Refresh settings
       const AUTO_REFRESH_MINUTES = 10;
 
+      // Meals footer behavior (you asked for breakfast main items only)
+      const BREAKFAST_MAX_ITEMS = 2;
+      const LUNCH_MAX_ITEMS = 3;
+
       function startOfCurrentWeekSunday(d = new Date()) {
         const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
         date.setDate(date.getDate() - date.getDay());
         date.setHours(0,0,0,0);
         return date;
+      }
+
+      function addDays(dateObj, days) {
+        const d = new Date(dateObj);
+        d.setDate(d.getDate() + days);
+        return d;
+      }
+
+      function toYYYYMMDD(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const d = String(dateObj.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
+      function formatLocalTime(dt) {
+        const mm = dt.getMonth() + 1;
+        const dd = dt.getDate();
+        let hh = dt.getHours();
+        const ampm = hh >= 12 ? "PM" : "AM";
+        hh = hh % 12; if (hh === 0) hh = 12;
+        const min = String(dt.getMinutes()).padStart(2, "0");
+        return `${mm}/${dd} ${hh}:${min} ${ampm}`;
       }
 
       function holidayLabelForDate(dateObj) {
@@ -444,6 +529,8 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
       const ICON_SCHOOL = "🐎";
 
       function classifyEvent(title) {
+        // precedence:
+        // Randy > Leslie > Basketball > Soccer > School > Other
         if (rules.randy.test(title))      return { category: "randy",  icon: "" };
         if (rules.leslie.test(title))     return { category: "leslie", icon: "" };
         if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL };
@@ -452,44 +539,11 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
         return { category: "other", icon: "" };
       }
 
-      function isMenuEvent(eventObj) {
-        const meal = eventObj.extendedProps && eventObj.extendedProps.meal;
-        return (meal === "breakfast" || meal === "lunch");
-      }
-
-      function parseMenuTitle(title) {
-        const cleaned = (title || "").trim();
-        const parts = cleaned.split("— Sides:");
-        const left = (parts[0] || "").trim();
-        const sides = (parts[1] || "").trim();
-        const colonIdx = left.indexOf(":");
-        const entrees = colonIdx >= 0 ? left.slice(colonIdx + 1).trim() : left;
-        return { entrees, sides };
-      }
-
-      function mealLabel(meal) {
-        return meal === "breakfast" ? "Breakfast" : "Lunch";
-      }
-      function mealEmoji(meal) {
-        return meal === "breakfast" ? "🍳" : "🥪";
-      }
-
       // =========================
-      // Badge / refreshed clock
+      // Status badge
       // =========================
       const lastRefEl = document.getElementById("last-refreshed");
       const menuStatusEl = document.getElementById("menu-status");
-      const menuDbgEl = document.getElementById("menu-debug");
-
-      function formatLocalTime(dt) {
-        const mm = dt.getMonth() + 1;
-        const dd = dt.getDate();
-        let hh = dt.getHours();
-        const ampm = hh >= 12 ? "PM" : "AM";
-        hh = hh % 12; if (hh === 0) hh = 12;
-        const min = String(dt.getMinutes()).padStart(2, "0");
-        return `${mm}/${dd} ${hh}:${min} ${ampm}`;
-      }
 
       function setLastRefreshed(reason) {
         const now = new Date();
@@ -497,55 +551,135 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
         if (lastRefEl) lastRefEl.textContent = `Last refreshed: ${formatLocalTime(now)}${suffix}`;
       }
 
-      function setMenuStatus(ok, msg) {
+      function setMealsStatus(ok, msg) {
         if (!menuStatusEl) return;
         if (ok === true) {
-          menuStatusEl.innerHTML = `Menu: <span class="ok">OK</span>${msg ? " - " + escapeHtml(msg) : ""}`;
+          menuStatusEl.innerHTML = `Meals: <span class="ok">OK</span>${msg ? " - " + escapeHtml(msg) : ""}`;
         } else if (ok === false) {
-          menuStatusEl.innerHTML = `Menu: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
+          menuStatusEl.innerHTML = `Meals: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
         } else {
-          menuStatusEl.innerHTML = `Menu: <span class="warn">loading…</span>`;
+          menuStatusEl.innerHTML = `Meals: <span class="warn">loading…</span>`;
         }
       }
 
       setLastRefreshed("loaded");
-      setMenuStatus(null);
+      setMealsStatus(null);
 
-      // ✅ IMPORTANT: normalize dates to YYYY-MM-DD
-      function toYYYYMMDD(dateObj) {
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-        const d = String(dateObj.getDate()).padStart(2, "0");
-        return `${y}-${m}-${d}`;
+      // =========================
+      // Meals footer rendering
+      // =========================
+      const mealsGrid = document.getElementById("meals-grid");
+
+      function splitMainItemsOnly(title) {
+        // title format from your worker:
+        // "🍳 Breakfast: A / B — Sides: C, D (+X more)"
+        // We want: A / B (main items only, no sides)
+        const cleaned = (title || "").trim();
+        const mainPart = cleaned.split("— Sides:")[0].trim();   // keep left side only
+        const colonIdx = mainPart.indexOf(":");
+        const afterColon = colonIdx >= 0 ? mainPart.slice(colonIdx + 1).trim() : mainPart;
+        // items are separated by " / "
+        const items = afterColon.split(" / ").map(s => s.trim()).filter(Boolean);
+        return items;
       }
 
-      async function fetchMenuEvents(fetchInfo) {
-        // FullCalendar gives Date objects too — use those and normalize.
-        const start = toYYYYMMDD(fetchInfo.start);
-        const end = toYYYYMMDD(fetchInfo.end);
+      function renderMealsFooter(weekStart, mealsByDate) {
+        if (!mealsGrid) return;
+        mealsGrid.innerHTML = "";
+
+        const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+        for (let i = 0; i < 7; i++) {
+          const dayDate = addDays(weekStart, i);
+          const key = toYYYYMMDD(dayDate);
+          const isWeekend = (i === 0 || i === 6);
+
+          const col = document.createElement("div");
+          col.className = "meal-col" + (isWeekend ? " weekend" : "");
+
+          const header = document.createElement("div");
+          header.className = "day";
+          header.innerHTML = `<span>${dayNames[i]}</span><span class="date">${key}</span>`;
+          col.appendChild(header);
+
+          const info = mealsByDate[key] || {};
+          const bItems = info.breakfastItems || [];
+          const lItems = info.lunchItems || [];
+
+          if (bItems.length) {
+            const row = document.createElement("div");
+            row.className = "meal-row";
+            row.innerHTML = `
+              <span class="meal-pill">🍳</span>
+              <span class="meal-text">${escapeHtml(bItems.join(" / "))}</span>
+            `;
+            col.appendChild(row);
+          }
+
+          if (lItems.length) {
+            const row = document.createElement("div");
+            row.className = "meal-row";
+            row.innerHTML = `
+              <span class="meal-pill">🥪</span>
+              <span class="meal-text">${escapeHtml(lItems.join(" / "))}</span>
+            `;
+            col.appendChild(row);
+          }
+
+          if (!bItems.length && !lItems.length) {
+            const empty = document.createElement("div");
+            empty.className = "meal-empty";
+            empty.textContent = "No menu posted";
+            col.appendChild(empty);
+          }
+
+          mealsGrid.appendChild(col);
+        }
+      }
+
+      async function fetchMealsForCurrentWeek() {
+        const weekStart = startOfCurrentWeekSunday(new Date());
+        const weekEnd = addDays(weekStart, 7);
+
+        const start = toYYYYMMDD(weekStart);
+        const end = toYYYYMMDD(weekEnd);
 
         const url = `${MENU_URL}?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
 
-        if (menuDbgEl) menuDbgEl.textContent = `Menu range: ${start} → ${end}`;
+        setMealsStatus(null);
 
         const resp = await fetch(url, { cache: "no-store" });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-        const text = (await resp.text()).trim();
+        const data = await resp.json();
+        if (!Array.isArray(data)) throw new Error("Meals feed did not return an array");
 
-        let jsonText = text;
-        if (jsonText.startsWith("{") && jsonText.includes("},{") && !jsonText.startsWith("[")) {
-          jsonText = `[${jsonText}]`;
+        // Build map: YYYY-MM-DD -> { breakfastItems:[], lunchItems:[] }
+        const byDate = {};
+        for (const ev of data) {
+          const dateKey = (ev && ev.start) ? String(ev.start).slice(0,10) : null;
+          const meal = ev && ev.extendedProps && ev.extendedProps.meal;
+          const title = ev && ev.title ? String(ev.title) : "";
+
+          if (!dateKey || (meal !== "breakfast" && meal !== "lunch")) continue;
+
+          const items = splitMainItemsOnly(title);
+          if (!byDate[dateKey]) byDate[dateKey] = { breakfastItems: [], lunchItems: [] };
+
+          if (meal === "breakfast") {
+            byDate[dateKey].breakfastItems = items.slice(0, BREAKFAST_MAX_ITEMS);
+          } else {
+            byDate[dateKey].lunchItems = items.slice(0, LUNCH_MAX_ITEMS);
+          }
         }
 
-        const data = JSON.parse(jsonText);
-
-        if (!Array.isArray(data)) throw new Error("Menu feed did not return an array");
-
-        setMenuStatus(true, `${data.length} events`);
-        return data;
+        renderMealsFooter(weekStart, byDate);
+        setMealsStatus(true, `${data.length} menu events`);
       }
 
+      // =========================
+      // FullCalendar setup (NO menu event source now)
+      // =========================
       const calendar = new FullCalendar.Calendar(
         document.getElementById("calendar"),
         {
@@ -557,9 +691,9 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
           expandRows: true,
           showNonCurrentDates: false,
           fixedWeekCount: false,
-
           dayMaxEvents: 12,
 
+          // Calendar shows 4 weeks (as you like), but meals footer only shows CURRENT week.
           visibleRange: function(currentDate) {
             const start = startOfCurrentWeekSunday(currentDate);
             const end = new Date(start);
@@ -570,23 +704,8 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
           headerToolbar: { left: "", center: "title", right: "" },
 
           eventSources: [
-            { url: ICS_URL, format: "ics" },
-            {
-              events: async function(fetchInfo, successCallback, failureCallback) {
-                try {
-                  const events = await fetchMenuEvents(fetchInfo);
-                  successCallback(events);
-                } catch (e) {
-                  setMenuStatus(false, e && e.message ? e.message : "Unknown");
-                  failureCallback(e);
-                }
-              }
-            }
+            { url: ICS_URL, format: "ics" }
           ],
-
-          loading: function(isLoading) {
-            if (!isLoading) setLastRefreshed(`auto ${AUTO_REFRESH_MINUTES}m`);
-          },
 
           dayCellDidMount: function(info) {
             const cell = new Date(info.date); cell.setHours(0,0,0,0);
@@ -599,18 +718,12 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
 
           eventClassNames: function(arg) {
             const classes = [];
-
-            if (isMenuEvent(arg.event)) {
-              classes.push("menu-event");
-            } else {
-              const title = (arg.event.title || "").trim();
-              const { category } = classifyEvent(title);
-              classes.push("event-" + category);
-            }
+            const title = (arg.event.title || "").trim();
+            const { category } = classifyEvent(title);
+            classes.push("event-" + category);
 
             const start = arg.event.start;
             if (start && isBigHolidayDate(start)) classes.push("holiday-sparkle");
-
             return classes;
           },
 
@@ -618,24 +731,6 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
             const title = (arg.event.title || "").trim();
             const isAllDay = arg.event.allDay;
             const timeText = arg.timeText || "";
-
-            if (isMenuEvent(arg.event)) {
-              const meal = arg.event.extendedProps.meal;
-              const { entrees, sides } = parseMenuTitle(title);
-
-              const line1 = `
-                <span class="menu-line1">
-                  <span class="menu-pill">${mealEmoji(meal)} ${mealLabel(meal)}</span>
-                  <span>${escapeHtml(entrees)}</span>
-                </span>
-              `;
-
-              const line2 = sides
-                ? `<span class="menu-line2">Sides: ${escapeHtml(sides)}</span>`
-                : "";
-
-              return { html: `<span class="menu-wrap">${line1}${line2}</span>` };
-            }
 
             const { icon } = classifyEvent(title);
             const parts = [];
@@ -649,10 +744,20 @@ Notes: Fix menu fetch date format (normalize to YYYY-MM-DD so menu events load r
 
       calendar.render();
 
+      // Initial meals fetch
+      fetchMealsForCurrentWeek().catch(err => {
+        setMealsStatus(false, err && err.message ? err.message : "Unknown");
+      });
+
+      // Hard refresh every N minutes (calendar + meals)
       setInterval(() => {
-        setMenuStatus(null);
-        calendar.refetchEvents();
         setLastRefreshed("refreshing…");
+        calendar.refetchEvents();
+
+        fetchMealsForCurrentWeek()
+          .catch(err => setMealsStatus(false, err && err.message ? err.message : "Unknown"))
+          .finally(() => setLastRefreshed(`auto ${AUTO_REFRESH_MINUTES}m`));
+
       }, AUTO_REFRESH_MINUTES * 60 * 1000);
 
       function escapeHtml(str) {
