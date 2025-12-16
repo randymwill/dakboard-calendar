@@ -1,11 +1,11 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.12.8
+Version: v1.13.0
 Last Updated: 2025-12-15
 
 
-New in v1.12.8:
+New in v1.13.0:
 - Fullscreen layout (calendar + sidebar on top, weather + Waze bottom)
 - Weather panel uses Open-Meteo in Fahrenheit (no API key)
 
@@ -38,6 +38,12 @@ Notes:
 
   <style>
     :root{
+  --CAL_OUTER_PAD: 10px;
+
+  --SIDEBAR_PAD: 10px;
+
+  --CARD_PAD: 10px;
+
       --bg: #07101d;
       --panel: #0b1a2f;
       --panel2: #091527;
@@ -787,6 +793,62 @@ body { margin: 0; }
     }
     #sidebar.christmas-accent .side-title-strong{
       text-shadow: 0 0 10px rgba(34,197,94,0.10);
+    }
+
+
+    /* =========================================================
+       WEATHER PANEL (polish)
+       ========================================================= */
+    #weather-panel{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      justify-content:flex-start;
+      padding: 14px 16px;
+      gap: 10px;
+    }
+    .wx-top{display:flex;align-items:center;gap:14px;width:100%;}
+    .wx-temp{font-size:54px;font-weight:800;letter-spacing:-0.02em;line-height:1;margin:0;}
+    .wx-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;}
+    .wx-summary{font-size:16px;font-weight:700;opacity:0.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .wx-updated{font-size:12px;opacity:0.75;}
+    .wx-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;width:100%;padding-top:8px;border-top:1px solid rgba(255,255,255,0.10);}
+    .wx-kv{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);}
+    .wx-k{font-size:11px;opacity:0.75;text-transform:uppercase;letter-spacing:0.06em;}
+    .wx-v{font-size:13px;font-weight:700;opacity:0.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .wx-forecast{display:flex;gap:10px;width:100%;margin-top:6px;}
+    .wx-day{flex:1;min-width:0;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.08);}
+    .wx-day .d{font-size:11px;opacity:0.75;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
+    .wx-day .t{font-size:13px;font-weight:800;opacity:0.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+
+    /* Meals footer alignment + tighter padding */
+    #meals-footer{display:flex;gap:10px;padding:8px 10px;}
+    .meals-day-box{padding:6px 8px;}
+
+
+    /* =========================================================
+       TIGHTEN CALENDAR VERTICAL SPACING (SHOW LAST WEEK)
+       ========================================================= */
+    /* Reduce space between weekday headers and grid */
+    .fc .fc-col-header-cell {
+      padding-top: 4px !important;
+      padding-bottom: 4px !important;
+    }
+
+    /* Pull events closer to the top of each day cell */
+    .fc .fc-daygrid-day-frame {
+      padding-top: 2px !important;
+    }
+
+    /* Reduce gap above day number */
+    .fc .fc-daygrid-day-number {
+      margin-top: 2px !important;
+    }
+
+    /* Slightly reduce event stack spacing (NOT font size) */
+    .fc .fc-daygrid-event {
+      margin-top: 2px !important;
     }
 
 </style>
