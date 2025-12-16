@@ -1,10 +1,17 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.12.2
+Version: v1.12.4
 Last Updated: 2025-12-15
 
-New in v1.12.2:
+
+New in v1.12.4:
+- Fullscreen layout (calendar + sidebar on top, weather + Waze bottom)
+- Weather panel uses Open-Meteo in Fahrenheit (no API key)
+
+Previous:
+- (from v1.11.2)
+
 - Holiday mode (auto theme accents for seasonal/holiday periods)
 - Fix: Sidebar/calendar initialization bug (JS syntax + status functions)
 - Today Focus Sidebar (today's agenda + upcoming games countdowns)
@@ -658,182 +665,89 @@ Notes:
     }
 
   
-    /* =========================================================
-       FULLSCREEN LAYOUT + BOTTOM PANELS (Weather + Traffic)
-       ---------------------------------------------------------
-       LAYOUT KNOBS (easy):
-         --TOP_VH: percent of screen for calendar area (vh units)
-         --BOTTOM_VH: percent of screen for bottom panels (vh units)
-       ========================================================= */
-    :root{
-      --TOP_VH: 68;
-      --BOTTOM_VH: 32;
+/* =========================================================
+   FULLSCREEN LAYOUT KNOBS (calendar + weather + traffic)
+   - Adjust these to change how much space the bottom row gets
+   ========================================================= */
+:root{
+  --TOP_VH: 68;        /* calendar+sidebar area height (percent of screen) */
+  --BOTTOM_VH: 32;     /* weather+traffic area height (percent of screen) */
+  --BOTTOM_GAP: 14px;
+  --BOTTOM_PAD: 14px;
+  --BOTTOM_RADIUS: 16px;
+}
 
-      /* Panels */
-      --panelBg1: rgba(255,255,255,0.05);
-      --panelBg2: rgba(0,0,0,0.18);
-      --panelBorder: rgba(255,255,255,0.14);
-      --panelShadow: 0 14px 30px rgba(0,0,0,0.35);
-    }
+/* Fullscreen grid */
+html, body { height: 100%; }
+body { margin: 0; }
+#screen-grid{
+  height: 100vh;
+  display: grid;
+  grid-template-rows: calc(var(--TOP_VH) * 1vh) calc(var(--BOTTOM_VH) * 1vh);
+  gap: 0;
+  background: var(--bg);
+}
 
-    body{ overflow:hidden; }
+/* Keep the existing calendar wrapper/card filling the top row */
+#top-area{ height: 100%; display: flex; }
+#top-area #calendar-wrapper{ height: 100%; width: 100%; padding: 0; display:flex; }
+#top-area #calendar-card{ height: 100%; width: 100%; }
 
-    /* Wrap the whole page into a 2-row grid */
-    #page{
-      height: 100vh;
-      width: 100vw;
-      display: grid;
-      grid-template-rows: calc(var(--TOP_VH) * 1vh) calc(var(--BOTTOM_VH) * 1vh);
-      gap: 10px;
-      padding: 10px;
-      box-sizing: border-box;
-    }
+/* Bottom row panels */
+#bottom-area{
+  height: 100%;
+  padding: var(--BOTTOM_PAD);
+  display: grid;
+  grid-template-columns: 44% 56%;
+  gap: var(--BOTTOM_GAP);
+  align-items: stretch;
+  box-sizing: border-box;
+}
+.bottom-panel{
+  border-radius: var(--BOTTOM_RADIUS);
+  background: linear-gradient(180deg, rgba(14,28,48,0.86), rgba(8,16,29,0.92));
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+  overflow: hidden;
+  position: relative;
+}
 
-    #top{ min-height: 0; }
-    #calendar-wrapper{ height: 100%; min-height: 0; }
+/* Weather panel */
+#weather-panel{ padding: 18px 18px 14px 18px; display:flex; flex-direction:column; gap: 10px; }
+#weather-top{ display:flex; align-items:flex-end; justify-content:space-between; gap: 10px; }
+#weather-temp{ font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+#weather-meta{ text-align:right; }
+#weather-meta .cond{ font-size: 18px; font-weight: 600; }
+#weather-meta .sub{ opacity: 0.75; font-size: 14px; margin-top: 2px; }
+#weather-stats{ display:flex; gap: 14px; flex-wrap:wrap; opacity:0.92; font-size: 14px; }
+.stat-pill{ padding: 8px 10px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
+#weather-forecast{ margin-top: auto; display:grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.day-card{ padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+.day-card .d{ font-size: 12px; opacity: 0.75; }
+.day-card .hi{ font-size: 16px; font-weight: 650; margin-top: 6px; }
+.day-card .lo{ font-size: 12px; opacity: 0.80; margin-top: 2px; }
+.day-card .p{ font-size: 12px; opacity: 0.80; margin-top: 6px; }
 
-    /* Bottom area: Weather + Traffic */
-    #bottom-panels{
-      min-height: 0;
-      display: grid;
-      grid-template-columns: 40% 40%;
-      gap: 10px;
-    }
-    .bottom-panel{
-      min-height: 0;
-      border-radius: 18px;
-      overflow: hidden;
-      background: linear-gradient(180deg, var(--panelBg1), var(--panelBg2));
-      border: 1px solid var(--panelBorder);
-      box-shadow: var(--panelShadow);
-      position: relative;
-    }
+/* Traffic */
+#traffic-panel iframe{ width:100%; height:100%; border:0; }
+#traffic-label{
+  position:absolute; top:10px; left:10px;
+  padding: 6px 10px; border-radius: 999px;
+  background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.10);
+  font-size: 12px; opacity: 0.85;
+}
 
-    /* Weather panel */
-    #weather-panel{
-      padding: 14px 16px;
-      display:flex;
-      flex-direction: column;
-      gap: 10px;
-      box-sizing: border-box;
-    }
-    .weather-row{
-      display:flex;
-      align-items:flex-end;
-      justify-content: space-between;
-      gap: 14px;
-    }
-    .weather-now{
-      display:flex;
-      align-items:flex-end;
-      gap: 12px;
-      min-width: 0;
-    }
-    .weather-emoji{
-      font-size: 2.4em;
-      line-height: 1;
-      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35));
-    }
-    .weather-temp{
-      font-size: 3.2em;
-      font-weight: 900;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      white-space: nowrap;
-    }
-    .weather-temp .deg{ font-size: 0.55em; opacity: 0.9; margin-left: 2px; }
-    .weather-desc{
-      font-size: 1.02em;
-      font-weight: 850;
-      color: rgba(255,255,255,0.86);
-      overflow:hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 18vw;
-    }
-    .weather-sub{
-      font-size: 0.92em;
-      font-weight: 780;
-      color: rgba(255,255,255,0.66);
-      white-space: nowrap;
-    }
-    .weather-meta{
-      display:flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      color: rgba(255,255,255,0.70);
-      font-weight: 780;
-      font-size: 0.90em;
-    }
-    .weather-chip{
-      background: rgba(0,0,0,0.22);
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 999px;
-      padding: 6px 10px;
-      display:flex;
-      gap: 7px;
-      align-items:center;
-    }
-
-    .forecast{
-      margin-top: 4px;
-      display:grid;
-      grid-template-columns: repeat(5, minmax(0,1fr));
-      gap: 8px;
-      min-height: 0;
-    }
-    .day{
-      background: rgba(0,0,0,0.18);
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 14px;
-      padding: 10px 10px 9px;
-      display:flex;
-      flex-direction: column;
-      gap: 6px;
-      min-width: 0;
-    }
-    .day .dow{
-      font-weight: 900;
-      font-size: 0.82em;
-      color: rgba(255,255,255,0.74);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .day .ico{
-      font-size: 1.35em;
-      line-height: 1;
-    }
-    .day .hiLo{
-      font-weight: 880;
-      font-size: 0.95em;
-      color: rgba(255,255,255,0.90);
-      white-space: nowrap;
-    }
-    .day .pop{
-      font-weight: 820;
-      font-size: 0.82em;
-      color: rgba(255,255,255,0.62);
-      white-space: nowrap;
-    }
-
-    /* Traffic panel */
-    #traffic-panel iframe{
-      width: 100%;
-      height: 100%;
-      border: 0;
-    }
-
-    /* Optional: hide bottom entirely by setting --BOTTOM_VH to 0 */
-    .bottom-hidden #bottom-panels{ display:none; }
-
+/* Make sure existing status badge stays visible on top area only */
+#status-badge{ z-index: 5; }
 
 </style>
 </head>
 
 <body>
-  <div id="page">
-    <div id="top">
-      <div id="calendar-wrapper">
+
+<div id="screen-grid">
+  <div id="top-area">
+    <div id="calendar-wrapper">
     <div id="calendar-card">
       <div class="holiday-accent-glow" id="holiday-accent-glow"></div>
       
@@ -876,51 +790,12 @@ Notes:
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.12.2</div>
+    <div class="ver">v1.11.2</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
-      </div>
-    </div>
-
-    <div id="bottom-panels">
-      <div id="weather-panel" class="bottom-panel" aria-label="Weather">
-        <div class="weather-row">
-          <div class="weather-now">
-            <div class="weather-emoji" id="w-emoji">⛅</div>
-            <div>
-              <div class="weather-temp"><span id="w-temp">--</span><span class="deg">°</span></div>
-              <div class="weather-desc" id="w-desc">Loading weather…</div>
-            </div>
-          </div>
-
-          <div style="text-align:right">
-            <div class="weather-sub" id="w-feels">Feels like --°</div>
-            <div class="weather-sub" id="w-updated">Updated —</div>
-          </div>
-        </div>
-
-        <div class="weather-meta" id="w-meta">
-          <div class="weather-chip">💨 <span id="w-wind">--</span> mph</div>
-          <div class="weather-chip">☔ <span id="w-pop">--</span>%</div>
-          <div class="weather-chip">🌅 <span id="w-sunrise">--</span></div>
-          <div class="weather-chip">🌇 <span id="w-sunset">--</span></div>
-        </div>
-
-        <div class="forecast" id="w-forecast"></div>
-      </div>
-
-      <div id="traffic-panel" class="bottom-panel" aria-label="Traffic map">
-        <iframe
-          id="waze-frame"
-          src="https://embed.waze.com/iframe?zoom=13&lat=38.654398639984805&lon=-90.45877499401288&ct=livemap"
-          allowfullscreen
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"></iframe>
-      </div>
-    </div>
   </div>
 
->
+  <script>
     document.addEventListener("DOMContentLoaded", function () {
 
       // =========================================================
@@ -933,7 +808,7 @@ Notes:
       const ENABLE_CHRISTMAS_COUNTDOWN = true; // chip next to title
 
       const ENABLE_HOLIDAY_MODE = true;        // auto seasonal accents
-      const HOLIDAY_MODE_PREVIEW = "christmas";         // e.g. "christmas" | "halloween" | "newyear" | "" (auto)
+      const HOLIDAY_MODE_PREVIEW = "";         // e.g. "christmas" | "halloween" | "newyear" | "" (auto)
 
 
       // Sources
@@ -1690,6 +1565,115 @@ Notes:
             buildSidebarFromCalendar();
       }, COUNTDOWN_REFRESH_SECONDS * 1000);
 
+      /* =========================================================
+         WEATHER (Open-Meteo) — Fahrenheit (no API key)
+         - Tweak refresh: WEATHER_REFRESH_MINUTES
+         ========================================================= */
+      const HOME_LAT = 38.654398639984805;
+      const HOME_LON = -90.45877499401288;
+      const WEATHER_REFRESH_MINUTES = 10;
+
+      function weatherCodeToText(code){
+        const m = {
+          0:"Clear",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",
+          45:"Fog",48:"Rime fog",
+          51:"Light drizzle",53:"Drizzle",55:"Dense drizzle",
+          56:"Freezing drizzle",57:"Freezing drizzle",
+          61:"Light rain",63:"Rain",65:"Heavy rain",
+          66:"Freezing rain",67:"Freezing rain",
+          71:"Light snow",73:"Snow",75:"Heavy snow",77:"Snow grains",
+          80:"Rain showers",81:"Rain showers",82:"Violent showers",
+          85:"Snow showers",86:"Snow showers",
+          95:"Thunderstorm",96:"Thunderstorm hail",99:"Thunderstorm hail"
+        };
+        return m[code] ?? ("Weather " + code);
+      }
+
+      function fmtTime(t){
+        try{
+          const d = new Date(t);
+          return d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+        }catch(e){ return "—"; }
+      }
+
+      async function loadWeather(){
+        const url =
+          `https://api.open-meteo.com/v1/forecast` +
+          `?latitude=${HOME_LAT}&longitude=${HOME_LON}` +
+          `&current=temperature_2m,apparent_temperature,weathercode,wind_speed_10m` +
+          `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode,sunrise,sunset` +
+          `&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch` +
+          `&timezone=auto&forecast_days=5`;
+
+        const res = await fetch(url, { cache: "no-store" });
+        if(!res.ok) throw new Error("Weather fetch failed: " + res.status);
+        const data = await res.json();
+
+        const cur = data.current || {};
+        const daily = data.daily || {};
+
+        // Current
+        const temp = Math.round(cur.temperature_2m ?? NaN);
+        const feels = Math.round(cur.apparent_temperature ?? NaN);
+        const wind = Math.round(cur.wind_speed_10m ?? NaN);
+        const cond = weatherCodeToText(cur.weathercode);
+
+        document.getElementById("weather-temp").textContent = isFinite(temp) ? `${temp}°F` : `--°F`;
+        document.getElementById("weather-cond").textContent = cond;
+        document.getElementById("weather-feels").textContent = isFinite(feels) ? `Feels like ${feels}°F` : `Feels like —`;
+        document.getElementById("weather-wind").textContent = isFinite(wind) ? `Wind: ${wind} mph` : `Wind: —`;
+
+        // Today stats from daily[0]
+        const hi = daily.temperature_2m_max?.[0];
+        const lo = daily.temperature_2m_min?.[0];
+        const pop = daily.precipitation_probability_max?.[0];
+        const sunrise = daily.sunrise?.[0];
+        const sunset  = daily.sunset?.[0];
+
+        document.getElementById("weather-hilo").textContent =
+          (hi!=null && lo!=null) ? `Hi/Lo: ${Math.round(hi)}° / ${Math.round(lo)}°` : `Hi/Lo: —`;
+        document.getElementById("weather-precip").textContent =
+          (pop!=null) ? `Precip: ${Math.round(pop)}%` : `Precip: —`;
+        document.getElementById("weather-sun").textContent =
+          (sunrise && sunset) ? `Sun: ${fmtTime(sunrise)}–${fmtTime(sunset)}` : `Sun: —`;
+
+        document.getElementById("weather-updated").textContent =
+          `Updated ${new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}`;
+
+        // Forecast cards
+        const fc = document.getElementById("weather-forecast");
+        fc.innerHTML = "";
+
+        const times = daily.time || [];
+        for(let i=0;i<Math.min(5, times.length); i++){
+          const dt = new Date(times[i] + "T00:00:00");
+          const day = dt.toLocaleDateString([], { weekday: "short" });
+          const fhi = daily.temperature_2m_max?.[i];
+          const flo = daily.temperature_2m_min?.[i];
+          const fpop = daily.precipitation_probability_max?.[i];
+          const fcode = daily.weathercode?.[i];
+          const ftext = weatherCodeToText(fcode);
+
+          const card = document.createElement("div");
+          card.className = "day-card";
+          card.innerHTML = `
+            <div class="d">${day}</div>
+            <div class="hi">${(fhi!=null)?Math.round(fhi):"—"}°</div>
+            <div class="lo">Low ${(flo!=null)?Math.round(flo):"—"}°</div>
+            <div class="p">${(fpop!=null)?Math.round(fpop):"—"}% • ${escapeHtml(ftext)}</div>
+          `;
+          fc.appendChild(card);
+        }
+      }
+
+      // Kick off weather after DOM is ready; keep it independent of calendar load.
+      try{
+        loadWeather();
+        setInterval(loadWeather, WEATHER_REFRESH_MINUTES * 60 * 1000);
+      }catch(e){
+        console.warn("Weather init error:", e);
+      }
+
       function escapeHtml(str) {
         return String(str)
           .replaceAll("&", "&amp;")
@@ -1700,130 +1684,40 @@ Notes:
       }
     });
   </script>
+  </div>
 
-  <script>
-    // =========================================================
-    // WEATHER (Open-Meteo, free/no API key) + Waze center
-    // =========================================================
-    const HOME_LAT = 38.654398639984805;
-    const HOME_LON = -90.45877499401288;
+  <div id="bottom-area">
+    <section class="bottom-panel" id="weather-panel" aria-label="Weather">
+      <div id="weather-top">
+        <div id="weather-temp">--°F</div>
+        <div id="weather-meta">
+          <div class="cond" id="weather-cond">Loading…</div>
+          <div class="sub" id="weather-feels">Feels like —</div>
+          <div class="sub" id="weather-updated">—</div>
+        </div>
+      </div>
 
-    const WEATHER_REFRESH_MINUTES = 10;     // how often to refresh weather
-    const WAZE_ZOOM = 13;                  // traffic map zoom
+      <div id="weather-stats">
+        <div class="stat-pill" id="weather-wind">Wind: —</div>
+        <div class="stat-pill" id="weather-precip">Precip: —</div>
+        <div class="stat-pill" id="weather-hilo">Hi/Lo: —</div>
+        <div class="stat-pill" id="weather-sun">Sun: —</div>
+      </div>
 
-    // If you want to fine-tune the bottom height:
-    //   in CSS :root set --TOP_VH and --BOTTOM_VH.
-    // Example: --TOP_VH: 70; --BOTTOM_VH: 30;
+      <div id="weather-forecast"></div>
+    </section>
 
-    // Weathercode to emoji + short label
-    function wx(code){
-      // Based on Open-Meteo weather codes
-      if (code === 0) return {e:"☀️", t:"Clear"};
-      if (code === 1) return {e:"🌤️", t:"Mostly clear"};
-      if (code === 2) return {e:"⛅", t:"Partly cloudy"};
-      if (code === 3) return {e:"☁️", t:"Overcast"};
-      if ([45,48].includes(code)) return {e:"🌫️", t:"Fog"};
-      if ([51,53,55].includes(code)) return {e:"🌦️", t:"Drizzle"};
-      if ([56,57].includes(code)) return {e:"🌧️", t:"Freezing drizzle"};
-      if ([61,63,65].includes(code)) return {e:"🌧️", t:"Rain"};
-      if ([66,67].includes(code)) return {e:"🌧️", t:"Freezing rain"};
-      if ([71,73,75].includes(code)) return {e:"❄️", t:"Snow"};
-      if (code === 77) return {e:"🌨️", t:"Snow grains"};
-      if ([80,81,82].includes(code)) return {e:"🌧️", t:"Showers"};
-      if ([85,86].includes(code)) return {e:"🌨️", t:"Snow showers"};
-      if (code === 95) return {e:"⛈️", t:"Thunderstorm"};
-      if ([96,99].includes(code)) return {e:"⛈️", t:"Thunder + hail"};
-      return {e:"⛅", t:"Weather"};
-    }
-
-    function fmtTimeShort(d){
-      return d.toLocaleTimeString(undefined, {hour:"numeric", minute:"2-digit"});
-    }
-    function fmtDow(d){
-      return d.toLocaleDateString(undefined, {weekday:"short"});
-    }
-
-    async function loadWeather(){
-      const url =
-        `https://api.open-meteo.com/v1/forecast` +
-        `?latitude=${HOME_LAT}&longitude=${HOME_LON}` +
-        `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m` +
-        `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset` +
-        `&timezone=auto`;
-
-      const wEmoji = document.getElementById("w-emoji");
-      const wTemp  = document.getElementById("w-temp");
-      const wDesc  = document.getElementById("w-desc");
-      const wFeels = document.getElementById("w-feels");
-      const wWind  = document.getElementById("w-wind");
-      const wPop   = document.getElementById("w-pop");
-      const wSunrise = document.getElementById("w-sunrise");
-      const wSunset  = document.getElementById("w-sunset");
-      const wUpdated = document.getElementById("w-updated");
-      const wForecast = document.getElementById("w-forecast");
-
-      try{
-        const res = await fetch(url, {cache:"no-store"});
-        if(!res.ok) throw new Error("Weather HTTP " + res.status);
-        const data = await res.json();
-
-        const c = data.current;
-        const d = data.daily;
-
-        const now = new Date();
-        if (wUpdated) wUpdated.textContent = "Updated " + fmtTimeShort(now);
-
-        const cur = wx(c.weather_code);
-        if (wEmoji) wEmoji.textContent = cur.e;
-        if (wDesc)  wDesc.textContent = cur.t;
-        if (wTemp)  wTemp.textContent = Math.round(c.temperature_2m);
-        if (wFeels) wFeels.textContent = "Feels like " + Math.round(c.apparent_temperature) + "°";
-        if (wWind)  wWind.textContent = Math.round(c.wind_speed_10m);
-
-        // Use today's precip prob max (if present)
-        const pop0 = (d.precipitation_probability_max && d.precipitation_probability_max.length) ? d.precipitation_probability_max[0] : null;
-        if (wPop) wPop.textContent = (pop0 ?? "--");
-
-        if (d.sunrise && d.sunrise[0]) wSunrise.textContent = fmtTimeShort(new Date(d.sunrise[0]));
-        if (d.sunset  && d.sunset[0])  wSunset.textContent  = fmtTimeShort(new Date(d.sunset[0]));
-
-        // 5-day forecast
-        if (wForecast){
-          wForecast.innerHTML = "";
-          const days = Math.min(5, d.time.length);
-          for(let i=0;i<days;i++){
-            const dayDate = new Date(d.time[i] + "T12:00:00");
-            const ico = wx(d.weather_code[i]).e;
-            const hi = Math.round(d.temperature_2m_max[i]);
-            const lo = Math.round(d.temperature_2m_min[i]);
-            const pop = (d.precipitation_probability_max && d.precipitation_probability_max[i] != null) ? d.precipitation_probability_max[i] : null;
-
-            wForecast.insertAdjacentHTML("beforeend", `
-              <div class="day">
-                <div class="dow">${fmtDow(dayDate)}</div>
-                <div class="ico">${ico}</div>
-                <div class="hiLo">${hi}° / ${lo}°</div>
-                <div class="pop">${pop!=null ? "☔ "+pop+"%" : ""}</div>
-              </div>
-            `);
-          }
-        }
-
-        // Update Waze location/zoom (in case you tweak knobs)
-        const wz = document.getElementById("waze-frame");
-        if (wz){
-          const src = `https://embed.waze.com/iframe?zoom=${WAZE_ZOOM}&lat=${HOME_LAT}&lon=${HOME_LON}&ct=livemap`;
-          if (wz.getAttribute("src") !== src) wz.setAttribute("src", src);
-        }
-      }catch(err){
-        if (document.getElementById("w-desc")) document.getElementById("w-desc").textContent = "Weather unavailable";
-        console.error(err);
-      }
-    }
-
-    loadWeather();
-    setInterval(loadWeather, WEATHER_REFRESH_MINUTES * 60 * 1000);
-  </script>
+    <section class="bottom-panel" id="traffic-panel" aria-label="Traffic map">
+      <div id="traffic-label">Traffic (Waze)</div>
+      <iframe
+        src="https://embed.waze.com/iframe?zoom=13&lat=38.654398639984805&lon=-90.45877499401288&ct=livemap"
+        allowfullscreen
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade">
+      </iframe>
+    </section>
+  </div>
+</div>
 
 </body>
 </html>
