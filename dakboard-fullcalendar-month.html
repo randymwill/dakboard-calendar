@@ -1,11 +1,11 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.12.4
+Version: v1.12.5
 Last Updated: 2025-12-15
 
 
-New in v1.12.4:
+New in v1.12.5:
 - Fullscreen layout (calendar + sidebar on top, weather + Waze bottom)
 - Weather panel uses Open-Meteo in Fahrenheit (no API key)
 
@@ -698,11 +698,13 @@ body { margin: 0; }
   height: 100%;
   padding: var(--BOTTOM_PAD);
   display: grid;
-  grid-template-columns: 35% 35%;
+  grid-template-columns: 35% 1fr 35%;
   gap: var(--BOTTOM_GAP);
   align-items: stretch;
   box-sizing: border-box;
 }
+#bottom-spacer{background:transparent; border:none; box-shadow:none;}
+
 .bottom-panel{
   border-radius: var(--BOTTOM_RADIUS);
   background: linear-gradient(180deg, rgba(14,28,48,0.86), rgba(8,16,29,0.92));
@@ -1707,10 +1709,12 @@ body { margin: 0; }
       <div id="weather-forecast"></div>
     </section>
 
-    <section class="bottom-panel" id="traffic-panel" aria-label="Traffic map">
+        <div id="bottom-spacer"></div>
+
+        <section class="bottom-panel" id="traffic-panel" aria-label="Traffic map">
       <div id="traffic-label">Traffic (Waze)</div>
       <iframe
-        src="https://embed.waze.com/iframe?zoom=12&lat=38.654398639984805&lon=-90.45877499401288&ct=livemap"
+        src="https://embed.waze.com/iframe?zoom=13&lat=38.654398639984805&lon=-90.45877499401288&ct=livemap"
         allowfullscreen
         loading="lazy"
         referrerpolicy="no-referrer-when-downgrade">
