@@ -1,11 +1,11 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.13.0
+Version: v1.14.0
 Last Updated: 2025-12-15
 
 
-New in v1.13.0:
+New in v1.14.0:
 - Fullscreen layout (calendar + sidebar on top, weather + Waze bottom)
 - Weather panel uses Open-Meteo in Fahrenheit (no API key)
 
@@ -851,6 +851,166 @@ body { margin: 0; }
       margin-top: 2px !important;
     }
 
+
+    /* =========================================================
+       LAYOUT: keep meals footer aligned with calendar grid
+       ========================================================= */
+    #main-row{
+      display:flex;
+      gap: 14px;
+      align-items: stretch;
+    }
+    #left-col{
+      flex: 1 1 auto;
+      min-width: 0;
+      display:flex;
+      flex-direction: column;
+    }
+    #calendar{
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    #meals-footer{
+      width: 100%;
+      margin-top: 8px;
+      /* keep footer from stealing space from calendar too aggressively */
+      max-height: 148px;
+    }
+
+
+    /* =========================================================
+       WEATHER (more iOS-like card)
+       ========================================================= */
+    #weather-card{
+      display:flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px 18px 14px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 18px 44px rgba(0,0,0,0.35);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      overflow:hidden;
+      height: 100%;
+      width: 100%;
+    }
+    .w-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .w-place{
+      font-weight: 800;
+      letter-spacing: .2px;
+      font-size: 34px;
+      line-height: 1.05;
+      opacity: .98;
+    }
+    .w-temp{
+      font-weight: 900;
+      font-size: 90px;
+      line-height: .95;
+      letter-spacing: -1px;
+    }
+    .w-cond{
+      font-size: 30px;
+      font-weight: 800;
+      text-align:right;
+      opacity: .95;
+    }
+    .w-hilo{
+      font-size: 26px;
+      font-weight: 800;
+      text-align:right;
+      opacity: .9;
+      margin-top: 4px;
+    }
+    .w-divider{
+      height: 1px;
+      background: rgba(255,255,255,0.16);
+      margin: 14px 0 12px;
+    }
+    .w-hourly{
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .w-hour{
+      flex: 1 1 0;
+      text-align:center;
+    }
+    .w-hour .t{
+      font-size: 20px;
+      opacity: .85;
+      font-weight: 800;
+    }
+    .w-hour .i{
+      font-size: 28px;
+      margin: 6px 0 6px;
+      opacity:.95;
+    }
+    .w-hour .v{
+      font-size: 26px;
+      font-weight: 900;
+    }
+    .w-daily{
+      margin-top: 12px;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .w-day{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+    }
+    .w-day .d{
+      width: 56px;
+      font-size: 26px;
+      font-weight: 900;
+      opacity: .95;
+    }
+    .w-day .ic{
+      width: 40px;
+      text-align:center;
+      font-size: 26px;
+    }
+    .w-day .lo{
+      width: 54px;
+      text-align:right;
+      font-size: 26px;
+      font-weight: 900;
+      opacity: .55;
+    }
+    .w-day .hi{
+      width: 54px;
+      text-align:right;
+      font-size: 26px;
+      font-weight: 900;
+      opacity: .95;
+    }
+    .w-bar{
+      flex: 1 1 auto;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.18);
+      position: relative;
+      overflow:hidden;
+      margin: 0 8px;
+    }
+    .w-bar > span{
+      position:absolute;
+      top:0; bottom:0;
+      left: var(--l, 20%);
+      width: var(--w, 45%);
+      border-radius: 999px;
+      background: rgba(120, 220, 255, .85);
+      filter: drop-shadow(0 0 10px rgba(120,220,255,.22));
+    }
+
 </style>
 </head>
 
@@ -864,7 +1024,11 @@ body { margin: 0; }
       <div id="festive-header-line" aria-hidden="true"></div>
       
       <div id="main-row">
-        <div id="calendar"></div>
+        <div id="left-col">
+          <div id="calendar"></div>
+
+          <!-- Meals footer is inside left-col so it stays aligned with calendar days (sidebar no longer shifts it) -->
+</div>
 
         <aside id="sidebar" aria-label="Today Focus Sidebar">
           <div class="side-card">
