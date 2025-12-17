@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.15.2
+Version: v1.16.1
 Last Updated: 2025-12-15
 
 
@@ -2148,6 +2148,7 @@ function menuDateKey(startValue){
         // SECTION: WEATHER PANEL JS
         // Search: SECTION: WEATHER PANEL JS
         // =========================================================
+        try{
         const url =
           `https://api.open-meteo.com/v1/forecast` +
           `?latitude=${HOME_LAT}&longitude=${HOME_LON}` +
@@ -2293,6 +2294,23 @@ function menuDateKey(startValue){
             fc.appendChild(card);
           }
         }
+        }catch(e){
+          console.warn("Weather load error:", e);
+          const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+          set("weather-temp", "--°F");
+          set("weather-cond", "Weather error");
+          set("weather-hilo", "Hi/Lo: —");
+          set("weather-feels", "Feels: —");
+          set("weather-wind", "Wind: —");
+          set("weather-precip", "Precip: —");
+          const msg = (e && e.message) ? e.message : String(e);
+          set("weather-updated", msg);
+          const tl = document.getElementById("weather-timeline");
+          if(tl) tl.innerHTML = `<div class="wx-error">${msg}</div>`;
+          const fc = document.getElementById("weather-forecast");
+          if(fc) fc.innerHTML = `<div class="wx-error">${msg}</div>`;
+        }
+
       }
 
       // Kick off weather after DOM is ready; keep it independent of calendar load.
@@ -2304,12 +2322,13 @@ function menuDateKey(startValue){
       }
 
       function escapeHtml(str) {
+        // Avoid String.prototype.replaceAll for older embedded browsers
         return String(str)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#039;");
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
       }
     });
   </script>
