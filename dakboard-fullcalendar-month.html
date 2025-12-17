@@ -1,11 +1,11 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.15.0
+Version: v1.15.1
 Last Updated: 2025-12-15
 
 
-New in v1.15.0:
+New in v1.15.1:
 - Fix: Meals weekday header aligned with meals columns (single shared grid)
 - Re-enabled Christmas countdown chip
 - Sidebar Status shows Version (instead of Meals event count)
@@ -147,7 +147,7 @@ Notes:
 
     /* =========================================================
        SECTION: MEALS FOOTER CSS (alignment-safe)
-       - Header + grid share the EXACT same columns + gap
+       - Meals grid is 7 columns to match calendar (Sun–Sat)
        ========================================================= */
     #meals-footer {
       flex: 0 0 auto;
@@ -159,27 +159,13 @@ Notes:
     }
     #meals-footer.hidden { display: none !important; }
 
-    /* Weekday header aligned to meals grid */
-    #meals-header,
+    /* Meals grid aligned to calendar columns */
     #meals-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 10px;
       align-items: stretch;
     }
-
-    #meals-header { margin-bottom: 6px; }
-    #meals-header .day-h{
-      text-align: center;
-      font-weight: 900;
-      font-size: 0.82em;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.62);
-      user-select: none;
-      pointer-events: none;
-    }
-
     .meal-col {
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 12px;
@@ -957,27 +943,19 @@ body { margin: 0; }
       </div>
 
       <!-- =========================================================
-     SECTION: MEALS FOOTER (aligned header + meals grid)
+     SECTION: MEALS FOOTER (aligned to calendar columns)
+     - No separate day header row (menus align under calendar columns)
      - To edit styling: search "SECTION: MEALS FOOTER CSS"
      - To edit rendering: search "SECTION: MEALS FOOTER JS"
      ========================================================= -->
       <div id="meals-footer">
-        <div id="meals-header" aria-label="Meals Weekday Header">
-          <div class="day-h">Sun</div>
-          <div class="day-h">Mon</div>
-          <div class="day-h">Tue</div>
-          <div class="day-h">Wed</div>
-          <div class="day-h">Thu</div>
-          <div class="day-h">Fri</div>
-          <div class="day-h">Sat</div>
-        </div>
-        <div id="meals-grid" aria-label="Meals Grid"></div>
+<div id="meals-grid" aria-label="Meals Grid"></div>
       </div>
     </div>
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.15.0</div>
+    <div class="ver">v1.15.1</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
@@ -988,7 +966,7 @@ body { margin: 0; }
       // =========================================================
       // FEATURE TOGGLES (easy on/off)
       // =========================================================
-      const APP_VERSION = "v1.15.0";
+      const APP_VERSION = "v1.15.1";
       const SHOW_STATUS_BADGE = false;         // bottom-right version box
       const AUTO_HIDE_MEALS_FOOTER = true;     // hide footer on weekends or when no posted menu today
       const ENABLE_TODAY_FOCUS = true;         // highlight today's column + bigger event text
@@ -1190,7 +1168,21 @@ body { margin: 0; }
         return { items, sides };
       }
 
-      // =========================================================
+      
+
+function menuDateKey(startValue){
+  if (!startValue) return null;
+  // If it's already YYYY-MM-DD, keep it
+  if (typeof startValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(startValue)) return startValue;
+  // Otherwise parse as Date and return LOCAL day (prevents timezone off-by-one)
+  const d = new Date(startValue);
+  if (isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+// =========================================================
       // SECTION: MEALS FOOTER JS
       // =========================================================
       function renderMealsFooter(weekStart, mealsByDate) {
@@ -1258,7 +1250,7 @@ body { margin: 0; }
 
         const byDate = {};
         for (const ev of data) {
-          const dateKey = (ev && ev.start) ? String(ev.start).slice(0,10) : null;
+          const dateKey = (ev && ev.start) ? menuDateKey(ev.start) : null;
           const meal = ev && ev.extendedProps && ev.extendedProps.meal;
           const title = ev && ev.title ? String(ev.title) : "";
 
