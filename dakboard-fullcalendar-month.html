@@ -1,12 +1,19 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.13.1
+Version: v1.15.0
 Last Updated: 2025-12-15
 
 
-New in v1.13.1:
-- Fullscreen layout (calendar + sidebar on top, weather + Waze bottom)fver
+New in v1.15.0:
+- Fix: Meals weekday header aligned with meals columns (single shared grid)
+- Re-enabled Christmas countdown chip
+- Sidebar Status shows Version (instead of Meals event count)
+- Added SECTION MARKERS for easy search/replace
+
+Previous:
+- (from v1.13.1)
+- Fullscreen layout (calendar + sidebar on top, weather + Waze bottom)
 - Weather panel uses Open-Meteo in Fahrenheit (no API key)
 
 Previous:
@@ -138,7 +145,10 @@ Notes:
       min-height: 0;
     }
 
-    /* Meals footer is height-capped so it cannot steal calendar space */
+    /* =========================================================
+       SECTION: MEALS FOOTER CSS (alignment-safe)
+       - Header + grid share the EXACT same columns + gap
+       ========================================================= */
     #meals-footer {
       flex: 0 0 auto;
       max-height: 150px;
@@ -149,11 +159,25 @@ Notes:
     }
     #meals-footer.hidden { display: none !important; }
 
+    /* Weekday header aligned to meals grid */
+    #meals-header,
     #meals-grid {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 10px;
       align-items: stretch;
+    }
+
+    #meals-header { margin-bottom: 6px; }
+    #meals-header .day-h{
+      text-align: center;
+      font-weight: 900;
+      font-size: 0.82em;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.62);
+      user-select: none;
+      pointer-events: none;
     }
 
     .meal-col {
@@ -822,24 +846,7 @@ body { margin: 0; }
     .wx-day .t{font-size:13px;font-weight:800;opacity:0.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 
-    /* Meals footer alignment + tighter padding */
-    #meals-footer{display:flex;gap:10px;padding:8px 10px;}
-    .meals-day-box{padding:6px 8px;}
-
-
-/* Meals footer alignment: keep empty days in place but invisible */
-.meal-cell.empty{
-  visibility: hidden;      /* takes space, but not visible */
-  pointer-events: none;
-  border-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-#meals-footer{ padding-top: 4px; }
-#meals-grid{ gap: 8px; }
-
-
-/* -------- Weather (enhanced, more like iOS card) -------- */
+    /* -------- Weather (enhanced, more like iOS card) -------- */
 :root{
   --wx-now-temp: 3.4em;
   --wx-now-city: 1.2em;
@@ -944,19 +951,33 @@ body { margin: 0; }
               <span class="side-title-strong">Status</span>
               <span class="side-title-muted" id="side-last-refresh">—</span>
             </div>
-            <div class="side-sub" id="side-meals-status">Meals: —</div>
+            <div class="side-sub" id="side-meals-status">Version: —</div>
           </div>
         </aside>
       </div>
 
+      <!-- =========================================================
+     SECTION: MEALS FOOTER (aligned header + meals grid)
+     - To edit styling: search "SECTION: MEALS FOOTER CSS"
+     - To edit rendering: search "SECTION: MEALS FOOTER JS"
+     ========================================================= -->
       <div id="meals-footer">
-        <div id="meals-grid"></div>
+        <div id="meals-header" aria-label="Meals Weekday Header">
+          <div class="day-h">Sun</div>
+          <div class="day-h">Mon</div>
+          <div class="day-h">Tue</div>
+          <div class="day-h">Wed</div>
+          <div class="day-h">Thu</div>
+          <div class="day-h">Fri</div>
+          <div class="day-h">Sat</div>
+        </div>
+        <div id="meals-grid" aria-label="Meals Grid"></div>
       </div>
     </div>
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.11.2</div>
+    <div class="ver">v1.15.0</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
@@ -967,11 +988,12 @@ body { margin: 0; }
       // =========================================================
       // FEATURE TOGGLES (easy on/off)
       // =========================================================
-      const SHOW_STATUS_BADGE = true;         // bottom-right version box
+      const APP_VERSION = "v1.15.0";
+      const SHOW_STATUS_BADGE = false;         // bottom-right version box
       const AUTO_HIDE_MEALS_FOOTER = true;     // hide footer on weekends or when no posted menu today
       const ENABLE_TODAY_FOCUS = true;         // highlight today's column + bigger event text
-      const ENABLE_COUNTDOWN_CHIPS = false;     // "Game in…" chips
-      const ENABLE_CHRISTMAS_COUNTDOWN = true; // chip next to title
+      const ENABLE_COUNTDOWN_CHIPS = true;     // "Game in…" chips
+      const ENABLE_CHRISTMAS_COUNTDOWN = true;  // chip next to title // chip next to title
 
       const ENABLE_HOLIDAY_MODE = false;        // auto seasonal accents
       const HOLIDAY_MODE_PREVIEW = "";         // e.g. "christmas" | "halloween" | "newyear" | "" (auto)
@@ -1002,6 +1024,22 @@ body { margin: 0; }
       const sideMealsStatusEl = document.getElementById("side-meals-status");
       const menuStatusEl = document.getElementById("menu-status");
 
+      // =========================================================
+      // SECTION: VERSION DISPLAY (Status box)
+      // - Sidebar Status shows Version (requested)
+      // =========================================================
+      function setVersionDisplays() {
+        // Sidebar Status box (requested location)
+        if (sideMealsStatusEl) {
+          sideMealsStatusEl.innerHTML = `Version: <span class="ver">${APP_VERSION}</span>`;
+        }
+        // Optional bottom-right badge (if enabled)
+        const verEl = document.querySelector("#status-badge .ver");
+        if (verEl) verEl.textContent = APP_VERSION;
+      }
+
+      setVersionDisplays();
+
       function setLastRefreshed(reason) {
         const now = new Date();
         const suffix = reason ? ` (${reason})` : "";
@@ -1022,9 +1060,8 @@ body { margin: 0; }
         }
 
         if (sideMealsStatusEl) {
-          if (ok === true) sideMealsStatusEl.innerHTML = `Meals: <span class="ok">OK</span>${msg ? " - " + escapeHtml(msg) : ""}`;
-          else if (ok === false) sideMealsStatusEl.innerHTML = `Meals: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
-          else sideMealsStatusEl.innerHTML = `Meals: <span class="warn">loading…</span>`;
+          // Sidebar Status is reserved for version display.
+          // (Meals health stays in the bottom-right status badge if enabled.)
         }
       }
 
@@ -1153,6 +1190,9 @@ body { margin: 0; }
         return { items, sides };
       }
 
+      // =========================================================
+      // SECTION: MEALS FOOTER JS
+      // =========================================================
       function renderMealsFooter(weekStart, mealsByDate) {
         if (!mealsGrid) return;
         mealsGrid.innerHTML = "";
