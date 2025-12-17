@@ -1,11 +1,11 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.15.1
+Version: v1.15.2
 Last Updated: 2025-12-15
 
 
-New in v1.15.1:
+New in v1.15.2:
 - Fix: Meals weekday header aligned with meals columns (single shared grid)
 - Re-enabled Christmas countdown chip
 - Sidebar Status shows Version (instead of Meals event count)
@@ -155,7 +155,7 @@ Notes:
       overflow: hidden;
       background: linear-gradient(180deg, rgba(255,255,255,0.02), var(--mealsBg));
       border-top: 1px solid var(--mealsBorder);
-      padding: 8px 10px 10px;
+      padding: 8px 0 10px;
     }
     #meals-footer.hidden { display: none !important; }
 
@@ -546,7 +546,18 @@ Notes:
       padding: 0 10px 8px;
       box-sizing: border-box;
     }
-    #calendar{
+    
+    /* =========================================================
+       SECTION: CALENDAR STACK (calendar + meals share exact width)
+       ========================================================= */
+    #calendar-stack{
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+#calendar{
       flex: 1 1 auto;
       min-width: 0;
       min-height: 0;
@@ -911,7 +922,16 @@ body { margin: 0; }
       <div id="festive-header-line" aria-hidden="true"></div>
       
       <div id="main-row">
-        <div id="calendar"></div>
+        <div id="calendar-stack">
+          <div id="calendar"></div>
+
+          <!-- =========================================================
+               SECTION: MEALS FOOTER (aligned to calendar width)
+               ========================================================= -->
+          <div id="meals-footer">
+            <div id="meals-grid" aria-label="Meals Grid"></div>
+          </div>
+        </div>
 
         <aside id="sidebar" aria-label="Today Focus Sidebar">
           <div class="side-card">
@@ -948,14 +968,12 @@ body { margin: 0; }
      - To edit styling: search "SECTION: MEALS FOOTER CSS"
      - To edit rendering: search "SECTION: MEALS FOOTER JS"
      ========================================================= -->
-      <div id="meals-footer">
-<div id="meals-grid" aria-label="Meals Grid"></div>
-      </div>
+      
     </div>
   </div>
 
   <div id="status-badge">
-    <div class="ver">v1.15.1</div>
+    <div class="ver">v1.15.2</div>
     <div class="ref" id="last-refreshed">Last refreshed: —</div>
     <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
   </div>
@@ -966,7 +984,7 @@ body { margin: 0; }
       // =========================================================
       // FEATURE TOGGLES (easy on/off)
       // =========================================================
-      const APP_VERSION = "v1.15.1";
+      const APP_VERSION = "v1.15.2";
       const SHOW_STATUS_BADGE = false;         // bottom-right version box
       const AUTO_HIDE_MEALS_FOOTER = true;     // hide footer on weekends or when no posted menu today
       const ENABLE_TODAY_FOCUS = true;         // highlight today's column + bigger event text
