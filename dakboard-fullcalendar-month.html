@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.16.1
+Version: v1.16.2
 Last Updated: 2025-12-15
 
 
@@ -1295,7 +1295,7 @@ body { margin: 0; }
       // =========================================================
       // FEATURE TOGGLES (easy on/off)
       // =========================================================
-      const APP_VERSION = "v1.16.0";
+      const APP_VERSION = "v1.16.2";
       const SHOW_STATUS_BADGE = false;         // bottom-right version box
       const AUTO_HIDE_MEALS_FOOTER = true;     // hide footer on weekends or when no posted menu today
       const ENABLE_TODAY_FOCUS = true;         // highlight today's column + bigger event text
@@ -2136,6 +2136,24 @@ function menuDateKey(startValue){
         return m[code] ?? ("Weather " + code);
       }
 
+
+
+      function weatherCodeToIcon(code){
+        // Open-Meteo weather codes -> simple icon set (emoji, reliable in Dakboard)
+        if(code === 0) return "☀️";
+        if(code === 1) return "🌤️";
+        if(code === 2) return "⛅";
+        if(code === 3) return "☁️";
+        if(code === 45 || code === 48) return "🌫️";
+        if(code >= 51 && code <= 57) return "🌦️";
+        if(code >= 61 && code <= 67) return "🌧️";
+        if(code >= 71 && code <= 77) return "🌨️";
+        if(code >= 80 && code <= 82) return "🌧️";
+        if(code === 85 || code === 86) return "🌨️";
+        if(code === 95) return "⛈️";
+        if(code === 96 || code === 99) return "⛈️";
+        return "🌡️";
+      }
       function fmtTime(t){
         try{
           const d = new Date(t);
