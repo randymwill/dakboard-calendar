@@ -741,21 +741,168 @@ body { margin: 0; }
   position: relative;
 }
 
-/* Weather panel */
-#weather-panel{ padding: 18px 18px 14px 18px; display:flex; flex-direction:column; gap: 10px; }
-#weather-top{ display:flex; align-items:flex-end; justify-content:space-between; gap: 10px; }
-#weather-temp{ font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
-#weather-meta{ text-align:right; }
-#weather-meta .cond{ font-size: 18px; font-weight: 600; }
-#weather-meta .sub{ opacity: 0.75; font-size: 14px; margin-top: 2px; }
-#weather-stats{ display:flex; gap: 14px; flex-wrap:wrap; opacity:0.92; font-size: 14px; }
-.stat-pill{ padding: 8px 10px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
-#weather-forecast{ margin-top: auto; display:grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-.day-card{ padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
-.day-card .d{ font-size: 12px; opacity: 0.75; }
-.day-card .hi{ font-size: 16px; font-weight: 650; margin-top: 6px; }
-.day-card .lo{ font-size: 12px; opacity: 0.80; margin-top: 2px; }
-.day-card .p{ font-size: 12px; opacity: 0.80; margin-top: 6px; }
+/* =========================================================
+   SECTION: WEATHER PANEL CSS
+   Search: SECTION: WEATHER PANEL CSS
+   ========================================================= */
+#weather-panel{
+  padding: 16px 16px 14px 16px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+/* Top: current + today stats */
+#weather-top{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items:end;
+}
+
+#weather-now{
+  display:flex;
+  gap: 12px;
+  align-items:flex-end;
+  min-width:0;
+}
+
+#weather-icon{
+  font-size: 42px;
+  line-height: 1;
+  transform: translateY(-6px);
+  opacity: 0.95;
+}
+
+#weather-temp{
+  font-size: 66px;
+  font-weight: 850;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+#weather-now-meta{
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+  min-width:0;
+  padding-bottom: 4px;
+}
+
+#weather-cond{
+  font-size: 18px;
+  font-weight: 800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+#weather-updated{
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+#weather-today{
+  text-align:right;
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  align-items:flex-end;
+}
+
+#weather-hilo{
+  font-size: 16px;
+  font-weight: 850;
+  opacity: 0.95;
+}
+
+.wx-chiprow{ display:flex; gap: 8px; flex-wrap:wrap; justify-content:flex-end; }
+.wx-chip{
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  font-size: 13px;
+  font-weight: 750;
+  opacity: 0.92;
+}
+
+/* Timeline (2-hour intervals) */
+#weather-timeline{
+  display:flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+
+.wx-slot{
+  flex:1 1 0;
+  min-width:0;
+  border-radius: 14px;
+  padding: 10px 10px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+}
+
+.wx-slot .time{
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.80;
+}
+
+.wx-slot .temp{
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing:-0.01em;
+}
+
+.wx-slot .pop{
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.78;
+}
+
+.wx-slot .bar{
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  overflow:hidden;
+}
+.wx-slot .bar > i{
+  display:block;
+  height:100%;
+  width: 0%;
+  background: rgba(120,200,255,0.85);
+}
+
+/* Next 3 days */
+#weather-forecast{
+  margin-top: 2px;
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.day-card{
+  padding: 12px 12px 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  min-width:0;
+}
+
+.day-card .d{ font-size: 12px; opacity: 0.75; font-weight: 900; letter-spacing:0.06em; text-transform:uppercase;}
+.day-card .main{ display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:10px; }
+.day-card .ico{ font-size: 22px; line-height:1; }
+.day-card .hi{ font-size: 18px; font-weight: 900; }
+.day-card .lo{ font-size: 12px; opacity: 0.80; font-weight:800; }
+.day-card .p{ font-size: 12px; opacity: 0.82; margin-top: 6px; font-weight:750; }
+
+/* ========================================================= */
 
 /* Traffic */
 #traffic-panel iframe{ width:100%; height:100%; border:0; }
@@ -909,6 +1056,170 @@ body { margin: 0; }
 .wx-day .bar{ position:relative; height:10px; border-radius:999px; background: rgba(255,255,255,0.10); overflow:hidden; flex:1 1 auto; }
 .wx-day .fill{ position:absolute; top:0; bottom:0; border-radius:999px; background: linear-gradient(90deg, rgba(80,160,255,0.95), rgba(125,240,210,0.95)); }
 
+
+
+/* =========================================================
+   SECTION: WEATHER PANEL CSS OVERRIDES (v1.16.0)
+   Search: SECTION: WEATHER PANEL CSS OVERRIDES
+   ========================================================= */
+#weather-panel{
+  padding: 16px 16px 14px 16px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+/* Top: current + today stats */
+#weather-top{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items:end;
+}
+
+#weather-now{
+  display:flex;
+  gap: 12px;
+  align-items:flex-end;
+  min-width:0;
+}
+
+#weather-icon{
+  font-size: 42px;
+  line-height: 1;
+  transform: translateY(-6px);
+  opacity: 0.95;
+}
+
+#weather-temp{
+  font-size: 66px;
+  font-weight: 850;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+#weather-now-meta{
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+  min-width:0;
+  padding-bottom: 4px;
+}
+
+#weather-cond{
+  font-size: 18px;
+  font-weight: 800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+#weather-updated{
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+#weather-today{
+  text-align:right;
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  align-items:flex-end;
+}
+
+#weather-hilo{
+  font-size: 16px;
+  font-weight: 850;
+  opacity: 0.95;
+}
+
+.wx-chiprow{ display:flex; gap: 8px; flex-wrap:wrap; justify-content:flex-end; }
+.wx-chip{
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  font-size: 13px;
+  font-weight: 750;
+  opacity: 0.92;
+}
+
+/* Timeline (2-hour intervals) */
+#weather-timeline{
+  display:flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+
+.wx-slot{
+  flex:1 1 0;
+  min-width:0;
+  border-radius: 14px;
+  padding: 10px 10px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+}
+
+.wx-slot .time{
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.80;
+}
+
+.wx-slot .temp{
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing:-0.01em;
+}
+
+.wx-slot .pop{
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.78;
+}
+
+.wx-slot .bar{
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  overflow:hidden;
+}
+.wx-slot .bar > i{
+  display:block;
+  height:100%;
+  width: 0%;
+  background: rgba(120,200,255,0.85);
+}
+
+/* Next 3 days */
+#weather-forecast{
+  margin-top: 2px;
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.day-card{
+  padding: 12px 12px 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  min-width:0;
+}
+
+.day-card .d{ font-size: 12px; opacity: 0.75; font-weight: 900; letter-spacing:0.06em; text-transform:uppercase;}
+.day-card .main{ display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:10px; }
+.day-card .ico{ font-size: 22px; line-height:1; }
+.day-card .hi{ font-size: 18px; font-weight: 900; }
+.day-card .lo{ font-size: 12px; opacity: 0.80; font-weight:800; }
+.day-card .p{ font-size: 12px; opacity: 0.82; margin-top: 6px; font-weight:750; }
+
+/* ========================================================= */
 </style>
 </head>
 
@@ -984,7 +1295,7 @@ body { margin: 0; }
       // =========================================================
       // FEATURE TOGGLES (easy on/off)
       // =========================================================
-      const APP_VERSION = "v1.15.2";
+      const APP_VERSION = "v1.16.0";
       const SHOW_STATUS_BADGE = false;         // bottom-right version box
       const AUTO_HIDE_MEALS_FOOTER = true;     // hide footer on weekends or when no posted menu today
       const ENABLE_TODAY_FOCUS = true;         // highlight today's column + bigger event text
@@ -1833,11 +2144,16 @@ function menuDateKey(startValue){
       }
 
       async function loadWeather(){
+        // =========================================================
+        // SECTION: WEATHER PANEL JS
+        // Search: SECTION: WEATHER PANEL JS
+        // =========================================================
         const url =
           `https://api.open-meteo.com/v1/forecast` +
           `?latitude=${HOME_LAT}&longitude=${HOME_LON}` +
           `&current=temperature_2m,apparent_temperature,weathercode,wind_speed_10m` +
-          `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode,sunrise,sunset` +
+          `&hourly=temperature_2m,precipitation_probability,precipitation` +
+          `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weathercode,sunrise,sunset` +
           `&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch` +
           `&timezone=auto&forecast_days=5`;
 
@@ -1846,59 +2162,136 @@ function menuDateKey(startValue){
         const data = await res.json();
 
         const cur = data.current || {};
+        const hourly = data.hourly || {};
         const daily = data.daily || {};
 
         // Current
         const temp = Math.round(cur.temperature_2m ?? NaN);
         const feels = Math.round(cur.apparent_temperature ?? NaN);
         const wind = Math.round(cur.wind_speed_10m ?? NaN);
-        const cond = weatherCodeToText(cur.weathercode);
+        const code = cur.weathercode;
+        const cond = weatherCodeToText(code);
+
+        const iconEl = document.getElementById("weather-icon");
+        if(iconEl) iconEl.textContent = weatherCodeToIcon(code);
 
         document.getElementById("weather-temp").textContent = isFinite(temp) ? `${temp}°F` : `--°F`;
         document.getElementById("weather-cond").textContent = cond;
-        document.getElementById("weather-feels").textContent = isFinite(feels) ? `Feels like ${feels}°F` : `Feels like —`;
-        document.getElementById("weather-wind").textContent = isFinite(wind) ? `Wind: ${wind} mph` : `Wind: —`;
 
-        // Today stats from daily[0]
+        // Today hi/lo + precip max
         const hi = daily.temperature_2m_max?.[0];
         const lo = daily.temperature_2m_min?.[0];
-        const pop = daily.precipitation_probability_max?.[0];
-        const sunrise = daily.sunrise?.[0];
-        const sunset  = daily.sunset?.[0];
+        const popMax = daily.precipitation_probability_max?.[0];
+        const precipSum = daily.precipitation_sum?.[0];
 
         document.getElementById("weather-hilo").textContent =
-          (hi!=null && lo!=null) ? `Hi/Lo: ${Math.round(hi)}° / ${Math.round(lo)}°` : `Hi/Lo: —`;
-        document.getElementById("weather-precip").textContent =
-          (pop!=null) ? `Precip: ${Math.round(pop)}%` : `Precip: —`;
-        document.getElementById("weather-sun").textContent =
-          (sunrise && sunset) ? `Sun: ${fmtTime(sunrise)}–${fmtTime(sunset)}` : `Sun: —`;
+          (hi!=null && lo!=null) ? `${Math.round(hi)}° / ${Math.round(lo)}°` : `Hi/Lo: —`;
+
+        document.getElementById("weather-feels").textContent =
+          isFinite(feels) ? `Feels: ${feels}°F` : `Feels: —`;
+
+        document.getElementById("weather-wind").textContent =
+          isFinite(wind) ? `Wind: ${wind} mph` : `Wind: —`;
+
+        // Precip chip: max probability + daily sum (if available)
+        if(popMax!=null && precipSum!=null){
+          document.getElementById("weather-precip").textContent = `Precip: ${Math.round(popMax)}% • ${Number(precipSum).toFixed(2)}in`;
+        }else if(popMax!=null){
+          document.getElementById("weather-precip").textContent = `Precip: ${Math.round(popMax)}%`;
+        }else{
+          document.getElementById("weather-precip").textContent = `Precip: —`;
+        }
 
         document.getElementById("weather-updated").textContent =
           `Updated ${new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}`;
 
-        // Forecast cards
+        // ---------------------------------------------------------
+        // Timeline: next 24h at 2-hour intervals (temp + precip)
+        // ---------------------------------------------------------
+        const tl = document.getElementById("weather-timeline");
+        if(tl){
+          tl.innerHTML = "";
+
+          const times = hourly.time || [];
+          const temps = hourly.temperature_2m || [];
+          const pops  = hourly.precipitation_probability || [];
+          const precs = hourly.precipitation || [];
+
+          const now = new Date();
+          // Find the first hourly sample that is >= now
+          let startIdx = 0;
+          for(let i=0;i<times.length;i++){
+            const dt = new Date(times[i]);
+            if(dt >= now){ startIdx = i; break; }
+          }
+          // Snap to an even 2-hour boundary so the timeline looks consistent
+          if(startIdx % 2 === 1) startIdx = Math.max(0, startIdx - 1);
+
+          const slots = 12; // 24 hours @ 2-hour steps
+          for(let s=0; s<slots; s++){
+            const i = startIdx + (s*2);
+            if(i >= times.length) break;
+
+            const dt = new Date(times[i]);
+            const label = dt.toLocaleTimeString([], {hour:"numeric"});
+            const t = temps[i];
+            const pop = pops[i];
+            const pr = precs[i];
+
+            const slot = document.createElement("div");
+            slot.className = "wx-slot";
+            const popPct = (pop!=null && isFinite(pop)) ? Math.max(0, Math.min(100, Math.round(pop))) : null;
+            const barW = (popPct!=null) ? popPct : 0;
+
+            const popLine =
+              (popPct!=null && pr!=null && isFinite(pr)) ? `${popPct}% • ${Number(pr).toFixed(2)}in`
+              : (popPct!=null) ? `${popPct}%`
+              : `—`;
+
+            slot.innerHTML = `
+              <div class="time">${label}</div>
+              <div class="temp">${(t!=null && isFinite(t)) ? Math.round(t) + "°" : "—"}</div>
+              <div class="pop">${popLine}</div>
+              <div class="bar"><i style="width:${barW}%;"></i></div>
+            `;
+            tl.appendChild(slot);
+          }
+        }
+
+        // ---------------------------------------------------------
+        // Next 3 days (starting tomorrow)
+        // ---------------------------------------------------------
         const fc = document.getElementById("weather-forecast");
-        fc.innerHTML = "";
+        if(fc){
+          fc.innerHTML = "";
 
-        const times = daily.time || [];
-        for(let i=0;i<Math.min(5, times.length); i++){
-          const dt = new Date(times[i] + "T00:00:00");
-          const day = dt.toLocaleDateString([], { weekday: "short" });
-          const fhi = daily.temperature_2m_max?.[i];
-          const flo = daily.temperature_2m_min?.[i];
-          const fpop = daily.precipitation_probability_max?.[i];
-          const fcode = daily.weathercode?.[i];
-          const ftext = weatherCodeToText(fcode);
+          const days = daily.time || [];
+          for(let i=1; i<=3 && i<days.length; i++){
+            const dt = new Date(days[i] + "T00:00:00");
+            const day = dt.toLocaleDateString([], { weekday: "short" });
 
-          const card = document.createElement("div");
-          card.className = "day-card";
-          card.innerHTML = `
-            <div class="d">${day}</div>
-            <div class="hi">${(fhi!=null)?Math.round(fhi):"—"}°</div>
-            <div class="lo">Low ${(flo!=null)?Math.round(flo):"—"}°</div>
-            <div class="p">${(fpop!=null)?Math.round(fpop):"—"}% • ${escapeHtml(ftext)}</div>
-          `;
-          fc.appendChild(card);
+            const fhi = daily.temperature_2m_max?.[i];
+            const flo = daily.temperature_2m_min?.[i];
+            const fpop = daily.precipitation_probability_max?.[i];
+            const fcode = daily.weathercode?.[i];
+            const ftext = weatherCodeToText(fcode);
+            const fico = weatherCodeToIcon(fcode);
+
+            const card = document.createElement("div");
+            card.className = "day-card";
+            card.innerHTML = `
+              <div class="d">${day}</div>
+              <div class="main">
+                <div>
+                  <div class="hi">${(fhi!=null)?Math.round(fhi):"—"}°</div>
+                  <div class="lo">Low ${(flo!=null)?Math.round(flo):"—"}°</div>
+                </div>
+                <div class="ico" aria-hidden="true">${fico}</div>
+              </div>
+              <div class="p">${(fpop!=null)?Math.round(fpop):"—"}% • ${escapeHtml(ftext)}</div>
+            `;
+            fc.appendChild(card);
+          }
         }
       }
 
@@ -1924,24 +2317,34 @@ function menuDateKey(startValue){
 
   <div id="bottom-area">
     <section class="bottom-panel" id="weather-panel" aria-label="Weather">
+      <!-- =========================================================
+           SECTION: WEATHER PANEL HTML
+           Search: SECTION: WEATHER PANEL HTML
+           ========================================================= -->
       <div id="weather-top">
-        <div id="weather-temp">--°F</div>
-        <div id="weather-meta">
-          <div class="cond" id="weather-cond">Loading…</div>
-          <div class="sub" id="weather-feels">Feels like —</div>
-          <div class="sub" id="weather-updated">—</div>
+        <div id="weather-now">
+          <div id="weather-icon" aria-hidden="true">⛅</div>
+          <div>
+            <div id="weather-temp">--°F</div>
+          </div>
+          <div id="weather-now-meta">
+            <div class="cond" id="weather-cond">Loading…</div>
+            <div class="sub" id="weather-updated">—</div>
+          </div>
+        </div>
+
+        <div id="weather-today">
+          <div id="weather-hilo">Hi/Lo: —</div>
+          <div class="wx-chiprow">
+            <div class="wx-chip" id="weather-feels">Feels: —</div>
+            <div class="wx-chip" id="weather-wind">Wind: —</div>
+            <div class="wx-chip" id="weather-precip">Precip: —</div>
+          </div>
         </div>
       </div>
 
-      <div id="weather-stats">
-        <div class="stat-pill" id="weather-wind">Wind: —</div>
-        <div class="stat-pill" id="weather-precip">Precip: —</div>
-        <div class="stat-pill" id="weather-hilo">Hi/Lo: —</div>
-        <div class="stat-pill" id="weather-sun">Sun: —</div>
-      </div>
-
-      <div id="weather-hourly" aria-label="Hourly forecast"></div>
-      <div id="weather-forecast"></div>
+      <div id="weather-timeline" aria-label="Today timeline (2-hour intervals)"></div>
+      <div id="weather-forecast" aria-label="Next 3 days forecast"></div>
     </section>
 
         <div id="bottom-spacer"></div>
