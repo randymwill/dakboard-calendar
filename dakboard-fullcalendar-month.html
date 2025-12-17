@@ -1,11 +1,11 @@
 <!doctype html>
 <!--
 DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.14.0
+Version: v1.13.1
 Last Updated: 2025-12-15
 
 
-New in v1.14.0:
+New in v1.13.1:
 - Fullscreen layout (calendar + sidebar on top, weather + Waze bottom)
 - Weather panel uses Open-Meteo in Fahrenheit (no API key)
 
@@ -827,189 +827,83 @@ body { margin: 0; }
     .meals-day-box{padding:6px 8px;}
 
 
-    /* =========================================================
-       TIGHTEN CALENDAR VERTICAL SPACING (SHOW LAST WEEK)
-       ========================================================= */
-    /* Reduce space between weekday headers and grid */
-    .fc .fc-col-header-cell {
-      padding-top: 4px !important;
-      padding-bottom: 4px !important;
-    }
-
-    /* Pull events closer to the top of each day cell */
-    .fc .fc-daygrid-day-frame {
-      padding-top: 2px !important;
-    }
-
-    /* Reduce gap above day number */
-    .fc .fc-daygrid-day-number {
-      margin-top: 2px !important;
-    }
-
-    /* Slightly reduce event stack spacing (NOT font size) */
-    .fc .fc-daygrid-event {
-      margin-top: 2px !important;
-    }
+/* Meals footer alignment: keep empty days in place but invisible */
+.meal-cell.empty{
+  visibility: hidden;      /* takes space, but not visible */
+  pointer-events: none;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#meals-footer{ padding-top: 4px; }
+#meals-grid{ gap: 8px; }
 
 
-    /* =========================================================
-       LAYOUT: keep meals footer aligned with calendar grid
-       ========================================================= */
-    #main-row{
-      display:flex;
-      gap: 14px;
-      align-items: stretch;
-    }
-    #left-col{
-      flex: 1 1 auto;
-      min-width: 0;
-      display:flex;
-      flex-direction: column;
-    }
-    #calendar{
-      flex: 1 1 auto;
-      min-height: 0;
-    }
-    #meals-footer{
-      width: 100%;
-      margin-top: 8px;
-      /* keep footer from stealing space from calendar too aggressively */
-      max-height: 148px;
-    }
+/* -------- Weather (enhanced, more like iOS card) -------- */
+:root{
+  --wx-now-temp: 3.4em;
+  --wx-now-city: 1.2em;
+  --wx-hourly-temp: 1.05em;
+  --wx-daily-temp: 1.0em;
+}
+#weather-panel{
+  background: radial-gradient(120% 120% at 30% 10%, rgba(140,160,200,0.22) 0%, rgba(10,18,34,0.85) 55%, rgba(6,10,20,0.92) 100%);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.45);
+}
+#weather-now{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding: 2px 2px 8px 2px;
+}
+#weather-now .city{ font-size: var(--wx-now-city); font-weight: 800; letter-spacing: .02em; }
+#weather-now .temp{ font-size: var(--wx-now-temp); line-height: .95; font-weight: 900; }
+#weather-now .meta{ display:flex; gap:10px; flex-wrap:wrap; opacity:.9; font-size:.95em; }
+#weather-now .chip{ border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); padding:4px 8px; border-radius:999px; }
+#weather-now .right{ text-align:right; display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+#weather-now .icon{ font-size:2.1em; line-height:1; }
+#weather-now .cond{ font-weight:800; }
+#weather-now .hilow{ opacity:.9; font-weight:700; }
 
+#weather-hourly{
+  display:flex; gap:10px;
+  padding: 8px 0 10px 0;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  margin: 6px 0 10px 0;
+}
+.wx-hour{
+  flex:1 1 0; min-width:0;
+  text-align:center;
+  padding: 8px 6px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.wx-hour .t{ opacity:.85; font-weight:800; font-size:.95em; }
+.wx-hour .i{ font-size:1.35em; margin:6px 0; }
+.wx-hour .v{ font-size: var(--wx-hourly-temp); font-weight:900; }
 
-    /* =========================================================
-       WEATHER (more iOS-like card)
-       ========================================================= */
-    #weather-card{
-      display:flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 18px 18px 14px;
-      border-radius: 22px;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.14);
-      box-shadow: 0 18px 44px rgba(0,0,0,0.35);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      overflow:hidden;
-      height: 100%;
-      width: 100%;
-    }
-    .w-top{
-      display:flex;
-      align-items:flex-start;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    .w-place{
-      font-weight: 800;
-      letter-spacing: .2px;
-      font-size: 34px;
-      line-height: 1.05;
-      opacity: .98;
-    }
-    .w-temp{
-      font-weight: 900;
-      font-size: 90px;
-      line-height: .95;
-      letter-spacing: -1px;
-    }
-    .w-cond{
-      font-size: 30px;
-      font-weight: 800;
-      text-align:right;
-      opacity: .95;
-    }
-    .w-hilo{
-      font-size: 26px;
-      font-weight: 800;
-      text-align:right;
-      opacity: .9;
-      margin-top: 4px;
-    }
-    .w-divider{
-      height: 1px;
-      background: rgba(255,255,255,0.16);
-      margin: 14px 0 12px;
-    }
-    .w-hourly{
-      display:flex;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .w-hour{
-      flex: 1 1 0;
-      text-align:center;
-    }
-    .w-hour .t{
-      font-size: 20px;
-      opacity: .85;
-      font-weight: 800;
-    }
-    .w-hour .i{
-      font-size: 28px;
-      margin: 6px 0 6px;
-      opacity:.95;
-    }
-    .w-hour .v{
-      font-size: 26px;
-      font-weight: 900;
-    }
-    .w-daily{
-      margin-top: 12px;
-      display:flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .w-day{
-      display:flex;
-      align-items:center;
-      gap: 12px;
-    }
-    .w-day .d{
-      width: 56px;
-      font-size: 26px;
-      font-weight: 900;
-      opacity: .95;
-    }
-    .w-day .ic{
-      width: 40px;
-      text-align:center;
-      font-size: 26px;
-    }
-    .w-day .lo{
-      width: 54px;
-      text-align:right;
-      font-size: 26px;
-      font-weight: 900;
-      opacity: .55;
-    }
-    .w-day .hi{
-      width: 54px;
-      text-align:right;
-      font-size: 26px;
-      font-weight: 900;
-      opacity: .95;
-    }
-    .w-bar{
-      flex: 1 1 auto;
-      height: 10px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.18);
-      position: relative;
-      overflow:hidden;
-      margin: 0 8px;
-    }
-    .w-bar > span{
-      position:absolute;
-      top:0; bottom:0;
-      left: var(--l, 20%);
-      width: var(--w, 45%);
-      border-radius: 999px;
-      background: rgba(120, 220, 255, .85);
-      filter: drop-shadow(0 0 10px rgba(120,220,255,.22));
-    }
+#weather-forecast{ display:flex; flex-direction:column; gap:10px; }
+.wx-day{
+  display:grid;
+  grid-template-columns: 54px 40px 1fr;
+  gap:10px;
+  align-items:center;
+  padding: 10px 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.wx-day .d{ font-weight:900; opacity:.95; }
+.wx-day .i{ font-size:1.35em; text-align:center; }
+.wx-day .temps{ display:flex; align-items:center; gap:10px; font-size: var(--wx-daily-temp); }
+.wx-day .lo{ opacity:.78; font-weight:800; width:46px; text-align:right; }
+.wx-day .hi{ font-weight:900; width:46px; }
+.wx-day .bar{ position:relative; height:10px; border-radius:999px; background: rgba(255,255,255,0.10); overflow:hidden; flex:1 1 auto; }
+.wx-day .fill{ position:absolute; top:0; bottom:0; border-radius:999px; background: linear-gradient(90deg, rgba(80,160,255,0.95), rgba(125,240,210,0.95)); }
 
 </style>
 </head>
@@ -1024,11 +918,7 @@ body { margin: 0; }
       <div id="festive-header-line" aria-hidden="true"></div>
       
       <div id="main-row">
-        <div id="left-col">
-          <div id="calendar"></div>
-
-          <!-- Meals footer is inside left-col so it stays aligned with calendar days (sidebar no longer shifts it) -->
-</div>
+        <div id="calendar"></div>
 
         <aside id="sidebar" aria-label="Today Focus Sidebar">
           <div class="side-card">
@@ -1853,6 +1743,22 @@ body { margin: 0; }
       const HOME_LON = -90.45877499401288;
       const WEATHER_REFRESH_MINUTES = 10;
 
+      
+      function weatherCodeToEmoji(code, isDay=true){
+        // Simple, readable icons that pop on a TV
+        const c = Number(code);
+        if ([0].includes(c)) return isDay ? "☀️" : "🌙";
+        if ([1,2].includes(c)) return isDay ? "🌤️" : "☁️";
+        if ([3].includes(c)) return "☁️";
+        if ([45,48].includes(c)) return "🌫️";
+        if ([51,53,55,56,57].includes(c)) return "🌦️";
+        if ([61,63,65,80,81,82].includes(c)) return "🌧️";
+        if ([66,67].includes(c)) return "🌧️";
+        if ([71,73,75,77,85,86].includes(c)) return "❄️";
+        if ([95,96,99].includes(c)) return "⛈️";
+        return "☁️";
+      }
+
       function weatherCodeToText(code){
         const m = {
           0:"Clear",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",
@@ -1984,6 +1890,7 @@ body { margin: 0; }
         <div class="stat-pill" id="weather-sun">Sun: —</div>
       </div>
 
+      <div id="weather-hourly" aria-label="Hourly forecast"></div>
       <div id="weather-forecast"></div>
     </section>
 
