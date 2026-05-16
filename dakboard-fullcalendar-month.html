@@ -1,14 +1,15 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.15.0
+Version: v1.16.0
 
-v1.15.0 cleanup/stabilization:
-- Rebuilt single-file layout around explicit calendar/sidebar/weather/traffic regions
-- Meals footer lives inside the calendar column and pixel-locks to FullCalendar headers
-- Christmas countdown is live and independent of holiday mode
-- Sidebar Status shows version and last refresh
-- Weather card rebuilt in a richer iOS-inspired style using Open-Meteo Fahrenheit data
+v1.16.0 family operations update:
+- Removed weather panel
+- Added Williams Family Calendar GitHub Pages ICS feed
+- Added traffic alert panel shell for a future traffic API worker
+- Added Mary-Jean camp info panel populated from calendar events
+- Changed Christmas countdown to next major date countdown
+- School meals footer now appears whenever the current week has menu data
 -->
 <html lang="en">
 <head>
@@ -542,199 +543,125 @@ v1.15.0 cleanup/stabilization:
       font-weight: 720;
     }
 
-    #weather-panel {
-      position: relative;
+    #traffic-alert-panel,
+    #camp-panel {
+      padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      padding: 18px;
       background:
-        radial-gradient(120% 110% at 26% 0%, rgba(95,180,255,0.30) 0%, rgba(25,65,108,0.24) 36%, transparent 67%),
-        linear-gradient(145deg, rgba(16,38,64,0.96), rgba(8,13,29,0.97) 56%, rgba(14,26,45,0.97));
+        radial-gradient(105% 90% at 18% 0%, rgba(34,211,238,0.16), transparent 58%),
+        linear-gradient(180deg, rgba(13,26,43,0.96), rgba(7,16,28,0.97));
     }
 
-    #weather-panel::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 32%);
-      opacity: 0.7;
-    }
-
-    #weather-panel > * {
-      position: relative;
-      z-index: 1;
-    }
-
-    #weather-now {
+    .panel-head {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      min-width: 0;
+      gap: 12px;
     }
 
-    .wx-city {
-      color: rgba(255,255,255,0.90);
-      font-size: 1.18em;
-      font-weight: 800;
-      line-height: 1.1;
-    }
-
-    .wx-temp {
-      margin-top: 2px;
-      font-size: 4.5em;
+    .panel-title {
+      font-size: 1.02em;
       font-weight: 900;
-      line-height: 0.92;
       letter-spacing: 0;
     }
 
-    .wx-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-top: 8px;
-    }
-
-    .wx-chip {
-      padding: 4px 8px;
+    .panel-chip {
+      padding: 4px 9px;
       border: 1px solid rgba(255,255,255,0.13);
       border-radius: 999px;
       background: rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.78);
+      color: rgba(255,255,255,0.72);
       font-size: 0.72em;
-      font-weight: 750;
+      font-weight: 820;
       white-space: nowrap;
     }
 
-    .wx-now-right {
-      flex: 0 0 auto;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 5px;
-      text-align: right;
+    .traffic-status {
+      padding: 13px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.16);
     }
 
-    .wx-big-icon {
-      font-size: 2.55em;
+    .traffic-status.good { border-color: rgba(34,197,94,0.34); }
+    .traffic-status.watch { border-color: rgba(250,204,21,0.42); }
+    .traffic-status.bad { border-color: rgba(239,68,68,0.52); }
+
+    .traffic-level {
+      font-size: 1.5em;
+      font-weight: 950;
       line-height: 1;
     }
 
-    .wx-cond {
-      max-width: 170px;
+    .traffic-detail {
+      margin-top: 7px;
+      color: rgba(255,255,255,0.70);
+      font-size: 0.86em;
+      font-weight: 750;
+      line-height: 1.28;
+    }
+
+    .traffic-meter {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+    }
+
+    .traffic-meter > span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #22c55e, #facc15, #ef4444);
+    }
+
+    .mini-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .mini-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 9px;
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .mini-date {
+      color: rgba(255,255,255,0.72);
+      font-size: 0.78em;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .mini-title,
+    .mini-detail {
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .mini-title {
+      font-size: 0.90em;
       font-weight: 850;
     }
 
-    .wx-hilo {
-      color: rgba(255,255,255,0.76);
-      font-size: 0.88em;
-      font-weight: 760;
-    }
-
-    #weather-hourly {
-      display: flex;
-      gap: 8px;
-      padding: 10px 0;
-      border-top: 1px solid rgba(255,255,255,0.13);
-      border-bottom: 1px solid rgba(255,255,255,0.13);
-    }
-
-    .wx-hour {
-      flex: 1 1 0;
-      min-width: 0;
-      padding: 8px 5px;
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.055);
-      text-align: center;
-    }
-
-    .wx-hour .time {
-      color: rgba(255,255,255,0.68);
-      font-size: 0.72em;
-      font-weight: 830;
-    }
-
-    .wx-hour .icon {
-      margin: 5px 0 3px;
-      font-size: 1.22em;
-      line-height: 1;
-    }
-
-    .wx-hour .temp {
-      font-size: 0.94em;
-      font-weight: 900;
-    }
-
-    #weather-forecast {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      min-height: 0;
-    }
-
-    .wx-day {
-      display: grid;
-      grid-template-columns: 48px 32px 1fr;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      padding: 8px 9px;
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.048);
-    }
-
-    .wx-day .day {
-      font-size: 0.78em;
-      font-weight: 900;
-    }
-
-    .wx-day .icon {
-      text-align: center;
-      font-size: 1.15em;
-    }
-
-    .wx-range {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      min-width: 0;
-    }
-
-    .wx-low,
-    .wx-high {
-      width: 34px;
-      font-size: 0.80em;
-      font-weight: 850;
-    }
-
-    .wx-low {
-      color: rgba(255,255,255,0.58);
-      text-align: right;
-    }
-
-    .wx-high { color: rgba(255,255,255,0.90); }
-
-    .wx-bar {
-      position: relative;
-      flex: 1 1 auto;
-      height: 9px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.11);
-    }
-
-    .wx-fill {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #5aa7ff, #7df0d2, #ffd166);
+    .mini-detail {
+      margin-top: 2px;
+      color: rgba(255,255,255,0.62);
+      font-size: 0.76em;
+      font-weight: 720;
     }
 
     #traffic-panel {
@@ -776,7 +703,6 @@ v1.15.0 cleanup/stabilization:
       .fc .fc-toolbar-title { font-size: 1.38em; }
       .fc .evt-title { font-size: 1.02em; }
       .meal-col { min-height: 76px; padding: 11px 10px 10px; }
-      .wx-temp { font-size: 4.9em; }
     }
 
     @media (max-width: 1200px) {
@@ -831,31 +757,38 @@ v1.15.0 cleanup/stabilization:
     </section>
 
     <section id="bottom-area">
-      <section class="bottom-panel" id="weather-panel" aria-label="Weather">
-        <div id="weather-now">
-          <div>
-            <div class="wx-city">Saint Louis</div>
-            <div class="wx-temp" id="weather-temp">--°</div>
-            <div class="wx-meta">
-              <span class="wx-chip" id="weather-feels">Feels —</span>
-              <span class="wx-chip" id="weather-wind">Wind —</span>
-              <span class="wx-chip" id="weather-precip">Precip —</span>
-              <span class="wx-chip" id="weather-updated">Updated —</span>
+      <section class="bottom-panel" id="traffic-alert-panel" aria-label="Traffic alerts">
+        <div class="panel-head">
+          <div class="panel-title">Traffic Watch</div>
+          <div class="panel-chip" id="traffic-updated">Not connected</div>
+        </div>
+        <div class="traffic-status watch" id="traffic-status-card">
+          <div class="traffic-level" id="traffic-level">Map only</div>
+          <div class="traffic-detail" id="traffic-detail">
+            Add a small traffic API worker to turn this into green/yellow/red alerts for your area.
+          </div>
+        </div>
+        <div class="traffic-meter" aria-hidden="true"><span id="traffic-meter-fill"></span></div>
+        <div class="mini-list">
+          <div class="mini-item">
+            <div class="mini-date">Plan</div>
+            <div>
+              <div class="mini-title">Recommended alert source</div>
+              <div class="mini-detail">Cloudflare Worker + Google Routes API or TomTom Traffic API.</div>
             </div>
           </div>
-          <div class="wx-now-right">
-            <div class="wx-big-icon" id="weather-icon">☁️</div>
-            <div class="wx-cond" id="weather-cond">Loading…</div>
-            <div class="wx-hilo" id="weather-hilo">H: --° L: --°</div>
-          </div>
         </div>
-        <div id="weather-hourly" aria-label="Hourly forecast">
-          <div class="load-note">Loading hourly forecast…</div>
-        </div>
-        <div id="weather-forecast" aria-label="Daily forecast"></div>
       </section>
 
-      <div id="bottom-spacer" aria-hidden="true"></div>
+      <section class="bottom-panel" id="camp-panel" aria-label="Mary-Jean camp schedule">
+        <div class="panel-head">
+          <div class="panel-title">Mary-Jean Camp</div>
+          <div class="panel-chip" id="camp-count">Loading</div>
+        </div>
+        <div class="mini-list" id="camp-list">
+          <div class="load-note">Looking for upcoming camp details…</div>
+        </div>
+      </section>
 
       <section class="bottom-panel" id="traffic-panel" aria-label="Traffic map">
         <div id="traffic-label">Traffic</div>
@@ -872,19 +805,19 @@ v1.15.0 cleanup/stabilization:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.15.0";
+      const APP_VERSION = "v1.16.0";
       const ENABLE_HOLIDAY_MODE = false;
-      const ENABLE_CHRISTMAS_COUNTDOWN = true;
+      const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
-      const AUTO_HIDE_MEALS_FOOTER = true;
+      const AUTO_HIDE_MEALS_FOOTER = false;
 
       const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
+      const WILLIAMS_ICS_URL = "https://randymwill.github.io/williams-family-calendar/calendar.ics";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
-      const HOME_LAT = 38.654398639984805;
-      const HOME_LON = -90.45877499401288;
+      const TRAFFIC_STATUS_URL = "";
 
       const AUTO_REFRESH_MINUTES = 10;
-      const WEATHER_REFRESH_MINUTES = 10;
+      const TRAFFIC_REFRESH_MINUTES = 5;
       const COUNTDOWN_LOOKAHEAD_DAYS = 14;
       const BREAKFAST_MAX_ITEMS = 2;
       const LUNCH_MAX_ENTREES = 3;
@@ -898,7 +831,14 @@ v1.15.0 cleanup/stabilization:
         todayUpcoming: document.getElementById("today-upcoming"),
         todayGames: document.getElementById("today-games"),
         sideRefresh: document.getElementById("side-last-refresh"),
-        sideVersion: document.getElementById("side-status-version")
+        sideVersion: document.getElementById("side-status-version"),
+        campList: document.getElementById("camp-list"),
+        campCount: document.getElementById("camp-count"),
+        trafficUpdated: document.getElementById("traffic-updated"),
+        trafficStatusCard: document.getElementById("traffic-status-card"),
+        trafficLevel: document.getElementById("traffic-level"),
+        trafficDetail: document.getElementById("traffic-detail"),
+        trafficMeterFill: document.getElementById("traffic-meter-fill")
       };
 
       if (!ENABLE_HOLIDAY_MODE) {
@@ -1008,26 +948,58 @@ v1.15.0 cleanup/stabilization:
         return "var(--other)";
       }
 
-      function holidayLabelForDate(date) {
-        const m = date.getMonth() + 1;
-        const d = date.getDate();
-        if (m === 12 && d === 24) return "Christmas Eve";
-        if (m === 12 && d === 25) return "Christmas Day";
-        if (m === 12 && d === 31) return "New Year's Eve";
-        return "";
+      function nthWeekdayOfMonth(year, monthIndex, weekday, nth) {
+        const date = new Date(year, monthIndex, 1);
+        const offset = (weekday - date.getDay() + 7) % 7;
+        date.setDate(1 + offset + (nth - 1) * 7);
+        return date;
       }
 
-      function updateChristmasChip() {
-        if (!ENABLE_CHRISTMAS_COUNTDOWN) return;
+      function lastWeekdayOfMonth(year, monthIndex, weekday) {
+        const date = new Date(year, monthIndex + 1, 0);
+        const offset = (date.getDay() - weekday + 7) % 7;
+        date.setDate(date.getDate() - offset);
+        return date;
+      }
+
+      function majorDatesForYear(year) {
+        return [
+          { label: "Memorial Day", icon: "🇺🇸", date: lastWeekdayOfMonth(year, 4, 1) },
+          { label: "Independence Day", icon: "🇺🇸", date: new Date(year, 6, 4) },
+          { label: "First Day of School", icon: "🎒", date: new Date(year, 7, 25) },
+          { label: "Labor Day", icon: "🇺🇸", date: nthWeekdayOfMonth(year, 8, 1, 1) },
+          { label: "Halloween", icon: "🎃", date: new Date(year, 9, 31) },
+          { label: "Thanksgiving", icon: "🦃", date: nthWeekdayOfMonth(year, 10, 4, 4) },
+          { label: "Christmas", icon: "🎄", date: new Date(year, 11, 25) },
+          { label: "New Year's Day", icon: "✨", date: new Date(year + 1, 0, 1) }
+        ].map(item => {
+          item.date.setHours(0, 0, 0, 0);
+          return item;
+        });
+      }
+
+      function nextMajorDate(now = new Date()) {
+        return majorDatesForYear(now.getFullYear())
+          .concat(majorDatesForYear(now.getFullYear() + 1))
+          .find(item => item.date.getTime() > now.getTime());
+      }
+
+      function holidayLabelForDate(date) {
+        const match = majorDatesForYear(date.getFullYear()).find(item => sameDay(item.date, date));
+        return match ? `${match.icon} ${match.label}` : "";
+      }
+
+      function updateMajorDateChip() {
+        if (!ENABLE_MAJOR_DATE_COUNTDOWN) return;
 
         const titleEl = document.querySelector(".fc-toolbar-title");
         if (!titleEl) return;
 
         const now = new Date();
-        let christmas = new Date(now.getFullYear(), 11, 25, 0, 0, 0, 0);
-        if (now > christmas) christmas = new Date(now.getFullYear() + 1, 11, 25, 0, 0, 0, 0);
+        const target = nextMajorDate(now);
+        if (!target) return;
 
-        const totalSeconds = Math.max(0, Math.floor((christmas.getTime() - now.getTime()) / 1000));
+        const totalSeconds = Math.max(0, Math.floor((target.date.getTime() - now.getTime()) / 1000));
         const days = Math.floor(totalSeconds / 86400);
         const hours = Math.floor((totalSeconds % 86400) / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -1039,7 +1011,7 @@ v1.15.0 cleanup/stabilization:
 
         titleEl.insertAdjacentHTML(
           "beforeend",
-          `<span class="title-chip">🎄 <span class="muted">Christmas</span> ${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s</span>`
+          `<span class="title-chip">${target.icon} <span class="muted">${escapeHtml(target.label)}</span> ${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s</span>`
         );
       }
 
@@ -1237,12 +1209,9 @@ v1.15.0 cleanup/stabilization:
 
       function shouldShowMealsFooter(mealsByDate) {
         if (!AUTO_HIDE_MEALS_FOOTER) return true;
-        const today = new Date();
-        const dow = today.getDay();
-        if (dow === 0 || dow === 6) return false;
-        const info = mealsByDate[toYYYYMMDD(today)];
-        if (!info) return false;
-        return Boolean(info.breakfastItems.length || info.lunchEntrees.length || info.lunchSides);
+        return Object.values(mealsByDate || {}).some(info => {
+          return Boolean(info.breakfastItems.length || info.lunchEntrees.length || info.lunchSides);
+        });
       }
 
       function setMealsFooterVisible(visible) {
@@ -1329,153 +1298,111 @@ v1.15.0 cleanup/stabilization:
         renderMealsFooter(weekStart, byDate);
       }
 
-      function weatherCodeToEmoji(code, isDay = true) {
-        const c = Number(code);
-        if (c === 0) return isDay ? "☀️" : "🌙";
-        if ([1, 2].includes(c)) return isDay ? "🌤️" : "☁️";
-        if (c === 3) return "☁️";
-        if ([45, 48].includes(c)) return "🌫️";
-        if ([51, 53, 55, 56, 57].includes(c)) return "🌦️";
-        if ([61, 63, 65, 66, 67, 80, 81, 82].includes(c)) return "🌧️";
-        if ([71, 73, 75, 77, 85, 86].includes(c)) return "❄️";
-        if ([95, 96, 99].includes(c)) return "⛈️";
-        return "☁️";
+      function cleanText(value) {
+        return String(value || "").replace(/\\n/g, " ").replace(/\s+/g, " ").trim();
       }
 
-      function weatherCodeToText(code) {
-        const labels = {
-          0: "Clear",
-          1: "Mainly clear",
-          2: "Partly cloudy",
-          3: "Overcast",
-          45: "Fog",
-          48: "Rime fog",
-          51: "Light drizzle",
-          53: "Drizzle",
-          55: "Dense drizzle",
-          56: "Freezing drizzle",
-          57: "Freezing drizzle",
-          61: "Light rain",
-          63: "Rain",
-          65: "Heavy rain",
-          66: "Freezing rain",
-          67: "Freezing rain",
-          71: "Light snow",
-          73: "Snow",
-          75: "Heavy snow",
-          77: "Snow grains",
-          80: "Rain showers",
-          81: "Rain showers",
-          82: "Violent showers",
-          85: "Snow showers",
-          86: "Snow showers",
-          95: "Thunderstorm",
-          96: "Thunderstorm hail",
-          99: "Thunderstorm hail"
-        };
-        return labels[Number(code)] || "Weather";
+      function eventLocation(event) {
+        return cleanText(event.extendedProps && event.extendedProps.location);
       }
 
-      async function loadWeather() {
-        const url =
-          `https://api.open-meteo.com/v1/forecast` +
-          `?latitude=${HOME_LAT}&longitude=${HOME_LON}` +
-          `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m,is_day` +
-          `&hourly=temperature_2m,weather_code` +
-          `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code,sunrise,sunset` +
-          `&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch` +
-          `&timezone=auto&forecast_days=5`;
-
-        try {
-          const response = await fetch(url, { cache: "no-store" });
-          if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
-          const data = await response.json();
-          renderWeather(data);
-        } catch (err) {
-          document.getElementById("weather-cond").textContent = "Weather unavailable";
-          document.getElementById("weather-updated").textContent = err && err.message ? err.message : "Error";
-        }
+      function eventDescription(event) {
+        return cleanText(event.extendedProps && event.extendedProps.description);
       }
 
-      function renderWeather(data) {
-        const current = data.current || {};
-        const hourly = data.hourly || {};
-        const daily = data.daily || {};
-        const currentCode = current.weather_code;
-        const isDay = current.is_day !== 0;
-        const temp = Math.round(current.temperature_2m);
-        const feels = Math.round(current.apparent_temperature);
-        const wind = Math.round(current.wind_speed_10m);
-        const pop = daily.precipitation_probability_max && daily.precipitation_probability_max[0];
-        const hi = daily.temperature_2m_max && Math.round(daily.temperature_2m_max[0]);
-        const lo = daily.temperature_2m_min && Math.round(daily.temperature_2m_min[0]);
-
-        document.getElementById("weather-temp").textContent = Number.isFinite(temp) ? `${temp}°` : "--°";
-        document.getElementById("weather-icon").textContent = weatherCodeToEmoji(currentCode, isDay);
-        document.getElementById("weather-cond").textContent = weatherCodeToText(currentCode);
-        document.getElementById("weather-hilo").textContent = `H:${Number.isFinite(hi) ? hi : "--"}° L:${Number.isFinite(lo) ? lo : "--"}°`;
-        document.getElementById("weather-feels").textContent = Number.isFinite(feels) ? `Feels ${feels}°` : "Feels —";
-        document.getElementById("weather-wind").textContent = Number.isFinite(wind) ? `Wind ${wind} mph` : "Wind —";
-        document.getElementById("weather-precip").textContent = pop != null ? `Precip ${Math.round(pop)}%` : "Precip —";
-        document.getElementById("weather-updated").textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
-
-        renderHourly(hourly);
-        renderDaily(daily);
+      function isCampEvent(event) {
+        const haystack = `${event.title || ""} ${eventLocation(event)} ${eventDescription(event)}`;
+        return /camp|science center|t-shirt|dashboard sign/i.test(haystack);
       }
 
-      function renderHourly(hourly) {
-        const container = document.getElementById("weather-hourly");
-        container.innerHTML = "";
-        const times = hourly.time || [];
-        const temps = hourly.temperature_2m || [];
-        const codes = hourly.weather_code || [];
+      function renderCampPanel(calendar) {
+        if (!els.campList) return;
+
         const now = new Date();
-        let startIdx = times.findIndex(time => new Date(time) >= now);
-        if (startIdx < 0) startIdx = 0;
+        const campEvents = calendar.getEvents()
+          .filter(event => event.start && (event.end || event.start) >= now && isCampEvent(event))
+          .sort((a, b) => a.start - b.start)
+          .slice(0, 5);
 
-        for (let slot = 0; slot < 6; slot++) {
-          const idx = startIdx + slot * 2;
-          if (idx >= times.length) break;
-          const dt = new Date(times[idx]);
-          const temp = Math.round(temps[idx]);
-          container.insertAdjacentHTML("beforeend", `
-            <div class="wx-hour">
-              <div class="time">${escapeHtml(dt.toLocaleTimeString([], { hour: "numeric" }))}</div>
-              <div class="icon">${weatherCodeToEmoji(codes[idx], true)}</div>
-              <div class="temp">${Number.isFinite(temp) ? temp : "--"}°</div>
-            </div>`);
+        if (els.campCount) {
+          els.campCount.textContent = campEvents.length ? `${campEvents.length} upcoming` : "No upcoming";
         }
-      }
 
-      function renderDaily(daily) {
-        const container = document.getElementById("weather-forecast");
-        container.innerHTML = "";
-        const days = daily.time || [];
-        const highs = daily.temperature_2m_max || [];
-        const lows = daily.temperature_2m_min || [];
-        const codes = daily.weather_code || [];
-        const validTemps = highs.concat(lows).filter(n => Number.isFinite(Number(n))).map(Number);
-        const minAll = validTemps.length ? Math.min(...validTemps) : 0;
-        const maxAll = validTemps.length ? Math.max(...validTemps) : 1;
-        const span = Math.max(1, maxAll - minAll);
+        els.campList.innerHTML = "";
+        if (!campEvents.length) {
+          els.campList.innerHTML = `
+            <div class="mini-item">
+              <div class="mini-date">Camp</div>
+              <div>
+                <div class="mini-title">No upcoming camp items found</div>
+                <div class="mini-detail">Camp events will appear here when they are in the calendar feed.</div>
+              </div>
+            </div>`;
+          return;
+        }
 
-        for (let i = 0; i < Math.min(5, days.length); i++) {
-          const dt = new Date(`${days[i]}T00:00:00`);
-          const low = Math.round(lows[i]);
-          const high = Math.round(highs[i]);
-          const hasRange = Number.isFinite(low) && Number.isFinite(high);
-          const left = hasRange ? Math.max(0, Math.min(92, ((low - minAll) / span) * 82)) : 0;
-          const width = hasRange ? Math.max(10, Math.min(96 - left, ((high - low) / span) * 82 + 10)) : 0;
-          container.insertAdjacentHTML("beforeend", `
-            <div class="wx-day">
-              <div class="day">${escapeHtml(dt.toLocaleDateString([], { weekday: "short" }))}</div>
-              <div class="icon">${weatherCodeToEmoji(codes[i], true)}</div>
-              <div class="wx-range">
-                <span class="wx-low">${Number.isFinite(low) ? low : "--"}°</span>
-                <span class="wx-bar"><span class="wx-fill" style="left:${left}%;width:${width}%;"></span></span>
-                <span class="wx-high">${Number.isFinite(high) ? high : "--"}°</span>
+        for (const event of campEvents) {
+          const dateLabel = event.allDay ? formatPrettyDate(event.start) : `${formatPrettyDate(event.start)} ${formatTime(event.start)}`;
+          const detail = eventLocation(event) || eventDescription(event) || "Details in calendar";
+          els.campList.insertAdjacentHTML("beforeend", `
+            <div class="mini-item">
+              <div class="mini-date">${escapeHtml(dateLabel)}</div>
+              <div>
+                <div class="mini-title">${escapeHtml(event.title)}</div>
+                <div class="mini-detail">${escapeHtml(detail)}</div>
               </div>
             </div>`);
+        }
+      }
+
+      function renderTrafficStatus(data) {
+        const ratio = Number(data && data.ratio);
+        const delayMinutes = Number(data && data.delayMinutes);
+        let level = "Clear";
+        let detail = "Traffic worker connected. No backup reported.";
+        let mode = "good";
+        let meter = 18;
+
+        if (Number.isFinite(ratio)) {
+          meter = Math.max(8, Math.min(100, Math.round((ratio - 1) * 100)));
+          if (ratio >= 1.5 || delayMinutes >= 15) {
+            level = "Backed up";
+            detail = `${Math.round(delayMinutes || 0)} min delay versus normal. Consider leaving early.`;
+            mode = "bad";
+          } else if (ratio >= 1.25 || delayMinutes >= 8) {
+            level = "Slower than normal";
+            detail = `${Math.round(delayMinutes || 0)} min delay versus normal. Keep an eye on it.`;
+            mode = "watch";
+          }
+        } else if (data && data.level) {
+          level = data.level;
+          detail = data.detail || detail;
+          mode = data.mode || "watch";
+          meter = data.meter || 50;
+        }
+
+        els.trafficStatusCard.className = `traffic-status ${mode}`;
+        els.trafficLevel.textContent = level;
+        els.trafficDetail.textContent = detail;
+        els.trafficMeterFill.style.width = `${meter}%`;
+        els.trafficUpdated.textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+      }
+
+      async function loadTrafficStatus() {
+        if (!TRAFFIC_STATUS_URL) {
+          if (els.trafficMeterFill) els.trafficMeterFill.style.width = "42%";
+          return;
+        }
+
+        try {
+          const response = await fetch(TRAFFIC_STATUS_URL, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Traffic HTTP ${response.status}`);
+          renderTrafficStatus(await response.json());
+        } catch (err) {
+          els.trafficStatusCard.className = "traffic-status watch";
+          els.trafficLevel.textContent = "Traffic check failed";
+          els.trafficDetail.textContent = err && err.message ? err.message : "Unknown traffic error";
+          els.trafficUpdated.textContent = "Error";
         }
       }
 
@@ -1498,7 +1425,8 @@ v1.15.0 cleanup/stabilization:
           return { start, end: addDays(start, 28) };
         },
         eventSources: [
-          { url: ICS_URL, format: "ics" }
+          { url: ICS_URL, format: "ics" },
+          { url: WILLIAMS_ICS_URL, format: "ics" }
         ],
         dayCellDidMount(info) {
           const date = startOfDay(info.date);
@@ -1533,18 +1461,20 @@ v1.15.0 cleanup/stabilization:
           cachedSportsEvents = normalizeSportsEvents(events);
           if (calendar.view) updateGameDayChips(calendar.view.currentStart, calendar.view.currentEnd);
           buildSidebar(calendar);
+          renderCampPanel(calendar);
           scheduleMealsLock();
         },
         datesSet(info) {
-          updateChristmasChip();
+          updateMajorDateChip();
           updateGameDayChips(info.start, info.end);
           buildSidebar(calendar);
+          renderCampPanel(calendar);
           scheduleMealsLock();
         }
       });
 
       calendar.render();
-      updateChristmasChip();
+      updateMajorDateChip();
       scheduleMealsLock();
 
       fetchMealsForCurrentWeek().catch(err => {
@@ -1553,14 +1483,15 @@ v1.15.0 cleanup/stabilization:
         renderMealsFooter(startOfCurrentWeekSunday(new Date()), {});
       });
 
-      loadWeather();
+      loadTrafficStatus();
 
       window.addEventListener("resize", scheduleMealsLock);
 
       setInterval(() => {
-        updateChristmasChip();
+        updateMajorDateChip();
         if (calendar.view) updateGameDayChips(calendar.view.currentStart, calendar.view.currentEnd);
         buildSidebar(calendar);
+        renderCampPanel(calendar);
       }, 1000);
 
       setInterval(() => {
@@ -1569,7 +1500,7 @@ v1.15.0 cleanup/stabilization:
         fetchMealsForCurrentWeek().catch(err => console.warn("Meals refresh error:", err));
       }, AUTO_REFRESH_MINUTES * 60 * 1000);
 
-      setInterval(loadWeather, WEATHER_REFRESH_MINUTES * 60 * 1000);
+      setInterval(loadTrafficStatus, TRAFFIC_REFRESH_MINUTES * 60 * 1000);
     });
   </script>
 </body>
