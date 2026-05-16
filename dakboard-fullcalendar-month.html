@@ -1,10 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.16.0
+Version: v1.16.1
 
-v1.16.0 family operations update:
-- Removed weather panel
+v1.16.1 family operations update:
+- Restored weather panel
 - Added Williams Family Calendar GitHub Pages ICS feed
 - Added traffic alert panel shell for a future traffic API worker
 - Added Mary-Jean camp info panel populated from calendar events
@@ -239,7 +239,12 @@ v1.16.0 family operations update:
       align-items: stretch;
     }
 
-    #bottom-spacer { min-width: 0; }
+    #center-stack {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: var(--gap);
+    }
 
     .bottom-panel {
       min-height: 0;
@@ -247,6 +252,201 @@ v1.16.0 family operations update:
       border: 1px solid rgba(255,255,255,0.13);
       border-radius: 8px;
       box-shadow: 0 18px 60px rgba(0,0,0,0.40);
+    }
+
+    #weather-panel {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 18px;
+      background:
+        radial-gradient(120% 110% at 26% 0%, rgba(95,180,255,0.30) 0%, rgba(25,65,108,0.24) 36%, transparent 67%),
+        linear-gradient(145deg, rgba(16,38,64,0.96), rgba(8,13,29,0.97) 56%, rgba(14,26,45,0.97));
+    }
+
+    #weather-panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 32%);
+      opacity: 0.7;
+    }
+
+    #weather-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    #weather-now {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .wx-city {
+      color: rgba(255,255,255,0.90);
+      font-size: 1.18em;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .wx-temp {
+      margin-top: 2px;
+      font-size: 4.5em;
+      font-weight: 900;
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    .wx-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .wx-chip {
+      padding: 4px 8px;
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.78);
+      font-size: 0.72em;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .wx-now-right {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      text-align: right;
+    }
+
+    .wx-big-icon {
+      font-size: 2.55em;
+      line-height: 1;
+    }
+
+    .wx-cond {
+      max-width: 170px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 850;
+    }
+
+    .wx-hilo {
+      color: rgba(255,255,255,0.76);
+      font-size: 0.88em;
+      font-weight: 760;
+    }
+
+    #weather-hourly {
+      display: flex;
+      gap: 8px;
+      padding: 10px 0;
+      border-top: 1px solid rgba(255,255,255,0.13);
+      border-bottom: 1px solid rgba(255,255,255,0.13);
+    }
+
+    .wx-hour {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 8px 5px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.055);
+      text-align: center;
+    }
+
+    .wx-hour .time {
+      color: rgba(255,255,255,0.68);
+      font-size: 0.72em;
+      font-weight: 830;
+    }
+
+    .wx-hour .icon {
+      margin: 5px 0 3px;
+      font-size: 1.22em;
+      line-height: 1;
+    }
+
+    .wx-hour .temp {
+      font-size: 0.94em;
+      font-weight: 900;
+    }
+
+    #weather-forecast {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-height: 0;
+    }
+
+    .wx-day {
+      display: grid;
+      grid-template-columns: 48px 32px 1fr;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      padding: 8px 9px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.048);
+    }
+
+    .wx-day .day {
+      font-size: 0.78em;
+      font-weight: 900;
+    }
+
+    .wx-day .icon {
+      text-align: center;
+      font-size: 1.15em;
+    }
+
+    .wx-range {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .wx-low,
+    .wx-high {
+      width: 34px;
+      font-size: 0.80em;
+      font-weight: 850;
+    }
+
+    .wx-low {
+      color: rgba(255,255,255,0.58);
+      text-align: right;
+    }
+
+    .wx-high { color: rgba(255,255,255,0.90); }
+
+    .wx-bar {
+      position: relative;
+      flex: 1 1 auto;
+      height: 9px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.11);
+    }
+
+    .wx-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #5aa7ff, #7df0d2, #ffd166);
     }
 
     .fc,
@@ -703,12 +903,13 @@ v1.16.0 family operations update:
       .fc .fc-toolbar-title { font-size: 1.38em; }
       .fc .evt-title { font-size: 1.02em; }
       .meal-col { min-height: 76px; padding: 11px 10px 10px; }
+      .wx-temp { font-size: 4.9em; }
     }
 
     @media (max-width: 1200px) {
       #sidebar { display: none; }
       #bottom-area { grid-template-columns: 1fr 1fr; }
-      #bottom-spacer { display: none; }
+      #center-stack { display: none; }
     }
   </style>
 </head>
@@ -757,38 +958,64 @@ v1.16.0 family operations update:
     </section>
 
     <section id="bottom-area">
-      <section class="bottom-panel" id="traffic-alert-panel" aria-label="Traffic alerts">
-        <div class="panel-head">
-          <div class="panel-title">Traffic Watch</div>
-          <div class="panel-chip" id="traffic-updated">Not connected</div>
-        </div>
-        <div class="traffic-status watch" id="traffic-status-card">
-          <div class="traffic-level" id="traffic-level">Map only</div>
-          <div class="traffic-detail" id="traffic-detail">
-            Add a small traffic API worker to turn this into green/yellow/red alerts for your area.
-          </div>
-        </div>
-        <div class="traffic-meter" aria-hidden="true"><span id="traffic-meter-fill"></span></div>
-        <div class="mini-list">
-          <div class="mini-item">
-            <div class="mini-date">Plan</div>
-            <div>
-              <div class="mini-title">Recommended alert source</div>
-              <div class="mini-detail">Cloudflare Worker + Google Routes API or TomTom Traffic API.</div>
+      <section class="bottom-panel" id="weather-panel" aria-label="Weather">
+        <div id="weather-now">
+          <div>
+            <div class="wx-city">Saint Louis</div>
+            <div class="wx-temp" id="weather-temp">--°</div>
+            <div class="wx-meta">
+              <span class="wx-chip" id="weather-feels">Feels —</span>
+              <span class="wx-chip" id="weather-wind">Wind —</span>
+              <span class="wx-chip" id="weather-precip">Precip —</span>
+              <span class="wx-chip" id="weather-updated">Updated —</span>
             </div>
           </div>
+          <div class="wx-now-right">
+            <div class="wx-big-icon" id="weather-icon">☁️</div>
+            <div class="wx-cond" id="weather-cond">Loading…</div>
+            <div class="wx-hilo" id="weather-hilo">H: --° L: --°</div>
+          </div>
         </div>
+        <div id="weather-hourly" aria-label="Hourly forecast">
+          <div class="load-note">Loading hourly forecast…</div>
+        </div>
+        <div id="weather-forecast" aria-label="Daily forecast"></div>
       </section>
 
-      <section class="bottom-panel" id="camp-panel" aria-label="Mary-Jean camp schedule">
-        <div class="panel-head">
-          <div class="panel-title">Mary-Jean Camp</div>
-          <div class="panel-chip" id="camp-count">Loading</div>
-        </div>
-        <div class="mini-list" id="camp-list">
-          <div class="load-note">Looking for upcoming camp details…</div>
-        </div>
-      </section>
+      <div id="center-stack">
+        <section class="bottom-panel" id="camp-panel" aria-label="Mary-Jean camp schedule">
+          <div class="panel-head">
+            <div class="panel-title">Mary-Jean Camp</div>
+            <div class="panel-chip" id="camp-count">Loading</div>
+          </div>
+          <div class="mini-list" id="camp-list">
+            <div class="load-note">Looking for upcoming camp details…</div>
+          </div>
+        </section>
+
+        <section class="bottom-panel" id="traffic-alert-panel" aria-label="Traffic alerts">
+          <div class="panel-head">
+            <div class="panel-title">Traffic Watch</div>
+            <div class="panel-chip" id="traffic-updated">Not connected</div>
+          </div>
+          <div class="traffic-status watch" id="traffic-status-card">
+            <div class="traffic-level" id="traffic-level">Map only</div>
+            <div class="traffic-detail" id="traffic-detail">
+              Add a small traffic API worker to turn this into green/yellow/red alerts for your area.
+            </div>
+          </div>
+          <div class="traffic-meter" aria-hidden="true"><span id="traffic-meter-fill"></span></div>
+          <div class="mini-list">
+            <div class="mini-item">
+              <div class="mini-date">Plan</div>
+              <div>
+                <div class="mini-title">Recommended alert source</div>
+                <div class="mini-detail">Cloudflare Worker + Google Routes API or TomTom Traffic API.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
 
       <section class="bottom-panel" id="traffic-panel" aria-label="Traffic map">
         <div id="traffic-label">Traffic</div>
@@ -805,7 +1032,7 @@ v1.16.0 family operations update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.16.0";
+      const APP_VERSION = "v1.16.1";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -814,9 +1041,12 @@ v1.16.0 family operations update:
       const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
       const WILLIAMS_ICS_URL = "https://randymwill.github.io/williams-family-calendar/calendar.ics";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
+      const HOME_LAT = 38.654398639984805;
+      const HOME_LON = -90.45877499401288;
       const TRAFFIC_STATUS_URL = "";
 
       const AUTO_REFRESH_MINUTES = 10;
+      const WEATHER_REFRESH_MINUTES = 10;
       const TRAFFIC_REFRESH_MINUTES = 5;
       const COUNTDOWN_LOOKAHEAD_DAYS = 14;
       const BREAKFAST_MAX_ITEMS = 2;
@@ -1298,6 +1528,154 @@ v1.16.0 family operations update:
         renderMealsFooter(weekStart, byDate);
       }
 
+      function weatherCodeToEmoji(code, isDay = true) {
+        const c = Number(code);
+        if (c === 0) return isDay ? "☀️" : "🌙";
+        if ([1, 2].includes(c)) return isDay ? "🌤️" : "☁️";
+        if (c === 3) return "☁️";
+        if ([45, 48].includes(c)) return "🌫️";
+        if ([51, 53, 55, 56, 57].includes(c)) return "🌦️";
+        if ([61, 63, 65, 66, 67, 80, 81, 82].includes(c)) return "🌧️";
+        if ([71, 73, 75, 77, 85, 86].includes(c)) return "❄️";
+        if ([95, 96, 99].includes(c)) return "⛈️";
+        return "☁️";
+      }
+
+      function weatherCodeToText(code) {
+        const labels = {
+          0: "Clear",
+          1: "Mainly clear",
+          2: "Partly cloudy",
+          3: "Overcast",
+          45: "Fog",
+          48: "Rime fog",
+          51: "Light drizzle",
+          53: "Drizzle",
+          55: "Dense drizzle",
+          56: "Freezing drizzle",
+          57: "Freezing drizzle",
+          61: "Light rain",
+          63: "Rain",
+          65: "Heavy rain",
+          66: "Freezing rain",
+          67: "Freezing rain",
+          71: "Light snow",
+          73: "Snow",
+          75: "Heavy snow",
+          77: "Snow grains",
+          80: "Rain showers",
+          81: "Rain showers",
+          82: "Violent showers",
+          85: "Snow showers",
+          86: "Snow showers",
+          95: "Thunderstorm",
+          96: "Thunderstorm hail",
+          99: "Thunderstorm hail"
+        };
+        return labels[Number(code)] || "Weather";
+      }
+
+      async function loadWeather() {
+        const url =
+          `https://api.open-meteo.com/v1/forecast` +
+          `?latitude=${HOME_LAT}&longitude=${HOME_LON}` +
+          `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m,is_day` +
+          `&hourly=temperature_2m,weather_code` +
+          `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code,sunrise,sunset` +
+          `&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch` +
+          `&timezone=auto&forecast_days=5`;
+
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
+          renderWeather(await response.json());
+        } catch (err) {
+          document.getElementById("weather-cond").textContent = "Weather unavailable";
+          document.getElementById("weather-updated").textContent = err && err.message ? err.message : "Error";
+        }
+      }
+
+      function renderWeather(data) {
+        const current = data.current || {};
+        const daily = data.daily || {};
+        const currentCode = current.weather_code;
+        const isDay = current.is_day !== 0;
+        const temp = Math.round(current.temperature_2m);
+        const feels = Math.round(current.apparent_temperature);
+        const wind = Math.round(current.wind_speed_10m);
+        const pop = daily.precipitation_probability_max && daily.precipitation_probability_max[0];
+        const hi = daily.temperature_2m_max && Math.round(daily.temperature_2m_max[0]);
+        const lo = daily.temperature_2m_min && Math.round(daily.temperature_2m_min[0]);
+
+        document.getElementById("weather-temp").textContent = Number.isFinite(temp) ? `${temp}°` : "--°";
+        document.getElementById("weather-icon").textContent = weatherCodeToEmoji(currentCode, isDay);
+        document.getElementById("weather-cond").textContent = weatherCodeToText(currentCode);
+        document.getElementById("weather-hilo").textContent = `H:${Number.isFinite(hi) ? hi : "--"}° L:${Number.isFinite(lo) ? lo : "--"}°`;
+        document.getElementById("weather-feels").textContent = Number.isFinite(feels) ? `Feels ${feels}°` : "Feels —";
+        document.getElementById("weather-wind").textContent = Number.isFinite(wind) ? `Wind ${wind} mph` : "Wind —";
+        document.getElementById("weather-precip").textContent = pop != null ? `Precip ${Math.round(pop)}%` : "Precip —";
+        document.getElementById("weather-updated").textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+
+        renderHourly(data.hourly || {});
+        renderDaily(daily);
+      }
+
+      function renderHourly(hourly) {
+        const container = document.getElementById("weather-hourly");
+        container.innerHTML = "";
+        const times = hourly.time || [];
+        const temps = hourly.temperature_2m || [];
+        const codes = hourly.weather_code || [];
+        const now = new Date();
+        let startIdx = times.findIndex(time => new Date(time) >= now);
+        if (startIdx < 0) startIdx = 0;
+
+        for (let slot = 0; slot < 6; slot++) {
+          const idx = startIdx + slot * 2;
+          if (idx >= times.length) break;
+          const dt = new Date(times[idx]);
+          const temp = Math.round(temps[idx]);
+          container.insertAdjacentHTML("beforeend", `
+            <div class="wx-hour">
+              <div class="time">${escapeHtml(dt.toLocaleTimeString([], { hour: "numeric" }))}</div>
+              <div class="icon">${weatherCodeToEmoji(codes[idx], true)}</div>
+              <div class="temp">${Number.isFinite(temp) ? temp : "--"}°</div>
+            </div>`);
+        }
+      }
+
+      function renderDaily(daily) {
+        const container = document.getElementById("weather-forecast");
+        container.innerHTML = "";
+        const days = daily.time || [];
+        const highs = daily.temperature_2m_max || [];
+        const lows = daily.temperature_2m_min || [];
+        const codes = daily.weather_code || [];
+        const validTemps = highs.concat(lows).filter(n => Number.isFinite(Number(n))).map(Number);
+        const minAll = validTemps.length ? Math.min(...validTemps) : 0;
+        const maxAll = validTemps.length ? Math.max(...validTemps) : 1;
+        const span = Math.max(1, maxAll - minAll);
+
+        for (let i = 0; i < Math.min(5, days.length); i++) {
+          const dt = new Date(`${days[i]}T00:00:00`);
+          const low = Math.round(lows[i]);
+          const high = Math.round(highs[i]);
+          const hasRange = Number.isFinite(low) && Number.isFinite(high);
+          const left = hasRange ? Math.max(0, Math.min(92, ((low - minAll) / span) * 82)) : 0;
+          const width = hasRange ? Math.max(10, Math.min(96 - left, ((high - low) / span) * 82 + 10)) : 0;
+          container.insertAdjacentHTML("beforeend", `
+            <div class="wx-day">
+              <div class="day">${escapeHtml(dt.toLocaleDateString([], { weekday: "short" }))}</div>
+              <div class="icon">${weatherCodeToEmoji(codes[i], true)}</div>
+              <div class="wx-range">
+                <span class="wx-low">${Number.isFinite(low) ? low : "--"}°</span>
+                <span class="wx-bar"><span class="wx-fill" style="left:${left}%;width:${width}%;"></span></span>
+                <span class="wx-high">${Number.isFinite(high) ? high : "--"}°</span>
+              </div>
+            </div>`);
+        }
+      }
+
       function cleanText(value) {
         return String(value || "").replace(/\\n/g, " ").replace(/\s+/g, " ").trim();
       }
@@ -1483,6 +1861,7 @@ v1.16.0 family operations update:
         renderMealsFooter(startOfCurrentWeekSunday(new Date()), {});
       });
 
+      loadWeather();
       loadTrafficStatus();
 
       window.addEventListener("resize", scheduleMealsLock);
@@ -1500,6 +1879,7 @@ v1.16.0 family operations update:
         fetchMealsForCurrentWeek().catch(err => console.warn("Meals refresh error:", err));
       }, AUTO_REFRESH_MINUTES * 60 * 1000);
 
+      setInterval(loadWeather, WEATHER_REFRESH_MINUTES * 60 * 1000);
       setInterval(loadTrafficStatus, TRAFFIC_REFRESH_MINUTES * 60 * 1000);
     });
   </script>
