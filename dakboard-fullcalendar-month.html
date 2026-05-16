@@ -1,13 +1,13 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.16.2
+Version: v1.17.0
 
-v1.16.2 family operations update:
+v1.17.0 traffic alerts update:
 - Restored weather panel
 - Removed Waze traffic map; traffic alerts now replace it
+- Added Cloudflare/TomTom traffic alert integration
 - Added Williams Family Calendar GitHub Pages ICS feed
-- Added traffic alert panel shell for a future traffic API worker
 - Added Mary-Jean camp info panel populated from calendar events
 - Changed Christmas countdown to next major date countdown
 - School meals footer now appears whenever the current week has menu data
@@ -973,18 +973,18 @@ v1.16.2 family operations update:
             <div class="panel-chip" id="traffic-updated">Not connected</div>
           </div>
           <div class="traffic-status watch" id="traffic-status-card">
-            <div class="traffic-level" id="traffic-level">Map only</div>
+            <div class="traffic-level" id="traffic-level">Checking traffic</div>
             <div class="traffic-detail" id="traffic-detail">
-              Add a small traffic API worker to turn this into green/yellow/red alerts for your area.
+              Watching nearby interstates and Ladue Road for major congestion.
             </div>
           </div>
           <div class="traffic-meter" aria-hidden="true"><span id="traffic-meter-fill"></span></div>
-          <div class="mini-list">
+          <div class="mini-list" id="traffic-segments">
             <div class="mini-item">
               <div class="mini-date">Plan</div>
               <div>
-                <div class="mini-title">Recommended alert source</div>
-                <div class="mini-detail">Cloudflare Worker + Google Routes API or TomTom Traffic API.</div>
+                <div class="mini-title">Watched roads</div>
+                <div class="mini-detail">Ladue Road, I-64/40, and I-270 near home.</div>
               </div>
             </div>
           </div>
@@ -996,7 +996,7 @@ v1.16.2 family operations update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.16.2";
+      const APP_VERSION = "v1.17.0";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1007,7 +1007,7 @@ v1.16.2 family operations update:
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
       const HOME_LAT = 38.654398639984805;
       const HOME_LON = -90.45877499401288;
-      const TRAFFIC_STATUS_URL = "";
+      const TRAFFIC_STATUS_URL = "https://traffic-watch.randywilliams-us.workers.dev/";
 
       const AUTO_REFRESH_MINUTES = 10;
       const WEATHER_REFRESH_MINUTES = 10;
@@ -1032,7 +1032,8 @@ v1.16.2 family operations update:
         trafficStatusCard: document.getElementById("traffic-status-card"),
         trafficLevel: document.getElementById("traffic-level"),
         trafficDetail: document.getElementById("traffic-detail"),
-        trafficMeterFill: document.getElementById("traffic-meter-fill")
+        trafficMeterFill: document.getElementById("traffic-meter-fill"),
+        trafficSegments: document.getElementById("traffic-segments")
       };
 
       if (!ENABLE_HOLIDAY_MODE) {
@@ -1728,6 +1729,59 @@ v1.16.2 family operations update:
         els.trafficDetail.textContent = detail;
         els.trafficMeterFill.style.width = `${meter}%`;
         els.trafficUpdated.textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+        renderTrafficSegments(data && data.segments ? data.segments : []);
+      }
+
+      function renderTrafficSegments(segments) {
+        if (!els.trafficSegments) return;
+        const ranked = segments
+          .slice()
+          .sort((a, b) => trafficSeverityScore(b) - trafficSeverityScore(a))
+          .slice(0, 4);
+
+        els.trafficSegments.innerHTML = "";
+        if (!ranked.length) {
+          els.trafficSegments.innerHTML = `
+            <div class="mini-item">
+              <div class="mini-date">Plan</div>
+              <div>
+                <div class="mini-title">Watched roads</div>
+                <div class="mini-detail">Ladue Road, I-64/40, and I-270 near home.</div>
+              </div>
+            </div>`;
+          return;
+        }
+
+        for (const segment of ranked) {
+          const label = segmentLabel(segment.status);
+          const ratioText = Number.isFinite(Number(segment.ratio))
+            ? `${Math.max(0, Math.round((Number(segment.ratio) - 1) * 100))}% slower`
+            : "status unknown";
+          const speedText = Number.isFinite(Number(segment.currentSpeed))
+            ? `${Math.round(Number(segment.currentSpeed))} mph now`
+            : ratioText;
+          els.trafficSegments.insertAdjacentHTML("beforeend", `
+            <div class="mini-item">
+              <div class="mini-date">${escapeHtml(label)}</div>
+              <div>
+                <div class="mini-title">${escapeHtml(segment.name || "Traffic segment")}</div>
+                <div class="mini-detail">${escapeHtml(speedText)}</div>
+              </div>
+            </div>`);
+        }
+      }
+
+      function segmentLabel(status) {
+        if (status === "closure") return "Closed";
+        if (status === "bad") return "Backup";
+        if (status === "watch") return "Slow";
+        if (status === "unknown") return "Check";
+        return "Clear";
+      }
+
+      function trafficSeverityScore(segment) {
+        const base = { closure: 400, bad: 300, watch: 200, unknown: 100, good: 0 }[segment.status] || 0;
+        return base + Number(segment.ratio || 1);
       }
 
       async function loadTrafficStatus() {
