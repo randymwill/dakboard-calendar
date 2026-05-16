@@ -1,10 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.16.1
+Version: v1.16.2
 
-v1.16.1 family operations update:
+v1.16.2 family operations update:
 - Restored weather panel
+- Removed Waze traffic map; traffic alerts now replace it
 - Added Williams Family Calendar GitHub Pages ICS feed
 - Added traffic alert panel shell for a future traffic API worker
 - Added Mary-Jean camp info panel populated from calendar events
@@ -234,7 +235,7 @@ v1.16.1 family operations update:
 
     #bottom-area {
       display: grid;
-      grid-template-columns: 30% 40% 30%;
+      grid-template-columns: 34% 1fr;
       gap: var(--gap);
       align-items: stretch;
     }
@@ -242,7 +243,7 @@ v1.16.1 family operations update:
     #center-stack {
       min-height: 0;
       display: grid;
-      grid-template-rows: 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: var(--gap);
     }
 
@@ -864,33 +865,6 @@ v1.16.1 family operations update:
       font-weight: 720;
     }
 
-    #traffic-panel {
-      position: relative;
-      background: #08111d;
-    }
-
-    #traffic-panel iframe {
-      display: block;
-      width: 100%;
-      height: 100%;
-      border: 0;
-    }
-
-    #traffic-label {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1;
-      padding: 5px 10px;
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 999px;
-      background: rgba(0,0,0,0.44);
-      color: rgba(255,255,255,0.82);
-      font-size: 0.72em;
-      font-weight: 780;
-      backdrop-filter: blur(3px);
-    }
-
     .load-note {
       color: rgba(255,255,255,0.66);
       font-size: 0.85em;
@@ -908,8 +882,8 @@ v1.16.1 family operations update:
 
     @media (max-width: 1200px) {
       #sidebar { display: none; }
-      #bottom-area { grid-template-columns: 1fr 1fr; }
-      #center-stack { display: none; }
+      #bottom-area { grid-template-columns: 1fr; }
+      #center-stack { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -1017,22 +991,12 @@ v1.16.1 family operations update:
         </section>
       </div>
 
-      <section class="bottom-panel" id="traffic-panel" aria-label="Traffic map">
-        <div id="traffic-label">Traffic</div>
-        <iframe
-          id="traffic-frame"
-          title="Waze live traffic"
-          src="https://embed.waze.com/iframe?zoom=13&amp;lat=38.638412&amp;lon=-90.457971&amp;ct=livemap"
-          allowfullscreen
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"></iframe>
-      </section>
     </section>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.16.1";
+      const APP_VERSION = "v1.16.2";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
