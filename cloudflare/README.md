@@ -2,6 +2,21 @@
 
 This Worker checks TomTom Traffic Flow for 8 nearby road sample points and returns one small JSON summary for the DAKboard page.
 
+The monitored points are:
+
+| ID | Label | Point |
+| --- | --- | --- |
+| `ladue-west` | Ladue Rd west of home | `38.6551,-90.4936` |
+| `ladue-east` | Ladue Rd east of home | `38.6548,-90.4247` |
+| `i64-eb-mason` | I-64 EB near Mason | `38.6361,-90.4826` |
+| `i64-wb-mason` | I-64 WB near Mason | `38.6371,-90.4826` |
+| `i64-eb-270` | I-64 EB near I-270 | `38.6362,-90.4490` |
+| `i64-wb-270` | I-64 WB near I-270 | `38.6372,-90.4490` |
+| `i270-nb-ladue` | I-270 NB near Ladue | `38.6545,-90.4488` |
+| `i270-sb-ladue` | I-270 SB near Ladue | `38.6545,-90.4498` |
+
+For divided highways, the sample point is offset onto the expected carriageway so the label indicates direction. Ladue Road is monitored as surface-road segments by location.
+
 ## Free-tier usage
 
 TomTom Flow Segment Data is a non-tile request. With 8 sample points and a 10-minute Worker cache:
