@@ -1,143 +1,108 @@
 <!doctype html>
 <!--
-DAKBOARD CALENDAR (FullCalendar + Google ICS + Nutrislice Meals Footer)
-Version: v1.16.2
-Last Updated: 2025-12-15
+DAKboard Family Dashboard
+Version: v1.15.0
 
-
-New in v1.16.2:
-- Fix: Meals weekday header aligned with meals columns (single shared grid)
-- Re-enabled Christmas countdown chip
-- Sidebar Status shows Version (instead of Meals event count)
-- Added SECTION MARKERS for easy search/replace
-
-Previous:
-- (from v1.13.1)
-- Fullscreen layout (calendar + sidebar on top, weather + Waze bottom)
-- Weather panel uses Open-Meteo in Fahrenheit (no API key)
-
-Previous:
-- (from v1.11.2)
-
-- Holiday mode (auto theme accents for seasonal/holiday periods)
-- Fix: Sidebar/calendar initialization bug (JS syntax + status functions)
-- Today Focus Sidebar (today's agenda + upcoming games countdowns)
-- Christmas countdown remains a live running countdown (d/h/m/s)
-
-Notes:
-- Tune menu text size: search "MEALS FONT KNOBS"
-- Tune calendar fonts: search "FONT TUNING (calendar)"
-- Toggle new features: search "FEATURE TOGGLES"
+v1.15.0 cleanup/stabilization:
+- Rebuilt single-file layout around explicit calendar/sidebar/weather/traffic regions
+- Meals footer lives inside the calendar column and pixel-locks to FullCalendar headers
+- Christmas countdown is live and independent of holiday mode
+- Sidebar Status shows version and last refresh
+- Weather card rebuilt in a richer iOS-inspired style using Open-Meteo Fahrenheit data
 -->
-
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DAKboard Calendar</title>
+  <title>DAKboard Family Dashboard</title>
 
-  <!-- FullCalendar -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
-  <!-- ical.js -->
   <script src="https://unpkg.com/ical.js/dist/ical.es5.min.cjs"></script>
-  <!-- FullCalendar iCalendar plugin -->
   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.19/index.global.min.js"></script>
 
   <style>
-    :root{
-  --CAL_OUTER_PAD: 10px;
+    :root {
+      --TOP_VH: 67;
+      --BOTTOM_VH: 33;
+      --sidebar-width: 360px;
+      --gap: 14px;
+      --pad: 14px;
 
-  --SIDEBAR_PAD: 10px;
-
-  --CARD_PAD: 10px;
-
-      --bg: #07101d;
-      --panel: #0b1a2f;
-      --panel2: #091527;
-
-      --grid: rgba(255,255,255,0.20);
-      --gridStrong: rgba(255,255,255,0.30);
-
-      --text: rgba(255,255,255,0.92);
+      --bg: #07111d;
+      --panel: #0d1a2b;
+      --panel-deep: #07101c;
+      --line: rgba(255,255,255,0.16);
+      --line-strong: rgba(255,255,255,0.28);
+      --text: rgba(255,255,255,0.94);
       --muted: rgba(255,255,255,0.62);
-      --todayBorder: rgba(56,189,248,0.85);
+      --faint: rgba(255,255,255,0.42);
 
-      --weekendTint: rgba(255,255,255,0.11);
-      --weekendTint2: rgba(255,255,255,0.03);
-      --weekendLine: rgba(255,255,255,0.28);
-
-      --school: #ef4444;  /* red */
-      --sports: #ec4899;  /* pink */
-      --other:  #22d3ee;  /* cyan */
-      --randy:  #3b82f6;  /* blue */
-      --leslie: #22c55e;  /* green */
-
-      --holidayGlow: rgba(250, 204, 21, 0.22);
-      --holidayBorder: rgba(250, 204, 21, 0.62);
-      --holidayLabelBg: rgba(0,0,0,0.48);
-
-      --sparkleOuter: rgba(250, 204, 21, 0.50);
-      --sparkleInner: rgba(255,255,255,0.22);
-
-      --mealsBg: rgba(0,0,0,0.18);
-      --mealsBorder: rgba(255,255,255,0.14);
-
-      --ok: rgba(34,197,94,0.85);
-      --warn: rgba(250,204,21,0.85);
-      --err: rgba(239,68,68,0.85);
-
-      /* =========================================================
-         MEALS FONT KNOBS (edit these)
-         ========================================================= */
-      --mealsBreakfastFont: 0.88em;     /* breakfast 1 line */
-      --mealsLunchEntreeFont: 0.88em;  /* lunch line 1-2 */
-      --mealsLunchSidesFont: 0.82em;   /* lunch line 3-4 */
-      --mealsLunchLineHeight: 1.12;
-
-      /* =========================================================
-         COUNTDOWN CHIP KNOBS
-         ========================================================= */
-      --chipBg: rgba(0,0,0,0.35);
-      --chipBorder: rgba(255,255,255,0.16);
-      --chipText: rgba(255,255,255,0.86);
-      --chipMuted: rgba(255,255,255,0.72);
-      --chipShadow: rgba(0,0,0,0.25);
-
-      /* =========================================================
-         TODAY FOCUS KNOBS
-         ========================================================= */
-      --todayColGlow: rgba(56,189,248,0.08);
-      --todayColGlow2: rgba(56,189,248,0.02);
-      --todayEventBoost: 1.12; /* multiplier for today's event font sizes */
+      --school: #ef4444;
+      --sports: #ec4899;
+      --other: #22d3ee;
+      --randy: #3b82f6;
+      --leslie: #22c55e;
+      --today: #38bdf8;
+      --meal-bg: rgba(255,255,255,0.055);
     }
 
-    html, body {
+    * { box-sizing: border-box; }
+
+    html,
+    body {
       height: 100%;
       margin: 0;
+      overflow: hidden;
       background: var(--bg);
       color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 18px;
     }
 
-    #calendar-wrapper {
-      width: 100vw;
-      height: 75vh;
-      padding: 10px 14px;
-      box-sizing: border-box;
-      background: linear-gradient(180deg, var(--bg), #050b14);
+    body {
+      background:
+        radial-gradient(1100px 700px at 18% -8%, rgba(34,211,238,0.13), transparent 62%),
+        radial-gradient(900px 620px at 86% 114%, rgba(236,72,153,0.10), transparent 56%),
+        linear-gradient(180deg, #081423 0%, #040912 100%);
+    }
+
+    #screen-grid {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: calc(var(--TOP_VH) * 1vh) calc(var(--BOTTOM_VH) * 1vh);
+      gap: 0;
+    }
+
+    #top-area,
+    #bottom-area {
+      min-height: 0;
+      padding: var(--pad);
     }
 
     #calendar-card {
-      width: 100%;
       height: 100%;
-      background: linear-gradient(180deg, var(--panel), var(--panel2));
-      border-radius: 18px;
+      min-height: 0;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 14px 34px rgba(0,0,0,0.45);
+      background: linear-gradient(180deg, rgba(13,26,43,0.96), rgba(7,16,28,0.97));
+      box-shadow: 0 18px 60px rgba(0,0,0,0.44);
+    }
+
+    #main-row {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      gap: 12px;
+      padding: 10px;
+    }
+
+    #left-col {
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
-      min-height: 0;
-      position: relative;
     }
 
     #calendar {
@@ -145,2258 +110,1467 @@ Notes:
       min-height: 0;
     }
 
-    /* =========================================================
-       SECTION: MEALS FOOTER CSS (alignment-safe)
-       - Meals grid is 7 columns to match calendar (Sun–Sat)
-       ========================================================= */
-    #meals-footer {
-      flex: 0 0 auto;
-      max-height: 150px;
-      overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), var(--mealsBg));
-      border-top: 1px solid var(--mealsBorder);
-      padding: 8px 0 10px;
-    }
-    #meals-footer.hidden { display: none !important; }
-
-    /* Meals grid aligned to calendar columns */
-    #meals-grid {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 10px;
-      align-items: stretch;
-    }
-    .meal-col {
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 12px;
-      padding: 10px 10px 8px;
-      background: rgba(0,0,0,0.14);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
-      min-width: 0;
-      min-height: 44px;
-    }
-
-    .meal-col.empty {
-      border: none !important;
-      background: transparent !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      min-height: 0 !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    .meal-row {
+    #sidebar {
+      flex: 0 0 var(--sidebar-width);
+      min-width: 320px;
+      max-width: 430px;
+      min-height: 0;
       display: flex;
-      gap: 8px;
-      align-items: flex-start;
-      margin: 6px 0;
-      min-width: 0;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    .meal-pill {
-      flex: 0 0 auto;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.25);
-      border: 1px solid rgba(255,255,255,0.12);
-      font-weight: 900;
-      font-size: 0.74em;
-      color: rgba(255,255,255,0.72);
-      letter-spacing: 0.02em;
-      line-height: 1.1;
-      margin-top: 1px;
+    .side-card {
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 8px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(0,0,0,0.13));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
     }
 
-    .meal-text-one {
+    .side-card.grow {
       flex: 1 1 auto;
-      min-width: 0;
-      color: rgba(255,255,255,0.90);
+    }
+
+    .side-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .side-title strong {
+      font-size: 1.04em;
+      letter-spacing: 0.01em;
+    }
+
+    .side-title span {
+      color: var(--muted);
+      font-size: 0.82em;
       font-weight: 750;
-      font-size: var(--mealsBreakfastFont);
-      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .side-sub {
+      color: rgba(255,255,255,0.74);
+      font-weight: 760;
+      line-height: 1.28;
+      margin-bottom: 14px;
+    }
+
+    .side-section {
+      margin-top: 12px;
+    }
+
+    .side-section-title {
+      color: var(--faint);
+      font-size: 0.72em;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+
+    .side-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .side-item {
+      display: flex;
+      gap: 9px;
+      min-width: 0;
+      padding: 8px 9px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.18);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      flex: 0 0 auto;
+      margin-top: 5px;
+      border-radius: 999px;
+      background: var(--other);
+    }
+
+    .side-lines {
+      min-width: 0;
+    }
+
+    .line1,
+    .line2 {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .meal-lunch-wrap{
-      flex: 1 1 auto;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+    .line1 {
+      font-size: 0.9em;
+      font-weight: 820;
     }
 
-    .meal-lunch-entrees{
-      color: rgba(255,255,255,0.92);
-      font-weight: 800;
-      font-size: var(--mealsLunchEntreeFont);
-      line-height: var(--mealsLunchLineHeight);
+    .line2 {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.78em;
+      font-weight: 720;
+    }
+
+    #side-status-version {
+      margin: 0;
+      color: rgba(255,255,255,0.80);
+    }
+
+    .status-line {
+      margin-bottom: 4px;
+    }
+
+    #bottom-area {
+      display: grid;
+      grid-template-columns: 30% 40% 30%;
+      gap: var(--gap);
+      align-items: stretch;
+    }
+
+    #bottom-spacer { min-width: 0; }
+
+    .bottom-panel {
+      min-height: 0;
       overflow: hidden;
-      white-space: normal;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 8px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.40);
     }
 
-    .meal-lunch-sides{
-      color: rgba(255,255,255,0.66);
-      font-weight: 700;
-      font-size: var(--mealsLunchSidesFont);
-      line-height: var(--mealsLunchLineHeight);
-      overflow: hidden;
-      white-space: normal;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+    .fc,
+    .fc .fc-view-harness,
+    .fc .fc-view-harness-active {
+      height: 100% !important;
     }
 
-    /* FullCalendar base */
-    .fc { height: 100%; }
+    .fc .fc-header-toolbar {
+      margin: 8px 8px 6px;
+    }
 
-    .fc .fc-header-toolbar { margin: 10px 12px 6px; }
     .fc .fc-toolbar-title {
-      font-size: 1.35em;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      opacity: 0.95;
       display: inline-flex;
       align-items: center;
       gap: 10px;
+      color: rgba(255,255,255,0.92);
+      font-size: 1.28em;
+      font-weight: 760;
+      letter-spacing: 0;
     }
 
-    /* Title chip (Christmas countdown) */
-    .title-chip{
+    .title-chip {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       padding: 4px 10px;
+      border: 1px solid rgba(255,255,255,0.15);
       border-radius: 999px;
-      background: var(--chipBg);
-      border: 1px solid var(--chipBorder);
-      color: var(--chipText);
-      font-weight: 800;
+      background: rgba(0,0,0,0.24);
+      color: rgba(255,255,255,0.88);
       font-size: 0.72em;
-      letter-spacing: 0.02em;
-      box-shadow: 0 8px 18px var(--chipShadow);
+      font-weight: 850;
       white-space: nowrap;
     }
-    .title-chip .muted{ color: var(--chipMuted); font-weight: 800; }
 
-    /* FONT TUNING (calendar) */
-    .fc .fc-col-header-cell-cushion {
-      color: var(--muted);
-      font-weight: 650;
-      padding: 10px 0;
-      font-size: 0.95em;
-    }
-    .fc .fc-daygrid-day-number {
-      color: var(--muted);
-      font-size: 0.75em;
-      padding: 6px 8px;
-    }
-    .fc .evt-title {
-      font-size: 1.05em;
-      font-weight: 650;
-      line-height: 1.1;
-    }
-    .fc .evt-time {
-      font-size: 0.85em;
-      opacity: 0.95;
-      font-weight: 700;
-    }
+    .title-chip .muted { color: rgba(255,255,255,0.68); }
 
-    /* Grid */
     .fc-theme-standard td,
     .fc-theme-standard th,
     .fc-theme-standard .fc-scrollgrid {
-      border-color: var(--grid);
+      border-color: var(--line);
     }
+
     .fc .fc-col-header-cell {
-      border-color: var(--gridStrong) !important;
+      border-color: var(--line-strong) !important;
+      background: rgba(255,255,255,0.035);
     }
+
+    .fc .fc-col-header-cell-cushion {
+      padding: 9px 0;
+      color: var(--muted);
+      font-size: 0.95em;
+      font-weight: 760;
+      text-decoration: none;
+    }
+
+    .fc .fc-daygrid-body,
+    .fc .fc-daygrid-body table {
+      height: 100%;
+    }
+
+    .fc .fc-daygrid-day {
+      height: calc(100% / 4);
+      background: rgba(255,255,255,0.015);
+    }
+
+    .fc .fc-day-sun,
+    .fc .fc-day-sat {
+      background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+    }
+
     .fc .fc-daygrid-day-frame {
+      min-height: 100%;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.045);
+    }
+
+    .fc .fc-daygrid-day-number {
+      padding: 6px 8px 4px;
+      color: var(--muted);
+      font-size: 0.78em;
+      font-weight: 750;
+      text-decoration: none;
+    }
+
+    .fc .fc-day-today {
+      background: linear-gradient(180deg, rgba(56,189,248,0.12), rgba(56,189,248,0.025)) !important;
+    }
+
+    .fc .fc-day-today .fc-daygrid-day-frame {
+      box-shadow: inset 0 0 0 2px rgba(56,189,248,0.75);
+    }
+
+    .fc .holiday-date .fc-daygrid-day-frame {
       box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.08),
-        inset 0 12px 20px rgba(0,0,0,0.18);
+        inset 0 0 0 2px rgba(250,204,21,0.45),
+        inset 0 22px 32px rgba(250,204,21,0.06);
     }
 
-    /* Weekend shading + line */
-    .fc .fc-col-header-cell.fc-day-sun,
-    .fc .fc-col-header-cell.fc-day-sat {
-      background: linear-gradient(180deg, var(--weekendTint), var(--weekendTint2));
-    }
-    .fc .fc-daygrid-day.fc-day-sun,
-    .fc .fc-daygrid-day.fc-day-sat {
-      background: linear-gradient(180deg, var(--weekendTint), transparent);
-    }
-    .fc .fc-col-header-cell.fc-day-sat,
-    .fc .fc-daygrid-day.fc-day-sat,
-    .fc .fc-col-header-cell.fc-day-sun,
-    .fc .fc-daygrid-day.fc-day-sun {
-      position: relative;
-    }
-    .fc .fc-col-header-cell.fc-day-sat::after,
-    .fc .fc-daygrid-day.fc-day-sat::after,
-    .fc .fc-col-header-cell.fc-day-sun::after,
-    .fc .fc-daygrid-day.fc-day-sun::after {
-      content: "";
-      position: absolute;
-      left: 0; top: 0; bottom: 0;
-      width: 2px;
-      background: var(--weekendLine);
-      pointer-events: none;
-    }
-
-    /* Today border + Today Focus background */
-    .fc .fc-day-today { position: relative; background: transparent !important; }
-    .fc .fc-day-today::after {
-      content: "";
-      position: absolute;
-      inset: 6px;
-      border: 2px solid var(--todayBorder);
-      border-radius: 12px;
-      pointer-events: none;
-      opacity: 0.78;
-    }
-
-    .fc .today-focus {
-      background: linear-gradient(180deg, var(--todayColGlow), var(--todayColGlow2)) !important;
-    }
-    .fc .today-focus .evt-title { font-size: calc(1.05em * var(--todayEventBoost)); font-weight: 750; }
-    .fc .today-focus .evt-time  { font-size: calc(0.85em * var(--todayEventBoost)); }
-
-    /* Countdown chip inside day cell */
-    .day-chip {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      z-index: 5;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: var(--chipBg);
-      border: 1px solid var(--chipBorder);
-      color: var(--chipText);
-      font-weight: 900;
-      font-size: 0.70em;
-      letter-spacing: 0.02em;
-      box-shadow: 0 8px 18px var(--chipShadow);
-      max-width: calc(100% - 16px);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      pointer-events: none;
-    }
-    .day-chip .muted { color: var(--chipMuted); font-weight: 900; }
-
-    /* Holiday day styling */
-    .fc .is-holiday {
-      position: relative;
-      background: linear-gradient(180deg, var(--holidayGlow), transparent) !important;
-    }
-    .fc .is-holiday .fc-daygrid-day-frame {
-      box-shadow:
-        inset 0 0 0 2px var(--holidayBorder),
-        inset 0 18px 26px rgba(0,0,0,0.22);
-    }
-    .fc .is-holiday::before {
+    .fc .holiday-date::before {
       content: attr(data-holiday-label);
       position: absolute;
       top: 8px;
       right: 10px;
+      z-index: 2;
+      max-width: calc(100% - 62px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       padding: 3px 8px;
       border-radius: 999px;
-      background: var(--holidayLabelBg);
-      border: 1px solid rgba(255,255,255,0.18);
-      color: rgba(255,255,255,0.92);
-      font-size: 0.72em;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      z-index: 4;
-      pointer-events: none;
+      border: 1px solid rgba(255,255,255,0.13);
+      background: rgba(0,0,0,0.30);
+      color: rgba(255,255,255,0.80);
+      font-size: 0.68em;
+      font-weight: 830;
     }
 
-    /* Events */
     .fc .fc-daygrid-event {
       border: 0;
-      border-radius: 8px;
-      padding: 2px 6px;
-      margin: 2px 4px 0;
-      color: #fff;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
-    }
-    .fc .fc-daygrid-block-event {
-      position: relative;
       border-radius: 6px;
-      padding: 6px 10px;
-      margin: 4px 4px 0;
-      box-shadow:
-        0 1px 0 rgba(255,255,255,0.14) inset,
-        0 6px 14px rgba(0,0,0,0.18);
-      overflow: hidden;
-    }
-    .fc .fc-daygrid-block-event::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
-      opacity: 0.25;
-      pointer-events: none;
-    }
-    .fc .fc-daygrid-block-event::after {
-      content: "";
-      position: absolute;
-      left: 0; top: 0; bottom: 0;
-      width: 6px;
-      background: rgba(255,255,255,0.35);
-      opacity: 0.35;
-      pointer-events: none;
+      margin: 2px 4px 0;
+      padding: 4px 7px;
+      color: #fff;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 4px 12px rgba(0,0,0,0.18);
     }
 
-    .fc .evt-past-today { opacity: 0.45; filter: saturate(0.85); }
+    .fc .fc-daygrid-event.event-school { background: var(--school); }
+    .fc .fc-daygrid-event.event-sports { background: var(--sports); }
+    .fc .fc-daygrid-event.event-other { background: var(--other); }
+    .fc .fc-daygrid-event.event-randy { background: var(--randy); }
+    .fc .fc-daygrid-event.event-leslie { background: var(--leslie); }
 
-    /* Category colors */
-    .fc .event-school { background: var(--school); }
-    .fc .event-sports { background: var(--sports); }
-    .fc .event-other  { background: var(--other);  }
-    .fc .event-randy  { background: var(--randy);  }
-    .fc .event-leslie { background: var(--leslie); }
-
-    /* Sparkle outline for holiday events */
-    .fc .holiday-sparkle {
-      box-shadow:
-        0 0 0 1.5px var(--sparkleOuter),
-        0 0 0 4px rgba(250,204,21,0.10),
-        0 0 0 1px var(--sparkleInner) inset,
-        0 1px 0 rgba(255,255,255,0.10) inset !important;
-    }
-
-    /* eventContent layout */
     .fc .evt {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       min-width: 0;
+      max-width: 100%;
       white-space: nowrap;
     }
+
+    .fc .evt-icon,
+    .fc .evt-time,
+    .fc .evt-title {
+      position: relative;
+      z-index: 1;
+    }
+
     .fc .evt-icon {
       flex: 0 0 auto;
-      font-size: 1.05em;
+      font-size: 1.06em;
       line-height: 1;
-      opacity: 0.95;
     }
+
+    .fc .evt-time {
+      flex: 0 0 auto;
+      font-size: 0.82em;
+      font-weight: 850;
+      opacity: 0.94;
+    }
+
     .fc .evt-title {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      font-size: 0.98em;
+      font-weight: 760;
+      line-height: 1.12;
     }
 
-    /* Force 4 rows to fill height */
-    .fc-daygrid-body,
-    .fc-daygrid-body table { height: 100%; }
-    .fc-daygrid-day { height: calc(100% / 4); }
-
-    /* 4K readability */
-    body { font-size: 18px; }
-    @media (min-width: 3000px) {
-      body { font-size: 24px; }
-      .fc .fc-toolbar-title { font-size: 1.55em; }
-      .fc .fc-col-header-cell-cushion { font-size: 1.0em; }
-      .fc .evt-title { font-size: 1.12em; }
+    .fc .evt-past-today {
+      opacity: 0.42;
+      filter: saturate(0.8);
     }
 
-    /* Version + status badge */
-    #status-badge {
-      position: fixed;
-      right: 10px;
-      bottom: 8px;
-      display: inline-flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 6px 10px;
-      border-radius: 10px;
-      background: rgba(0,0,0,0.25);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: rgba(255,255,255,0.50);
-      font-size: 0.70em;
-      letter-spacing: 0.04em;
-      z-index: 9999;
-      user-select: none;
-      pointer-events: none;
-      backdrop-filter: blur(2px);
-      min-width: 260px;
-    }
-    #status-badge.hidden { display: none !important; }
-    #status-badge .ver { font-weight: 900; color: rgba(255,255,255,0.62); }
-    #status-badge .ref { color: rgba(255,255,255,0.48); }
-    #status-badge .menu { color: rgba(255,255,255,0.48); }
-    #status-badge .ok { color: var(--ok); font-weight: 800; }
-    #status-badge .err { color: var(--err); font-weight: 800; }
-    #status-badge .warn { color: var(--warn); font-weight: 800; }
-  
-    /* =========================================================
-       SIDEBAR (Today Focus)
-       ========================================================= */
-    #main-row{
-      flex: 1 1 auto;
-      min-height: 0;
-      display: flex;
-      gap: 12px;
-      padding: 0 10px 8px;
-      box-sizing: border-box;
-    }
-    
-    /* =========================================================
-       SECTION: CALENDAR STACK (calendar + meals share exact width)
-       ========================================================= */
-    #calendar-stack{
-      flex: 1 1 auto;
-      min-width: 0;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-    }
-#calendar{
-      flex: 1 1 auto;
-      min-width: 0;
-      min-height: 0;
-    }
-    #sidebar{
-      flex: 0 0 22vw;
-      max-width: 560px;
-      min-width: 340px;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 4px 2px 0 0;
-      box-sizing: border-box;
-    }
-    @media (max-width: 1200px){
-      #sidebar{ display:none; }
-      #main-row{ padding-right: 10px; }
-    }
-
-    .side-card{
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.12));
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 16px;
-      box-shadow: 0 12px 26px rgba(0,0,0,0.28);
-      padding: 12px 12px 10px;
-      min-height: 0;
+    .day-chip {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 3;
+      max-width: calc(100% - 16px);
       overflow: hidden;
-    }
-    .side-card-small{
-      padding: 10px 12px;
-      opacity: 0.92;
-    }
-    .side-title{
-      display:flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
-    .side-title-strong{
-      font-weight: 850;
-      letter-spacing: 0.02em;
-      color: rgba(255,255,255,0.92);
-      font-size: 1.02em;
-    }
-    .side-title-muted{
-      color: rgba(255,255,255,0.58);
-      font-weight: 750;
-      font-size: 0.82em;
+      text-overflow: ellipsis;
       white-space: nowrap;
-    }
-    .side-sub{
-      color: rgba(255,255,255,0.70);
-      font-weight: 750;
-      font-size: 0.88em;
-      margin-bottom: 10px;
-      line-height: 1.25;
-    }
-    .side-section{
-      margin-top: 10px;
-      min-height: 0;
-    }
-    .side-section-title{
-      color: rgba(255,255,255,0.66);
-      font-weight: 900;
-      font-size: 0.74em;
-      letter-spacing: 0.10em;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-    .side-list{
-      display:flex;
-      flex-direction: column;
-      gap: 6px;
-      min-height: 0;
-    }
-    .side-item{
-      display:flex;
-      align-items: flex-start;
-      gap: 8px;
-      padding: 7px 8px;
-      border-radius: 12px;
-      background: rgba(0,0,0,0.20);
-      border: 1px solid rgba(255,255,255,0.10);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
-      min-width: 0;
-    }
-    .side-item .dot{
-      width: 10px;
-      height: 10px;
+      padding: 3px 8px;
       border-radius: 999px;
-      margin-top: 4px;
-      flex: 0 0 auto;
-      background: rgba(255,255,255,0.35);
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.30);
+      color: rgba(255,255,255,0.88);
+      font-size: 0.68em;
+      font-weight: 880;
+      pointer-events: none;
     }
-    .side-item .txt{
+
+    .day-chip .muted { color: rgba(255,255,255,0.68); }
+
+    #meals-footer {
+      flex: 0 0 auto;
+      width: 100%;
+      overflow: hidden;
+      padding: 7px 0 0;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.13));
+    }
+
+    #meals-footer.hidden { display: none !important; }
+
+    #meals-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0;
+      align-items: stretch;
+    }
+
+    .meal-col {
       min-width: 0;
-      display:flex;
+      min-height: 54px;
+      margin: 0 4px 8px;
+      padding: 8px 8px 7px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 7px;
+      background: var(--meal-bg);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .meal-col.empty {
+      visibility: hidden;
+      pointer-events: none;
+      border-color: transparent !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .meal-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .meal-row + .meal-row { margin-top: 5px; }
+
+    .meal-pill {
+      flex: 0 0 auto;
+      min-width: 26px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.22);
+      text-align: center;
+      font-size: 0.76em;
+      line-height: 1.2;
+    }
+
+    .meal-main {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(255,255,255,0.88);
+      font-size: 0.80em;
+      font-weight: 790;
+      line-height: 1.18;
+    }
+
+    .meal-lunch {
+      min-width: 0;
+      display: flex;
       flex-direction: column;
       gap: 1px;
-      flex: 1 1 auto;
+      line-height: 1.15;
     }
-    .side-item .line1{
-      color: rgba(255,255,255,0.92);
-      font-weight: 820;
-      font-size: 0.90em;
-      overflow:hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+
+    .meal-entrees,
+    .meal-sides {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
-    .side-item .line2{
+
+    .meal-entrees {
+      -webkit-line-clamp: 2;
+      color: rgba(255,255,255,0.90);
+      font-size: 0.80em;
+      font-weight: 800;
+    }
+
+    .meal-sides {
+      -webkit-line-clamp: 2;
       color: rgba(255,255,255,0.62);
-      font-weight: 760;
-      font-size: 0.78em;
-      overflow:hidden;
-      text-overflow: ellipsis;
+      font-size: 0.74em;
+      font-weight: 720;
+    }
+
+    #weather-panel {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 18px;
+      background:
+        radial-gradient(120% 110% at 26% 0%, rgba(95,180,255,0.30) 0%, rgba(25,65,108,0.24) 36%, transparent 67%),
+        linear-gradient(145deg, rgba(16,38,64,0.96), rgba(8,13,29,0.97) 56%, rgba(14,26,45,0.97));
+    }
+
+    #weather-panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 32%);
+      opacity: 0.7;
+    }
+
+    #weather-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    #weather-now {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .wx-city {
+      color: rgba(255,255,255,0.90);
+      font-size: 1.18em;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .wx-temp {
+      margin-top: 2px;
+      font-size: 4.5em;
+      font-weight: 900;
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    .wx-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .wx-chip {
+      padding: 4px 8px;
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.78);
+      font-size: 0.72em;
+      font-weight: 750;
       white-space: nowrap;
     }
 
-    /* =========================================================
-       HOLIDAY MODE (accent-only theme overrides)
-       ========================================================= */
-    .holiday-accent-glow{
-      position: absolute;
-      inset: -40px -40px auto -40px;
-      height: 120px;
-      background: radial-gradient(closest-side, rgba(255,255,255,0.08), transparent 70%);
-      pointer-events: none;
-      opacity: 0.85;
-      mix-blend-mode: screen;
+    .wx-now-right {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      text-align: right;
     }
 
-  
-/* =========================================================
-   FULLSCREEN LAYOUT KNOBS (calendar + weather + traffic)
-   - Adjust these to change how much space the bottom row gets
-   ========================================================= */
-:root{
-  --TOP_VH: 67;        /* calendar+sidebar area height (percent of screen) */
-  --BOTTOM_VH: 33;     /* weather+traffic area height (percent of screen) */
-  --BOTTOM_GAP: 14px;
-  --BOTTOM_PAD: 14px;
-  --BOTTOM_RADIUS: 16px;
-}
+    .wx-big-icon {
+      font-size: 2.55em;
+      line-height: 1;
+    }
 
-/* Fullscreen grid */
-html, body { height: 100%; }
-body { margin: 0; }
-#screen-grid{
-  height: 100vh;
-  display: grid;
-  grid-template-rows: calc(var(--TOP_VH) * 1vh) calc(var(--BOTTOM_VH) * 1vh);
-  gap: 0;
-  background: var(--bg);
-}
+    .wx-cond {
+      max-width: 170px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 850;
+    }
 
-/* Keep the existing calendar wrapper/card filling the top row */
-#top-area{ height: 100%; display: flex; }
-#top-area #calendar-wrapper{ height: 100%; width: 100%; padding: 0; display:flex; }
-#top-area #calendar-card{ height: 100%; width: 100%; }
+    .wx-hilo {
+      color: rgba(255,255,255,0.76);
+      font-size: 0.88em;
+      font-weight: 760;
+    }
 
-/* Bottom row panels */
-#bottom-area{
-  height: 100%;
-  padding: var(--BOTTOM_PAD);
-  display: grid;
-  grid-template-columns: 30% 1fr 30%;
-  gap: var(--BOTTOM_GAP);
-  align-items: stretch;
-  box-sizing: border-box;
-}
-#bottom-spacer{background:transparent; border:none; box-shadow:none;}
+    #weather-hourly {
+      display: flex;
+      gap: 8px;
+      padding: 10px 0;
+      border-top: 1px solid rgba(255,255,255,0.13);
+      border-bottom: 1px solid rgba(255,255,255,0.13);
+    }
 
-.bottom-panel{
-  border-radius: var(--BOTTOM_RADIUS);
-  background: linear-gradient(180deg, rgba(14,28,48,0.86), rgba(8,16,29,0.92));
-  border: 1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.35);
-  overflow: hidden;
-  position: relative;
-}
+    .wx-hour {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 8px 5px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.055);
+      text-align: center;
+    }
 
-/* =========================================================
-   SECTION: WEATHER PANEL CSS
-   Search: SECTION: WEATHER PANEL CSS
-   ========================================================= */
-#weather-panel{
-  padding: 16px 16px 14px 16px;
-  display:flex;
-  flex-direction:column;
-  gap: 10px;
-}
+    .wx-hour .time {
+      color: rgba(255,255,255,0.68);
+      font-size: 0.72em;
+      font-weight: 830;
+    }
 
-/* Top: current + today stats */
-#weather-top{
-  display:grid;
-  grid-template-columns: 1fr auto;
-  gap: 14px;
-  align-items:end;
-}
+    .wx-hour .icon {
+      margin: 5px 0 3px;
+      font-size: 1.22em;
+      line-height: 1;
+    }
 
-#weather-now{
-  display:flex;
-  gap: 12px;
-  align-items:flex-end;
-  min-width:0;
-}
+    .wx-hour .temp {
+      font-size: 0.94em;
+      font-weight: 900;
+    }
 
-#weather-icon{
-  font-size: 42px;
-  line-height: 1;
-  transform: translateY(-6px);
-  opacity: 0.95;
-}
+    #weather-forecast {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-height: 0;
+    }
 
-#weather-temp{
-  font-size: 66px;
-  font-weight: 850;
-  line-height: 0.95;
-  letter-spacing: -0.03em;
-}
+    .wx-day {
+      display: grid;
+      grid-template-columns: 48px 32px 1fr;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      padding: 8px 9px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.048);
+    }
 
-#weather-now-meta{
-  display:flex;
-  flex-direction:column;
-  gap: 4px;
-  min-width:0;
-  padding-bottom: 4px;
-}
+    .wx-day .day {
+      font-size: 0.78em;
+      font-weight: 900;
+    }
 
-#weather-cond{
-  font-size: 18px;
-  font-weight: 800;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
+    .wx-day .icon {
+      text-align: center;
+      font-size: 1.15em;
+    }
 
-#weather-updated{
-  font-size: 12px;
-  opacity: 0.75;
-}
+    .wx-range {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
 
-#weather-today{
-  text-align:right;
-  display:flex;
-  flex-direction:column;
-  gap: 6px;
-  align-items:flex-end;
-}
+    .wx-low,
+    .wx-high {
+      width: 34px;
+      font-size: 0.80em;
+      font-weight: 850;
+    }
 
-#weather-hilo{
-  font-size: 16px;
-  font-weight: 850;
-  opacity: 0.95;
-}
+    .wx-low {
+      color: rgba(255,255,255,0.58);
+      text-align: right;
+    }
 
-.wx-chiprow{ display:flex; gap: 8px; flex-wrap:wrap; justify-content:flex-end; }
-.wx-chip{
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.10);
-  font-size: 13px;
-  font-weight: 750;
-  opacity: 0.92;
-}
+    .wx-high { color: rgba(255,255,255,0.90); }
 
-/* Timeline (2-hour intervals) */
-#weather-timeline{
-  display:flex;
-  gap: 10px;
-  padding: 10px 0;
-  border-top: 1px solid rgba(255,255,255,0.10);
-  border-bottom: 1px solid rgba(255,255,255,0.10);
-}
-
-.wx-slot{
-  flex:1 1 0;
-  min-width:0;
-  border-radius: 14px;
-  padding: 10px 10px 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  display:flex;
-  flex-direction:column;
-  gap: 6px;
-}
-
-.wx-slot .time{
-  font-size: 12px;
-  font-weight: 800;
-  opacity: 0.80;
-}
-
-.wx-slot .temp{
-  font-size: 16px;
-  font-weight: 900;
-  letter-spacing:-0.01em;
-}
-
-.wx-slot .pop{
-  font-size: 12px;
-  font-weight: 800;
-  opacity: 0.78;
-}
-
-.wx-slot .bar{
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  overflow:hidden;
-}
-.wx-slot .bar > i{
-  display:block;
-  height:100%;
-  width: 0%;
-  background: rgba(120,200,255,0.85);
-}
-
-/* Next 3 days */
-#weather-forecast{
-  margin-top: 2px;
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.day-card{
-  padding: 12px 12px 10px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  min-width:0;
-}
-
-.day-card .d{ font-size: 12px; opacity: 0.75; font-weight: 900; letter-spacing:0.06em; text-transform:uppercase;}
-.day-card .main{ display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:10px; }
-.day-card .ico{ font-size: 22px; line-height:1; }
-.day-card .hi{ font-size: 18px; font-weight: 900; }
-.day-card .lo{ font-size: 12px; opacity: 0.80; font-weight:800; }
-.day-card .p{ font-size: 12px; opacity: 0.82; margin-top: 6px; font-weight:750; }
-
-/* ========================================================= */
-
-/* Traffic */
-#traffic-panel iframe{ width:100%; height:100%; border:0; }
-#traffic-label{
-  position:absolute; top:10px; left:10px;
-  padding: 6px 10px; border-radius: 999px;
-  background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.10);
-  font-size: 12px; opacity: 0.85;
-}
-
-/* Make sure existing status badge stays visible on top area only */
-#status-badge{ z-index: 5; }
-
-
-    /* =========================================================
-       CHRISTMAS MODE: Festive header line (Option A)
-       ========================================================= */
-    #festive-header-line{
-      position: absolute;
-      left: 18px;
-      right: 18px;
-      top: 10px;
-      height: 10px;
+    .wx-bar {
+      position: relative;
+      flex: 1 1 auto;
+      height: 9px;
+      overflow: hidden;
       border-radius: 999px;
-      background: linear-gradient(90deg,
-        rgba(34,197,94,0.55),
-        rgba(239,68,68,0.45),
-        rgba(34,197,94,0.55)
-      );
-      opacity: 0.0; /* shown only in christmas mode */
-      box-shadow: 0 6px 18px rgba(0,0,0,0.20), 0 0 18px rgba(34,197,94,0.10);
-      pointer-events: none;
-      z-index: 6;
-    }
-    #festive-header-line::after{
-      content:"";
-      position:absolute;
-      inset:-2px;
-      border-radius:999px;
-      background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.28), transparent 35%),
-                  radial-gradient(circle at 55% 50%, rgba(255,255,255,0.18), transparent 40%),
-                  radial-gradient(circle at 85% 50%, rgba(255,255,255,0.22), transparent 38%);
-      opacity: 0.55;
-      mix-blend-mode: screen;
-      pointer-events:none;
+      background: rgba(255,255,255,0.11);
     }
 
-    /* =========================================================
-       CHRISTMAS MODE: Sidebar accent (Option C)
-       ========================================================= */
-    #sidebar.christmas-accent .side-card{
-      border: 1px solid rgba(255,255,255,0.16);
-      box-shadow: 0 12px 26px rgba(0,0,0,0.28),
-                  0 0 0 2px rgba(239,68,68,0.16),
-                  0 0 0 4px rgba(34,197,94,0.12);
-    }
-    #sidebar.christmas-accent .side-title-strong{
-      text-shadow: 0 0 10px rgba(34,197,94,0.10);
+    .wx-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #5aa7ff, #7df0d2, #ffd166);
     }
 
-
-    /* =========================================================
-       WEATHER PANEL (polish)
-       ========================================================= */
-    #weather-panel{
-      display:flex;
-      flex-direction:column;
-      align-items:flex-start;
-      justify-content:flex-start;
-      padding: 14px 16px;
-      gap: 10px;
+    #traffic-panel {
+      position: relative;
+      background: #08111d;
     }
-    .wx-top{display:flex;align-items:center;gap:14px;width:100%;}
-    .wx-temp{font-size:54px;font-weight:800;letter-spacing:-0.02em;line-height:1;margin:0;}
-    .wx-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;}
-    .wx-summary{font-size:16px;font-weight:700;opacity:0.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .wx-updated{font-size:12px;opacity:0.75;}
-    .wx-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;width:100%;padding-top:8px;border-top:1px solid rgba(255,255,255,0.10);}
-    .wx-kv{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);}
-    .wx-k{font-size:11px;opacity:0.75;text-transform:uppercase;letter-spacing:0.06em;}
-    .wx-v{font-size:13px;font-weight:700;opacity:0.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .wx-forecast{display:flex;gap:10px;width:100%;margin-top:6px;}
-    .wx-day{flex:1;min-width:0;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.08);}
-    .wx-day .d{font-size:11px;opacity:0.75;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
-    .wx-day .t{font-size:13px;font-weight:800;opacity:0.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
+    #traffic-panel iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
 
-    /* -------- Weather (enhanced, more like iOS card) -------- */
-:root{
-  --wx-now-temp: 3.4em;
-  --wx-now-city: 1.2em;
-  --wx-hourly-temp: 1.05em;
-  --wx-daily-temp: 1.0em;
-}
-#weather-panel{
-  background: radial-gradient(120% 120% at 30% 10%, rgba(140,160,200,0.22) 0%, rgba(10,18,34,0.85) 55%, rgba(6,10,20,0.92) 100%);
-  border: 1px solid rgba(255,255,255,0.14);
-  box-shadow: 0 18px 60px rgba(0,0,0,0.45);
-}
-#weather-now{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:16px;
-  padding: 2px 2px 8px 2px;
-}
-#weather-now .city{ font-size: var(--wx-now-city); font-weight: 800; letter-spacing: .02em; }
-#weather-now .temp{ font-size: var(--wx-now-temp); line-height: .95; font-weight: 900; }
-#weather-now .meta{ display:flex; gap:10px; flex-wrap:wrap; opacity:.9; font-size:.95em; }
-#weather-now .chip{ border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); padding:4px 8px; border-radius:999px; }
-#weather-now .right{ text-align:right; display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
-#weather-now .icon{ font-size:2.1em; line-height:1; }
-#weather-now .cond{ font-weight:800; }
-#weather-now .hilow{ opacity:.9; font-weight:700; }
+    #traffic-label {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1;
+      padding: 5px 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 999px;
+      background: rgba(0,0,0,0.44);
+      color: rgba(255,255,255,0.82);
+      font-size: 0.72em;
+      font-weight: 780;
+      backdrop-filter: blur(3px);
+    }
 
-#weather-hourly{
-  display:flex; gap:10px;
-  padding: 8px 0 10px 0;
-  border-top: 1px solid rgba(255,255,255,0.10);
-  border-bottom: 1px solid rgba(255,255,255,0.10);
-  margin: 6px 0 10px 0;
-}
-.wx-hour{
-  flex:1 1 0; min-width:0;
-  text-align:center;
-  padding: 8px 6px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-.wx-hour .t{ opacity:.85; font-weight:800; font-size:.95em; }
-.wx-hour .i{ font-size:1.35em; margin:6px 0; }
-.wx-hour .v{ font-size: var(--wx-hourly-temp); font-weight:900; }
+    .load-note {
+      color: rgba(255,255,255,0.66);
+      font-size: 0.85em;
+      font-weight: 760;
+    }
 
-#weather-forecast{ display:flex; flex-direction:column; gap:10px; }
-.wx-day{
-  display:grid;
-  grid-template-columns: 54px 40px 1fr;
-  gap:10px;
-  align-items:center;
-  padding: 10px 10px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.045);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-.wx-day .d{ font-weight:900; opacity:.95; }
-.wx-day .i{ font-size:1.35em; text-align:center; }
-.wx-day .temps{ display:flex; align-items:center; gap:10px; font-size: var(--wx-daily-temp); }
-.wx-day .lo{ opacity:.78; font-weight:800; width:46px; text-align:right; }
-.wx-day .hi{ font-weight:900; width:46px; }
-.wx-day .bar{ position:relative; height:10px; border-radius:999px; background: rgba(255,255,255,0.10); overflow:hidden; flex:1 1 auto; }
-.wx-day .fill{ position:absolute; top:0; bottom:0; border-radius:999px; background: linear-gradient(90deg, rgba(80,160,255,0.95), rgba(125,240,210,0.95)); }
+    @media (min-width: 3000px) {
+      body { font-size: 24px; }
+      :root { --sidebar-width: 520px; --pad: 18px; --gap: 18px; }
+      .fc .fc-toolbar-title { font-size: 1.38em; }
+      .fc .evt-title { font-size: 1.02em; }
+      .meal-col { min-height: 76px; padding: 11px 10px 10px; }
+      .wx-temp { font-size: 4.9em; }
+    }
 
-
-
-/* =========================================================
-   SECTION: WEATHER PANEL CSS OVERRIDES (v1.16.0)
-   Search: SECTION: WEATHER PANEL CSS OVERRIDES
-   ========================================================= */
-#weather-panel{
-  padding: 16px 16px 14px 16px;
-  display:flex;
-  flex-direction:column;
-  gap: 10px;
-}
-
-/* Top: current + today stats */
-#weather-top{
-  display:grid;
-  grid-template-columns: 1fr auto;
-  gap: 14px;
-  align-items:end;
-}
-
-#weather-now{
-  display:flex;
-  gap: 12px;
-  align-items:flex-end;
-  min-width:0;
-}
-
-#weather-icon{
-  font-size: 42px;
-  line-height: 1;
-  transform: translateY(-6px);
-  opacity: 0.95;
-}
-
-#weather-temp{
-  font-size: 66px;
-  font-weight: 850;
-  line-height: 0.95;
-  letter-spacing: -0.03em;
-}
-
-#weather-now-meta{
-  display:flex;
-  flex-direction:column;
-  gap: 4px;
-  min-width:0;
-  padding-bottom: 4px;
-}
-
-#weather-cond{
-  font-size: 18px;
-  font-weight: 800;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-#weather-updated{
-  font-size: 12px;
-  opacity: 0.75;
-}
-
-#weather-today{
-  text-align:right;
-  display:flex;
-  flex-direction:column;
-  gap: 6px;
-  align-items:flex-end;
-}
-
-#weather-hilo{
-  font-size: 16px;
-  font-weight: 850;
-  opacity: 0.95;
-}
-
-.wx-chiprow{ display:flex; gap: 8px; flex-wrap:wrap; justify-content:flex-end; }
-.wx-chip{
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.10);
-  font-size: 13px;
-  font-weight: 750;
-  opacity: 0.92;
-}
-
-/* Timeline (2-hour intervals) */
-#weather-timeline{
-  display:flex;
-  gap: 10px;
-  padding: 10px 0;
-  border-top: 1px solid rgba(255,255,255,0.10);
-  border-bottom: 1px solid rgba(255,255,255,0.10);
-}
-
-.wx-slot{
-  flex:1 1 0;
-  min-width:0;
-  border-radius: 14px;
-  padding: 10px 10px 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  display:flex;
-  flex-direction:column;
-  gap: 6px;
-}
-
-.wx-slot .time{
-  font-size: 12px;
-  font-weight: 800;
-  opacity: 0.80;
-}
-
-.wx-slot .temp{
-  font-size: 16px;
-  font-weight: 900;
-  letter-spacing:-0.01em;
-}
-
-.wx-slot .pop{
-  font-size: 12px;
-  font-weight: 800;
-  opacity: 0.78;
-}
-
-.wx-slot .bar{
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  overflow:hidden;
-}
-.wx-slot .bar > i{
-  display:block;
-  height:100%;
-  width: 0%;
-  background: rgba(120,200,255,0.85);
-}
-
-/* Next 3 days */
-#weather-forecast{
-  margin-top: 2px;
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.day-card{
-  padding: 12px 12px 10px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  min-width:0;
-}
-
-.day-card .d{ font-size: 12px; opacity: 0.75; font-weight: 900; letter-spacing:0.06em; text-transform:uppercase;}
-.day-card .main{ display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:10px; }
-.day-card .ico{ font-size: 22px; line-height:1; }
-.day-card .hi{ font-size: 18px; font-weight: 900; }
-.day-card .lo{ font-size: 12px; opacity: 0.80; font-weight:800; }
-.day-card .p{ font-size: 12px; opacity: 0.82; margin-top: 6px; font-weight:750; }
-
-/* ========================================================= */
-</style>
+    @media (max-width: 1200px) {
+      #sidebar { display: none; }
+      #bottom-area { grid-template-columns: 1fr 1fr; }
+      #bottom-spacer { display: none; }
+    }
+  </style>
 </head>
 
 <body>
+  <div id="screen-grid">
+    <section id="top-area">
+      <div id="calendar-card">
+        <div id="main-row">
+          <div id="left-col">
+            <div id="calendar"></div>
+            <div id="meals-footer">
+              <div id="meals-grid" aria-label="Current week school meals"></div>
+            </div>
+          </div>
 
-<div id="screen-grid">
-  <div id="top-area">
-    <div id="calendar-wrapper">
-    <div id="calendar-card">
-      <div class="holiday-accent-glow" id="holiday-accent-glow"></div>
-      <div id="festive-header-line" aria-hidden="true"></div>
-      
-      <div id="main-row">
-        <div id="calendar-stack">
-          <div id="calendar"></div>
+          <aside id="sidebar" aria-label="Today and status">
+            <div class="side-card grow">
+              <div class="side-title">
+                <strong>Today</strong>
+                <span id="today-date-label">—</span>
+              </div>
+              <div class="side-sub" id="today-summary">Loading…</div>
 
-          <!-- =========================================================
-               SECTION: MEALS FOOTER (aligned to calendar width)
-               ========================================================= -->
-          <div id="meals-footer">
-            <div id="meals-grid" aria-label="Meals Grid"></div>
+              <div class="side-section">
+                <div class="side-section-title">Next Up</div>
+                <div class="side-list" id="today-upcoming"></div>
+              </div>
+
+              <div class="side-section">
+                <div class="side-section-title">Games</div>
+                <div class="side-list" id="today-games"></div>
+              </div>
+            </div>
+
+            <div class="side-card">
+              <div class="side-title">
+                <strong>Status</strong>
+              </div>
+              <div class="side-sub status-line" id="side-status-version">Version: —</div>
+              <div class="side-sub status-line" id="side-last-refresh">Last refreshed: —</div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="bottom-area">
+      <section class="bottom-panel" id="weather-panel" aria-label="Weather">
+        <div id="weather-now">
+          <div>
+            <div class="wx-city">Saint Louis</div>
+            <div class="wx-temp" id="weather-temp">--°</div>
+            <div class="wx-meta">
+              <span class="wx-chip" id="weather-feels">Feels —</span>
+              <span class="wx-chip" id="weather-wind">Wind —</span>
+              <span class="wx-chip" id="weather-precip">Precip —</span>
+              <span class="wx-chip" id="weather-updated">Updated —</span>
+            </div>
+          </div>
+          <div class="wx-now-right">
+            <div class="wx-big-icon" id="weather-icon">☁️</div>
+            <div class="wx-cond" id="weather-cond">Loading…</div>
+            <div class="wx-hilo" id="weather-hilo">H: --° L: --°</div>
           </div>
         </div>
+        <div id="weather-hourly" aria-label="Hourly forecast">
+          <div class="load-note">Loading hourly forecast…</div>
+        </div>
+        <div id="weather-forecast" aria-label="Daily forecast"></div>
+      </section>
 
-        <aside id="sidebar" aria-label="Today Focus Sidebar">
-          <div class="side-card">
-            <div class="side-title">
-              <span class="side-title-strong">Today</span>
-              <span class="side-title-muted" id="today-date-label">—</span>
-            </div>
-            <div class="side-sub" id="today-summary">Loading…</div>
+      <div id="bottom-spacer" aria-hidden="true"></div>
 
-            <div class="side-section">
-              <div class="side-section-title">Next up</div>
-              <div id="today-upcoming" class="side-list"></div>
-            </div>
-
-            <div class="side-section">
-              <div class="side-section-title">Games</div>
-              <div id="today-games" class="side-list"></div>
-            </div>
-          </div>
-
-          <div class="side-card side-card-small">
-            <div class="side-title">
-              <span class="side-title-strong">Status</span>
-              <span class="side-title-muted" id="side-last-refresh">—</span>
-            </div>
-            <div class="side-sub" id="side-meals-status">Version: —</div>
-          </div>
-        </aside>
-      </div>
-
-      <!-- =========================================================
-     SECTION: MEALS FOOTER (aligned to calendar columns)
-     - No separate day header row (menus align under calendar columns)
-     - To edit styling: search "SECTION: MEALS FOOTER CSS"
-     - To edit rendering: search "SECTION: MEALS FOOTER JS"
-     ========================================================= -->
-      
-    </div>
-  </div>
-
-  <div id="status-badge">
-    <div class="ver">v1.15.2</div>
-    <div class="ref" id="last-refreshed">Last refreshed: —</div>
-    <div class="menu" id="menu-status">Meals: <span class="warn">loading…</span></div>
+      <section class="bottom-panel" id="traffic-panel" aria-label="Traffic map">
+        <div id="traffic-label">Traffic</div>
+        <iframe
+          id="traffic-frame"
+          title="Waze live traffic"
+          src="https://embed.waze.com/iframe?zoom=13&amp;lat=38.638412&amp;lon=-90.457971&amp;ct=livemap"
+          allowfullscreen
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </section>
+    </section>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      const APP_VERSION = "v1.15.0";
+      const ENABLE_HOLIDAY_MODE = false;
+      const ENABLE_CHRISTMAS_COUNTDOWN = true;
+      const ENABLE_GAME_COUNTDOWN_CHIPS = true;
+      const AUTO_HIDE_MEALS_FOOTER = true;
 
-      // =========================================================
-      // FEATURE TOGGLES (easy on/off)
-      // =========================================================
-      const APP_VERSION = "v1.16.2";
-      const SHOW_STATUS_BADGE = false;         // bottom-right version box
-      const AUTO_HIDE_MEALS_FOOTER = true;     // hide footer on weekends or when no posted menu today
-      const ENABLE_TODAY_FOCUS = true;         // highlight today's column + bigger event text
-      const ENABLE_COUNTDOWN_CHIPS = true;     // "Game in…" chips
-      const ENABLE_CHRISTMAS_COUNTDOWN = true;  // chip next to title // chip next to title
-
-      const ENABLE_HOLIDAY_MODE = false;        // auto seasonal accents
-      const HOLIDAY_MODE_PREVIEW = "";         // e.g. "christmas" | "halloween" | "newyear" | "" (auto)
-
-
-      // Sources
-      const ICS_URL  = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
+      const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
+      const HOME_LAT = 38.654398639984805;
+      const HOME_LON = -90.45877499401288;
 
-      // Refresh behavior
       const AUTO_REFRESH_MINUTES = 10;
-      const COUNTDOWN_REFRESH_SECONDS = 1;
-
-      // Meals formatting limits
+      const WEATHER_REFRESH_MINUTES = 10;
+      const COUNTDOWN_LOOKAHEAD_DAYS = 14;
       const BREAKFAST_MAX_ITEMS = 2;
       const LUNCH_MAX_ENTREES = 3;
 
-      // Countdown behavior knobs
-      const COUNTDOWN_MAX_PER_DAY = 1;
-      const COUNTDOWN_LOOKAHEAD_DAYS = 14;
+      const els = {
+        calendar: document.getElementById("calendar"),
+        mealsFooter: document.getElementById("meals-footer"),
+        mealsGrid: document.getElementById("meals-grid"),
+        todayDate: document.getElementById("today-date-label"),
+        todaySummary: document.getElementById("today-summary"),
+        todayUpcoming: document.getElementById("today-upcoming"),
+        todayGames: document.getElementById("today-games"),
+        sideRefresh: document.getElementById("side-last-refresh"),
+        sideVersion: document.getElementById("side-status-version")
+      };
 
-      // Status badge
-      const statusBadge = document.getElementById("status-badge");
-      if (statusBadge && !SHOW_STATUS_BADGE) statusBadge.classList.add("hidden");
-
-      const lastRefEl = document.getElementById("last-refreshed");
-      const sideLastRefEl = document.getElementById("side-last-refresh");
-      const sideMealsStatusEl = document.getElementById("side-meals-status");
-      const menuStatusEl = document.getElementById("menu-status");
-
-      // =========================================================
-      // SECTION: VERSION DISPLAY (Status box)
-      // - Sidebar Status shows Version (requested)
-      // =========================================================
-      function setVersionDisplays() {
-        // Sidebar Status box (requested location)
-        if (sideMealsStatusEl) {
-          sideMealsStatusEl.innerHTML = `Version: <span class="ver">${APP_VERSION}</span>`;
-        }
-        // Optional bottom-right badge (if enabled)
-        const verEl = document.querySelector("#status-badge .ver");
-        if (verEl) verEl.textContent = APP_VERSION;
+      if (!ENABLE_HOLIDAY_MODE) {
+        document.documentElement.classList.remove("holiday-mode");
       }
 
       setVersionDisplays();
-
-      function setLastRefreshed(reason) {
-        const now = new Date();
-        const suffix = reason ? ` (${reason})` : "";
-        const text = `Last refreshed: ${formatLocalTime(now)}${suffix}`;
-        if (lastRefEl) lastRefEl.textContent = text;
-        if (sideLastRefEl) sideLastRefEl.textContent = formatLocalTime(now);
-      }
-
-      function setMealsStatus(ok, msg) {
-        if (menuStatusEl) {
-          if (ok === true) {
-            menuStatusEl.innerHTML = `Meals: <span class="ok">OK</span>${msg ? " - " + escapeHtml(msg) : ""}`;
-          } else if (ok === false) {
-            menuStatusEl.innerHTML = `Meals: <span class="err">Error</span>${msg ? " - " + escapeHtml(msg) : ""}`;
-          } else {
-            menuStatusEl.innerHTML = `Meals: <span class="warn">loading…</span>`;
-          }
-        }
-
-        if (sideMealsStatusEl) {
-          // Sidebar Status is reserved for version display.
-          // (Meals health stays in the bottom-right status badge if enabled.)
-        }
-      }
-
       setLastRefreshed("loaded");
-      setMealsStatus(null);
 
-      applyHolidayMode();
-
-      // Date helpers
-      function startOfCurrentWeekSunday(d = new Date()) {
-        const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        date.setDate(date.getDate() - date.getDay());
-        date.setHours(0,0,0,0);
-        return date;
-      }
-
-      function addDays(dateObj, days) {
-        const d = new Date(dateObj);
-        d.setDate(d.getDate() + days);
-        return d;
-      }
-
-      function startOfDay(dateObj) {
-        const d = new Date(dateObj);
-        d.setHours(0,0,0,0);
-        return d;
-      }
-
-      function sameDay(a, b) {
-        return a.getFullYear() === b.getFullYear() &&
-               a.getMonth() === b.getMonth() &&
-               a.getDate() === b.getDate();
-      }
-
-      function toYYYYMMDD(dateObj) {
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-        const d = String(dateObj.getDate()).padStart(2, "0");
-        return `${y}-${m}-${d}`;
-      }
-
-      function formatLocalTime(dt) {
-        const mm = dt.getMonth() + 1;
-        const dd = dt.getDate();
-        let hh = dt.getHours();
-        const ampm = hh >= 12 ? "PM" : "AM";
-        hh = hh % 12; if (hh === 0) hh = 12;
-        const min = String(dt.getMinutes()).padStart(2, "0");
-        return `${mm}/${dd} ${hh}:${min} ${ampm}`;
-      }
-
-      function holidayLabelForDate(dateObj) {
-        const m = dateObj.getMonth() + 1;
-        const d = dateObj.getDate();
-        if (m === 12 && d === 24) return "🎄 Christmas Eve";
-        if (m === 12 && d === 25) return "🎁 Christmas Day";
-        if (m === 12 && d === 31) return "🥂 New Year’s Eve";
-        return "";
-      }
-
-      function isBigHolidayDate(dateObj) {
-        const m = dateObj.getMonth() + 1;
-        const d = dateObj.getDate();
-        return (m === 12 && (d === 24 || d === 25 || d === 31));
-      }
-
-      // Rules + icons
       const rules = {
-        randy:  /randy/i,
+        randy: /randy/i,
         leslie: /leslie/i,
-        school: /school|dismissal|class|winter break|no school/i,
+        school: /school|dismissal|class|winter break|no school|mason ridge|party/i,
         basketball: /basketball|bball|little dribblers/i,
         soccer: /soccer|rainbow unicorns/i,
         rainbowUnicorns: /rainbow unicorns/i
       };
 
-      const ICON_BBALL  = "🏀";
-      const ICON_SOCCER_RU = "🌈🦄⚽";
-      const ICON_SOCCER = "⚽";
-      const ICON_SCHOOL = "🐎";
-
-      function classifyEvent(title) {
-        if (rules.randy.test(title))      return { category: "randy",  icon: "" };
-        if (rules.leslie.test(title))     return { category: "leslie", icon: "" };
-        if (rules.basketball.test(title)) return { category: "sports", icon: ICON_BBALL, sport: "basketball" };
-        if (rules.soccer.test(title)) {
-          return { category: "sports", icon: rules.rainbowUnicorns.test(title) ? ICON_SOCCER_RU : ICON_SOCCER, sport: "soccer" };
-        }
-        if (rules.school.test(title))     return { category: "school", icon: ICON_SCHOOL };
-        return { category: "other", icon: "" };
-      }
-
-      // Meals footer
-      const mealsFooter = document.getElementById("meals-footer");
-      const mealsGrid = document.getElementById("meals-grid");
-
-      function setMealsFooterVisible(isVisible) {
-        if (!mealsFooter) return;
-        mealsFooter.classList.toggle("hidden", !isVisible);
-      }
-
-      function shouldShowMealsFooter(mealsByDate) {
-        if (!AUTO_HIDE_MEALS_FOOTER) return true;
-
-        const today = new Date();
-        const dow = today.getDay();
-        if (dow === 0 || dow === 6) return false;
-
-        const todayKey = toYYYYMMDD(today);
-        const info = mealsByDate && mealsByDate[todayKey];
-        if (!info) return false;
-
-        const hasBreakfast = (info.breakfastItems || []).length > 0;
-        const hasLunch = (info.lunchEntrees || []).length > 0 || (info.lunchSides || "").length > 0;
-        return hasBreakfast || hasLunch;
-      }
-
-      function parseMenuTitleParts(title) {
-        const cleaned = (title || "").trim();
-        const parts = cleaned.split("— Sides:");
-        const left = (parts[0] || "").trim();
-        const sides = (parts[1] || "").trim();
-        const colonIdx = left.indexOf(":");
-        const afterColon = colonIdx >= 0 ? left.slice(colonIdx + 1).trim() : left;
-        const items = afterColon.split(" / ").map(s => s.trim()).filter(Boolean);
-        return { items, sides };
-      }
-
-      
-
-function menuDateKey(startValue){
-  if (!startValue) return null;
-  // If it's already YYYY-MM-DD, keep it
-  if (typeof startValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(startValue)) return startValue;
-  // Otherwise parse as Date and return LOCAL day (prevents timezone off-by-one)
-  const d = new Date(startValue);
-  if (isNaN(d.getTime())) return null;
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
-  return `${y}-${m}-${day}`;
-}
-// =========================================================
-      // SECTION: MEALS FOOTER JS
-      // =========================================================
-      function renderMealsFooter(weekStart, mealsByDate) {
-        if (!mealsGrid) return;
-        mealsGrid.innerHTML = "";
-
-        for (let i = 0; i < 7; i++) {
-          const key = toYYYYMMDD(addDays(weekStart, i));
-          const info = mealsByDate[key] || {};
-          const bItems = info.breakfastItems || [];
-          const lEntrees = info.lunchEntrees || [];
-          const lSides = info.lunchSides || "";
-
-          const hasAny = (bItems.length > 0) || (lEntrees.length > 0) || (lSides && lSides.length > 0);
-
-          const col = document.createElement("div");
-          col.className = "meal-col" + (hasAny ? "" : " empty");
-
-          if (hasAny) {
-            if (bItems.length) {
-              const row = document.createElement("div");
-              row.className = "meal-row";
-              row.innerHTML = `
-                <span class="meal-pill">🍳</span>
-                <span class="meal-text-one">${escapeHtml(bItems.join(" / "))}</span>
-              `;
-              col.appendChild(row);
-            }
-
-            if (lEntrees.length || lSides) {
-              const row = document.createElement("div");
-              row.className = "meal-row";
-              row.innerHTML = `
-                <span class="meal-pill">🥪</span>
-                <span class="meal-lunch-wrap">
-                  <span class="meal-lunch-entrees">${escapeHtml(lEntrees.join(" / "))}</span>
-                  <span class="meal-lunch-sides">${lSides ? "Sides: " + escapeHtml(lSides) : ""}</span>
-                </span>
-              `;
-              col.appendChild(row);
-            }
-          }
-
-          mealsGrid.appendChild(col);
+      function setVersionDisplays() {
+        if (els.sideVersion) {
+          els.sideVersion.innerHTML = `Version: <strong>${APP_VERSION}</strong>`;
         }
       }
 
-      async function fetchMealsForCurrentWeek() {
-        const weekStart = startOfCurrentWeekSunday(new Date());
-        const weekEnd = addDays(weekStart, 7);
-
-        const start = toYYYYMMDD(weekStart);
-        const end = toYYYYMMDD(weekEnd);
-        const url = `${MENU_URL}?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
-
-        setMealsStatus(null);
-
-      applyHolidayMode();
-
-        const resp = await fetch(url, { cache: "no-store" });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-        const data = await resp.json();
-        if (!Array.isArray(data)) throw new Error("Meals feed did not return an array");
-
-        const byDate = {};
-        for (const ev of data) {
-          const dateKey = (ev && ev.start) ? menuDateKey(ev.start) : null;
-          const meal = ev && ev.extendedProps && ev.extendedProps.meal;
-          const title = ev && ev.title ? String(ev.title) : "";
-
-          if (!dateKey || (meal !== "breakfast" && meal !== "lunch")) continue;
-
-          const { items, sides } = parseMenuTitleParts(title);
-          if (!byDate[dateKey]) byDate[dateKey] = { breakfastItems: [], lunchEntrees: [], lunchSides: "" };
-
-          if (meal === "breakfast") {
-            byDate[dateKey].breakfastItems = items.slice(0, BREAKFAST_MAX_ITEMS);
-          } else {
-            byDate[dateKey].lunchEntrees = items.slice(0, LUNCH_MAX_ENTREES);
-            byDate[dateKey].lunchSides = sides || "";
-          }
-        }
-
-        setMealsFooterVisible(shouldShowMealsFooter(byDate));
-        renderMealsFooter(weekStart, byDate);
-        setMealsStatus(true, `${data.length} menu events`);
+      function setLastRefreshed(reason) {
+        const text = formatLocalTime(new Date());
+        if (els.sideRefresh) els.sideRefresh.textContent = `Last refreshed: ${text}`;
+        if (reason) console.log(`Dashboard refreshed: ${reason}`);
       }
 
-      
-      // =========================================================
-      // Holiday Mode (accent themes)
-      // =========================================================
-      function applyThemeVars(vars){
-        const root = document.documentElement;
-        for (const [k,v] of Object.entries(vars || {})) {
-          root.style.setProperty(k, v);
-        }
+      function startOfCurrentWeekSunday(d = new Date()) {
+        const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        date.setDate(date.getDate() - date.getDay());
+        date.setHours(0, 0, 0, 0);
+        return date;
       }
 
-      function getHolidayThemeKey(now){
-        if (HOLIDAY_MODE_PREVIEW) return HOLIDAY_MODE_PREVIEW;
-
-        const m = now.getMonth() + 1;
-        const d = now.getDate();
-
-        // Christmas season: Dec 10 -> Jan 2
-        if ((m === 12 && d >= 10) || (m === 1 && d <= 2)) return "christmas";
-        // Halloween season: Oct 15 -> Nov 1
-        if ((m === 10 && d >= 15) || (m === 11 && d <= 1)) return "halloween";
-        // New Year week: Dec 28 -> Jan 3 (handled by christmas, but keep for future)
-        return "";
+      function addDays(date, days) {
+        const d = new Date(date);
+        d.setDate(d.getDate() + days);
+        return d;
       }
 
-      function applyHolidayMode(){
-        if (!ENABLE_HOLIDAY_MODE) return;
-
-        const now = new Date();
-        const key = getHolidayThemeKey(now);
-
-        const glow = document.getElementById("holiday-accent-glow");
-        const festiveHeader = document.getElementById("festive-header-line");
-        const sidebar = document.getElementById("sidebar");
-        if (glow) glow.style.opacity = key ? "0.95" : "0.65";
-
-        if (key === "christmas") {
-          if (festiveHeader) festiveHeader.style.opacity = "0.95";
-          if (sidebar) sidebar.classList.add("christmas-accent");
-          applyThemeVars({
-            "--todayBorder": "rgba(34,197,94,0.78)",     /* green */
-            "--weekendLine": "rgba(239,68,68,0.55)",     /* red */
-            "--holidayGlow": "rgba(34,197,94,0.18)",
-            "--holidayBorder": "rgba(239,68,68,0.58)",
-            "--chipBorder": "rgba(239,68,68,0.20)",
-            "--chipBg": "rgba(0,0,0,0.36)"
-          });
-          if (glow) glow.style.background = "radial-gradient(closest-side, rgba(34,197,94,0.16), transparent 70%), radial-gradient(closest-side, rgba(239,68,68,0.12), transparent 70%)";
-        } else if (key === "halloween") {
-          applyThemeVars({
-            "--todayBorder": "rgba(249,115,22,0.78)",    /* orange */
-            "--weekendLine": "rgba(168,85,247,0.55)",    /* purple */
-            "--holidayGlow": "rgba(249,115,22,0.20)",
-            "--holidayBorder": "rgba(168,85,247,0.55)"
-          });
-          if (glow) glow.style.background = "radial-gradient(closest-side, rgba(249,115,22,0.18), transparent 70%), radial-gradient(closest-side, rgba(168,85,247,0.12), transparent 70%)";
-        } else {
-          // default (no override)
-          applyThemeVars({});
-          if (glow) glow.style.background = "radial-gradient(closest-side, rgba(255,255,255,0.10), transparent 70%)";
-        }
+      function startOfDay(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d;
       }
 
-      // =========================================================
-      // Today Focus Sidebar
-      // =========================================================
-      const todayDateLabelEl = document.getElementById("today-date-label");
-      const todaySummaryEl = document.getElementById("today-summary");
-      const todayUpcomingEl = document.getElementById("today-upcoming");
-      const todayGamesEl = document.getElementById("today-games");
-
-      function formatPrettyDate(d){
-        return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+      function sameDay(a, b) {
+        return a && b &&
+          a.getFullYear() === b.getFullYear() &&
+          a.getMonth() === b.getMonth() &&
+          a.getDate() === b.getDate();
       }
 
-      function formatTimeShort(d){
-        return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      function toYYYYMMDD(date) {
+        const d = date instanceof Date ? date : new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       }
 
-      function minutesUntil(dt){
-        return Math.round((dt.getTime() - Date.now()) / 60000);
+      function menuDateKey(value) {
+        if (!value) return null;
+        if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+        const d = new Date(value);
+        return Number.isNaN(d.getTime()) ? null : toYYYYMMDD(d);
       }
 
-      function humanWhen(dt){
-        const mins = minutesUntil(dt);
-        if (mins <= 0) return "now";
-        if (mins < 60) return `in ${mins}m`;
-        const hrs = Math.floor(mins/60);
-        const rem = mins % 60;
-        if (hrs < 24) return `in ${hrs}h ${rem}m`;
-        const days = Math.floor(hrs/24);
-        const hr = hrs % 24;
-        return `in ${days}d ${hr}h`;
+      function formatLocalTime(dt) {
+        return dt.toLocaleString([], { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
       }
 
-      function dotColorForCategory(cat){
-        if (cat === "school") return "var(--school)";
-        if (cat === "sports") return "var(--sports)";
-        if (cat === "leslie") return "var(--leslie)";
-        if (cat === "randy") return "var(--randy)";
-        return "var(--other)";
+      function formatPrettyDate(dt) {
+        return dt.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
       }
 
-      function renderSideList(container, items){
-        if (!container) return;
-        container.innerHTML = "";
-
-        if (!items || items.length === 0){
-          container.innerHTML = `<div class="side-item"><span class="dot" style="background:rgba(255,255,255,0.25)"></span><div class="txt"><div class="line1">Nothing scheduled</div><div class="line2">Enjoy the quiet 😌</div></div></div>`;
-          return;
-        }
-
-        for (const it of items){
-          const dot = dotColorForCategory(it.category);
-          container.insertAdjacentHTML("beforeend", `
-            <div class="side-item">
-              <span class="dot" style="background:${dot}"></span>
-              <div class="txt">
-                <div class="line1">${escapeHtml(it.line1)}</div>
-                <div class="line2">${escapeHtml(it.line2)}</div>
-              </div>
-            </div>
-          `);
-        }
+      function formatTime(dt) {
+        return dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       }
 
-      function buildSidebarFromCalendar(){
-        // If sidebar is hidden by media query, skip work.
-        const sb = document.getElementById("sidebar");
-        if (!sb || getComputedStyle(sb).display === "none") return;
-
-        const now = new Date();
-        if (todayDateLabelEl) todayDateLabelEl.textContent = formatPrettyDate(now);
-
-        // Pull visible events from FullCalendar
-        const events = calendar.getEvents ? calendar.getEvents() : [];
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0,0);
-        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23,59,59,999);
-
-        const todays = [];
-        const upcoming = [];
-        const games = [];
-
-        for (const ev of events){
-          const title = (ev.title || "").trim();
-          const meta = classifyEvent(title);
-          const st = ev.start;
-          if (!st) continue;
-
-          const en = ev.end || new Date(st.getTime() + 60*60*1000);
-
-          const isToday = (st.getTime() >= todayStart.getTime() && st.getTime() <= todayEnd.getTime()) ||
-                          (en.getTime() >= todayStart.getTime() && en.getTime() <= todayEnd.getTime());
-
-          const isFuture = en.getTime() >= now.getTime();
-
-          if (isToday){
-            todays.push({ ev, meta, st, en });
-          } else if (isFuture){
-            upcoming.push({ ev, meta, st, en });
-          }
-
-          if (meta.category === "sports" && isFuture){
-            games.push({ ev, meta, st, en });
-          }
-        }
-
-        // Sort
-        todays.sort((a,b) => (a.st.getTime() - b.st.getTime()));
-        upcoming.sort((a,b) => (a.st.getTime() - b.st.getTime()));
-        games.sort((a,b) => (a.st.getTime() - b.st.getTime()));
-
-        const nextUp = [];
-        const maxUp = 6;
-
-        // Prioritize remaining events today, then earliest future
-        for (const t of todays){
-          if (t.en.getTime() < now.getTime()) continue;
-          const time = t.ev.allDay ? "All day" : `${formatTimeShort(t.st)}`;
-          nextUp.push({
-            category: t.meta.category,
-            line1: `${t.meta.icon ? t.meta.icon + " " : ""}${t.ev.title}`,
-            line2: `${time} • ${humanWhen(t.st)}`
-          });
-          if (nextUp.length >= maxUp) break;
-        }
-        if (nextUp.length < maxUp){
-          for (const u of upcoming){
-            if (nextUp.length >= maxUp) break;
-            const time = u.ev.allDay ? "All day" : `${formatPrettyDate(u.st)} ${formatTimeShort(u.st)}`;
-            nextUp.push({
-              category: u.meta.category,
-              line1: `${u.meta.icon ? u.meta.icon + " " : ""}${u.ev.title}`,
-              line2: `${time} • ${humanWhen(u.st)}`
-            });
-          }
-        }
-
-        const gameItems = [];
-        const maxGames = 3;
-        for (const g of games){
-          if (gameItems.length >= maxGames) break;
-          // Only show games within next 14 days (matches chips)
-          const horizon = new Date(); horizon.setDate(horizon.getDate() + COUNTDOWN_LOOKAHEAD_DAYS);
-          if (g.st.getTime() > horizon.getTime()) continue;
-
-          const when = `${formatPrettyDate(g.st)} ${formatTimeShort(g.st)}`;
-          gameItems.push({
-            category: "sports",
-            line1: `${g.meta.icon ? g.meta.icon + " " : ""}${g.ev.title}`,
-            line2: `${when} • ${humanWhen(g.st)}`
-          });
-        }
-
-        // Summary line
-        if (todaySummaryEl){
-          const remainingToday = todays.filter(t => t.en.getTime() >= now.getTime()).length;
-          const nextGame = games.find(g => g.st.getTime() >= now.getTime());
-          const gameText = nextGame ? `${nextGame.meta.icon ? nextGame.meta.icon + " " : ""}${humanWhen(nextGame.st)}` : "no games soon";
-          todaySummaryEl.textContent = `${remainingToday} remaining today • next game ${gameText}`;
-        }
-
-        renderSideList(todayUpcomingEl, nextUp);
-        renderSideList(todayGamesEl, gameItems);
-      }
-
-// Countdown logic
-      const dayChipElsByKey = new Map();
-      let cachedSportsEvents = [];
-
-      function ensureDayChip(dayEl, dateKey) {
-        let el = dayChipElsByKey.get(dateKey);
-        if (el && el.isConnected) return el;
-
-        const frame = dayEl.querySelector(".fc-daygrid-day-frame") || dayEl;
-        frame.style.position = "relative";
-
-        el = document.createElement("div");
-        el.className = "day-chip";
-        el.style.display = "none";
-        frame.appendChild(el);
-
-        dayChipElsByKey.set(dateKey, el);
-        return el;
-      }
-
-      function clearAllDayChips() {
-        for (const [, el] of dayChipElsByKey) {
-          if (el) el.style.display = "none";
-        }
-      }
-
-      function humanCountdown(ms) {
-        if (ms <= 0) return "now";
-        const mins = Math.floor(ms / 60000);
-        const hrs = Math.floor(mins / 60);
-        const days = Math.floor(hrs / 24);
-        if (days >= 1) return `${days}d`;
-        if (hrs >= 1) return `${hrs}h`;
-        return `${mins}m`;
-      }
-
-      function updateChristmasChip() {
-        if (!ENABLE_CHRISTMAS_COUNTDOWN) return;
-
-        const now = new Date();
-        const year = now.getFullYear();
-
-        // Count down to Dec 25 00:00:00 local time (next year's if already passed)
-        let christmas = new Date(year, 11, 25, 0, 0, 0, 0); // Dec=11
-        if (now > christmas) christmas = new Date(year + 1, 11, 25, 0, 0, 0, 0);
-
-        const diffMs = christmas.getTime() - now.getTime();
-
-        const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
-        const days = Math.floor(totalSeconds / 86400);
-        const hours = Math.floor((totalSeconds % 86400) / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        const pad2 = (n) => String(n).padStart(2, "0");
-        const countdown = `${days}d ${pad2(hours)}h ${pad2(minutes)}m ${pad2(seconds)}s`;
-
-        const chipHtml = `<span class="title-chip">🎄 <span class="muted">Christmas</span> ${countdown}</span>`;
-        const titleEl = document.querySelector(".fc-toolbar-title");
-        if (!titleEl) return;
-
-        const existing = titleEl.querySelector(".title-chip");
-        if (existing) existing.remove();
-
-        titleEl.insertAdjacentHTML("beforeend", chipHtml);
-      }
-
-      function normalizeSportsEvents(fcEvents) {
-        const out = [];
-        const now = new Date();
-
-        for (const e of fcEvents) {
-          try {
-            const title = (e.title || "").trim();
-            const meta = classifyEvent(title);
-            if (meta.category !== "sports") continue;
-
-            const start = e.start;
-            if (!start) continue;
-
-            const end = e.end || new Date(start.getTime() + 60 * 60 * 1000);
-            const endMs = end.getTime();
-
-            if (endMs < now.getTime()) continue;
-
-            out.push({
-              title,
-              start: new Date(start.getTime()),
-              end: new Date(endMs),
-              icon: meta.icon || "🏟️"
-            });
-          } catch (err) {}
-        }
-
-        out.sort((a,b) => a.start.getTime() - b.start.getTime());
-        return out;
-      }
-
-      function updateGameDayChips(visibleStart, visibleEnd) {
-        if (!ENABLE_COUNTDOWN_CHIPS) return;
-
-        clearAllDayChips();
-
-        const now = new Date();
-        const lookaheadEnd = addDays(startOfDay(now), COUNTDOWN_LOOKAHEAD_DAYS).getTime();
-
-        const perDay = new Map();
-        for (const ev of cachedSportsEvents) {
-          const st = ev.start.getTime();
-          if (st < now.getTime()) continue;
-          if (st > lookaheadEnd) continue;
-          if (st < visibleStart.getTime() || st >= visibleEnd.getTime()) continue;
-
-          const key = toYYYYMMDD(ev.start);
-          if (!perDay.has(key)) perDay.set(key, []);
-          perDay.get(key).push(ev);
-        }
-
-        for (const [key, events] of perDay.entries()) {
-          events.sort((a,b) => a.start.getTime() - b.start.getTime());
-          const nextEv = events[0];
-          const ms = nextEv.start.getTime() - now.getTime();
-          const cd = humanCountdown(ms);
-
-          const el = dayChipElsByKey.get(key);
-          if (!el) continue;
-
-          el.innerHTML = `${nextEv.icon} <span class="muted">Game</span> in ${cd}`;
-          el.style.display = "";
-        }
-      }
-
-      // FullCalendar
-      const calendar = new FullCalendar.Calendar(
-        document.getElementById("calendar"),
-        {
-          initialView: "rolling4Weeks",
-          views: { rolling4Weeks: { type: "dayGrid", duration: { weeks: 4 } } },
-
-          firstDay: 0,
-          height: "100%",
-          expandRows: true,
-          showNonCurrentDates: false,
-          fixedWeekCount: false,
-
-          dayMaxEvents: true,
-          dayMaxEventRows: 4,
-          eventMinHeight: 18,
-
-          visibleRange: function(currentDate) {
-            const start = startOfCurrentWeekSunday(currentDate);
-            const end = new Date(start);
-            end.setDate(end.getDate() + 28);
-            return { start, end };
-          },
-
-          headerToolbar: { left: "", center: "title", right: "" },
-
-          eventSources: [
-            { url: ICS_URL, format: "ics" }
-          ],
-
-          dayCellDidMount: function(info) {
-            const cellDate = startOfDay(info.date);
-            const today = startOfDay(new Date());
-
-            const label = holidayLabelForDate(cellDate);
-            if (label) {
-              info.el.classList.add("is-holiday");
-              info.el.setAttribute("data-holiday-label", label);
-            }
-
-            const dateKey = toYYYYMMDD(cellDate);
-            ensureDayChip(info.el, dateKey);
-
-            if (ENABLE_TODAY_FOCUS && sameDay(cellDate, today)) {
-              info.el.classList.add("today-focus");
-            }
-          },
-
-          eventClassNames: function(arg) {
-            const classes = [];
-            const title = (arg.event.title || "").trim();
-            const meta = classifyEvent(title);
-            classes.push("event-" + meta.category);
-
-            const start = arg.event.start;
-            if (start && isBigHolidayDate(start)) classes.push("holiday-sparkle");
-            return classes;
-          },
-
-          eventDidMount: function(arg) {
-            if (!ENABLE_TODAY_FOCUS) return;
-
-            const ev = arg.event;
-            if (!ev || ev.allDay) return;
-
-            const now = new Date();
-            const end = ev.end || new Date(ev.start.getTime() + 60 * 60 * 1000);
-            if (end.getTime() < now.getTime() && sameDay(ev.start, now)) {
-              arg.el.classList.add("evt-past-today");
-            }
-          },
-
-          eventContent: function(arg) {
-            const title = (arg.event.title || "").trim();
-            const isAllDay = arg.event.allDay;
-            const timeText = arg.timeText || "";
-
-            const meta = classifyEvent(title);
-            const parts = [];
-            if (meta.icon) parts.push(`<span class="evt-icon">${meta.icon}</span>`);
-            if (!isAllDay && timeText) parts.push(`<span class="evt-time">${escapeHtml(timeText)}</span>`);
-            parts.push(`<span class="evt-title">${escapeHtml(title)}</span>`);
-            return { html: `<span class="evt">${parts.join("")}</span>` };
-          },
-
-          eventsSet: function(events) {
-            cachedSportsEvents = normalizeSportsEvents(events);
-
-            const view = calendar.view;
-            if (view) updateGameDayChips(view.currentStart, view.currentEnd);
-        buildSidebarFromCalendar();
-            buildSidebarFromCalendar();
-          },
-
-          datesSet: function(info) {
-            updateChristmasChip();
-            updateGameDayChips(info.start, info.end);
-            buildSidebarFromCalendar();
-          }
-        }
-      );
-
-      calendar.render();
-      buildSidebarFromCalendar();
-      updateChristmasChip();
-
-      // Fetch meals
-      fetchMealsForCurrentWeek().catch(err => {
-        setMealsStatus(false, err && err.message ? err.message : "Unknown");
-        setMealsFooterVisible(true);
-      });
-
-      // Auto refresh (events + meals)
-      setInterval(() => {
-        setLastRefreshed("refreshing…");
-        calendar.refetchEvents();
-        buildSidebarFromCalendar();
-
-        fetchMealsForCurrentWeek()
-          .catch(err => {
-            setMealsStatus(false, err && err.message ? err.message : "Unknown");
-            setMealsFooterVisible(true);
-          })
-          .finally(() => setLastRefreshed(`auto ${AUTO_REFRESH_MINUTES}m`));
-
-      }, AUTO_REFRESH_MINUTES * 60 * 1000);
-
-      // Countdown refresh
-      setInterval(() => {
-        if (!ENABLE_COUNTDOWN_CHIPS && !ENABLE_CHRISTMAS_COUNTDOWN) return;
-        updateChristmasChip();
-        const view = calendar.view;
-        if (view) updateGameDayChips(view.currentStart, view.currentEnd);
-        buildSidebarFromCalendar();
-            buildSidebarFromCalendar();
-      }, COUNTDOWN_REFRESH_SECONDS * 1000);
-
-      /* =========================================================
-         WEATHER (Open-Meteo) — Fahrenheit (no API key)
-         - Tweak refresh: WEATHER_REFRESH_MINUTES
-         ========================================================= */
-      const HOME_LAT = 38.654398639984805;
-      const HOME_LON = -90.45877499401288;
-      const WEATHER_REFRESH_MINUTES = 10;
-
-      
-      function weatherCodeToEmoji(code, isDay=true){
-        // Simple, readable icons that pop on a TV
-        const c = Number(code);
-        if ([0].includes(c)) return isDay ? "☀️" : "🌙";
-        if ([1,2].includes(c)) return isDay ? "🌤️" : "☁️";
-        if ([3].includes(c)) return "☁️";
-        if ([45,48].includes(c)) return "🌫️";
-        if ([51,53,55,56,57].includes(c)) return "🌦️";
-        if ([61,63,65,80,81,82].includes(c)) return "🌧️";
-        if ([66,67].includes(c)) return "🌧️";
-        if ([71,73,75,77,85,86].includes(c)) return "❄️";
-        if ([95,96,99].includes(c)) return "⛈️";
-        return "☁️";
-      }
-
-      function weatherCodeToText(code){
-        const m = {
-          0:"Clear",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",
-          45:"Fog",48:"Rime fog",
-          51:"Light drizzle",53:"Drizzle",55:"Dense drizzle",
-          56:"Freezing drizzle",57:"Freezing drizzle",
-          61:"Light rain",63:"Rain",65:"Heavy rain",
-          66:"Freezing rain",67:"Freezing rain",
-          71:"Light snow",73:"Snow",75:"Heavy snow",77:"Snow grains",
-          80:"Rain showers",81:"Rain showers",82:"Violent showers",
-          85:"Snow showers",86:"Snow showers",
-          95:"Thunderstorm",96:"Thunderstorm hail",99:"Thunderstorm hail"
-        };
-        return m[code] ?? ("Weather " + code);
-      }
-
-
-
-      function weatherCodeToIcon(code){
-        // Open-Meteo weather codes -> simple icon set (emoji, reliable in Dakboard)
-        if(code === 0) return "☀️";
-        if(code === 1) return "🌤️";
-        if(code === 2) return "⛅";
-        if(code === 3) return "☁️";
-        if(code === 45 || code === 48) return "🌫️";
-        if(code >= 51 && code <= 57) return "🌦️";
-        if(code >= 61 && code <= 67) return "🌧️";
-        if(code >= 71 && code <= 77) return "🌨️";
-        if(code >= 80 && code <= 82) return "🌧️";
-        if(code === 85 || code === 86) return "🌨️";
-        if(code === 95) return "⛈️";
-        if(code === 96 || code === 99) return "⛈️";
-        return "🌡️";
-      }
-      function fmtTime(t){
-        try{
-          const d = new Date(t);
-          return d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
-        }catch(e){ return "—"; }
-      }
-
-      async function loadWeather(){
-        // =========================================================
-        // SECTION: WEATHER PANEL JS
-        // Search: SECTION: WEATHER PANEL JS
-        // =========================================================
-        try{
-        const url =
-          `https://api.open-meteo.com/v1/forecast` +
-          `?latitude=${HOME_LAT}&longitude=${HOME_LON}` +
-          `&current=temperature_2m,apparent_temperature,weathercode,wind_speed_10m` +
-          `&hourly=temperature_2m,precipitation_probability,precipitation` +
-          `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weathercode,sunrise,sunset` +
-          `&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch` +
-          `&timezone=auto&forecast_days=5`;
-
-        const res = await fetch(url, { cache: "no-store" });
-        if(!res.ok) throw new Error("Weather fetch failed: " + res.status);
-        const data = await res.json();
-
-        const cur = data.current || {};
-        const hourly = data.hourly || {};
-        const daily = data.daily || {};
-
-        // Current
-        const temp = Math.round(cur.temperature_2m ?? NaN);
-        const feels = Math.round(cur.apparent_temperature ?? NaN);
-        const wind = Math.round(cur.wind_speed_10m ?? NaN);
-        const code = cur.weathercode;
-        const cond = weatherCodeToText(code);
-
-        const iconEl = document.getElementById("weather-icon");
-        if(iconEl) iconEl.textContent = weatherCodeToIcon(code);
-
-        document.getElementById("weather-temp").textContent = isFinite(temp) ? `${temp}°F` : `--°F`;
-        document.getElementById("weather-cond").textContent = cond;
-
-        // Today hi/lo + precip max
-        const hi = daily.temperature_2m_max?.[0];
-        const lo = daily.temperature_2m_min?.[0];
-        const popMax = daily.precipitation_probability_max?.[0];
-        const precipSum = daily.precipitation_sum?.[0];
-
-        document.getElementById("weather-hilo").textContent =
-          (hi!=null && lo!=null) ? `${Math.round(hi)}° / ${Math.round(lo)}°` : `Hi/Lo: —`;
-
-        document.getElementById("weather-feels").textContent =
-          isFinite(feels) ? `Feels: ${feels}°F` : `Feels: —`;
-
-        document.getElementById("weather-wind").textContent =
-          isFinite(wind) ? `Wind: ${wind} mph` : `Wind: —`;
-
-        // Precip chip: max probability + daily sum (if available)
-        if(popMax!=null && precipSum!=null){
-          document.getElementById("weather-precip").textContent = `Precip: ${Math.round(popMax)}% • ${Number(precipSum).toFixed(2)}in`;
-        }else if(popMax!=null){
-          document.getElementById("weather-precip").textContent = `Precip: ${Math.round(popMax)}%`;
-        }else{
-          document.getElementById("weather-precip").textContent = `Precip: —`;
-        }
-
-        document.getElementById("weather-updated").textContent =
-          `Updated ${new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}`;
-
-        // ---------------------------------------------------------
-        // Timeline: next 24h at 2-hour intervals (temp + precip)
-        // ---------------------------------------------------------
-        const tl = document.getElementById("weather-timeline");
-        if(tl){
-          tl.innerHTML = "";
-
-          const times = hourly.time || [];
-          const temps = hourly.temperature_2m || [];
-          const pops  = hourly.precipitation_probability || [];
-          const precs = hourly.precipitation || [];
-
-          const now = new Date();
-          // Find the first hourly sample that is >= now
-          let startIdx = 0;
-          for(let i=0;i<times.length;i++){
-            const dt = new Date(times[i]);
-            if(dt >= now){ startIdx = i; break; }
-          }
-          // Snap to an even 2-hour boundary so the timeline looks consistent
-          if(startIdx % 2 === 1) startIdx = Math.max(0, startIdx - 1);
-
-          const slots = 12; // 24 hours @ 2-hour steps
-          for(let s=0; s<slots; s++){
-            const i = startIdx + (s*2);
-            if(i >= times.length) break;
-
-            const dt = new Date(times[i]);
-            const label = dt.toLocaleTimeString([], {hour:"numeric"});
-            const t = temps[i];
-            const pop = pops[i];
-            const pr = precs[i];
-
-            const slot = document.createElement("div");
-            slot.className = "wx-slot";
-            const popPct = (pop!=null && isFinite(pop)) ? Math.max(0, Math.min(100, Math.round(pop))) : null;
-            const barW = (popPct!=null) ? popPct : 0;
-
-            const popLine =
-              (popPct!=null && pr!=null && isFinite(pr)) ? `${popPct}% • ${Number(pr).toFixed(2)}in`
-              : (popPct!=null) ? `${popPct}%`
-              : `—`;
-
-            slot.innerHTML = `
-              <div class="time">${label}</div>
-              <div class="temp">${(t!=null && isFinite(t)) ? Math.round(t) + "°" : "—"}</div>
-              <div class="pop">${popLine}</div>
-              <div class="bar"><i style="width:${barW}%;"></i></div>
-            `;
-            tl.appendChild(slot);
-          }
-        }
-
-        // ---------------------------------------------------------
-        // Next 3 days (starting tomorrow)
-        // ---------------------------------------------------------
-        const fc = document.getElementById("weather-forecast");
-        if(fc){
-          fc.innerHTML = "";
-
-          const days = daily.time || [];
-          for(let i=1; i<=3 && i<days.length; i++){
-            const dt = new Date(days[i] + "T00:00:00");
-            const day = dt.toLocaleDateString([], { weekday: "short" });
-
-            const fhi = daily.temperature_2m_max?.[i];
-            const flo = daily.temperature_2m_min?.[i];
-            const fpop = daily.precipitation_probability_max?.[i];
-            const fcode = daily.weathercode?.[i];
-            const ftext = weatherCodeToText(fcode);
-            const fico = weatherCodeToIcon(fcode);
-
-            const card = document.createElement("div");
-            card.className = "day-card";
-            card.innerHTML = `
-              <div class="d">${day}</div>
-              <div class="main">
-                <div>
-                  <div class="hi">${(fhi!=null)?Math.round(fhi):"—"}°</div>
-                  <div class="lo">Low ${(flo!=null)?Math.round(flo):"—"}°</div>
-                </div>
-                <div class="ico" aria-hidden="true">${fico}</div>
-              </div>
-              <div class="p">${(fpop!=null)?Math.round(fpop):"—"}% • ${escapeHtml(ftext)}</div>
-            `;
-            fc.appendChild(card);
-          }
-        }
-        }catch(e){
-          console.warn("Weather load error:", e);
-          const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-          set("weather-temp", "--°F");
-          set("weather-cond", "Weather error");
-          set("weather-hilo", "Hi/Lo: —");
-          set("weather-feels", "Feels: —");
-          set("weather-wind", "Wind: —");
-          set("weather-precip", "Precip: —");
-          const msg = (e && e.message) ? e.message : String(e);
-          set("weather-updated", msg);
-          const tl = document.getElementById("weather-timeline");
-          if(tl) tl.innerHTML = `<div class="wx-error">${msg}</div>`;
-          const fc = document.getElementById("weather-forecast");
-          if(fc) fc.innerHTML = `<div class="wx-error">${msg}</div>`;
-        }
-
-      }
-
-      // Kick off weather after DOM is ready; keep it independent of calendar load.
-      try{
-        loadWeather();
-        setInterval(loadWeather, WEATHER_REFRESH_MINUTES * 60 * 1000);
-      }catch(e){
-        console.warn("Weather init error:", e);
-      }
-
-      function escapeHtml(str) {
-        // Avoid String.prototype.replaceAll for older embedded browsers
-        return String(str)
+      function escapeHtml(value) {
+        return String(value ?? "")
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
           .replace(/"/g, "&quot;")
           .replace(/'/g, "&#039;");
       }
+
+      function classifyEvent(title) {
+        const t = title || "";
+        if (rules.randy.test(t)) return { category: "randy", icon: "" };
+        if (rules.leslie.test(t)) return { category: "leslie", icon: "" };
+        if (rules.basketball.test(t)) return { category: "sports", icon: "🏀", sport: "basketball" };
+        if (rules.soccer.test(t)) {
+          return { category: "sports", icon: rules.rainbowUnicorns.test(t) ? "🌈🦄⚽" : "⚽", sport: "soccer" };
+        }
+        if (rules.school.test(t)) return { category: "school", icon: "🐎" };
+        return { category: "other", icon: "" };
+      }
+
+      function categoryColor(category) {
+        if (category === "school") return "var(--school)";
+        if (category === "sports") return "var(--sports)";
+        if (category === "randy") return "var(--randy)";
+        if (category === "leslie") return "var(--leslie)";
+        return "var(--other)";
+      }
+
+      function holidayLabelForDate(date) {
+        const m = date.getMonth() + 1;
+        const d = date.getDate();
+        if (m === 12 && d === 24) return "Christmas Eve";
+        if (m === 12 && d === 25) return "Christmas Day";
+        if (m === 12 && d === 31) return "New Year's Eve";
+        return "";
+      }
+
+      function updateChristmasChip() {
+        if (!ENABLE_CHRISTMAS_COUNTDOWN) return;
+
+        const titleEl = document.querySelector(".fc-toolbar-title");
+        if (!titleEl) return;
+
+        const now = new Date();
+        let christmas = new Date(now.getFullYear(), 11, 25, 0, 0, 0, 0);
+        if (now > christmas) christmas = new Date(now.getFullYear() + 1, 11, 25, 0, 0, 0, 0);
+
+        const totalSeconds = Math.max(0, Math.floor((christmas.getTime() - now.getTime()) / 1000));
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        const pad = n => String(n).padStart(2, "0");
+
+        const existing = titleEl.querySelector(".title-chip");
+        if (existing) existing.remove();
+
+        titleEl.insertAdjacentHTML(
+          "beforeend",
+          `<span class="title-chip">🎄 <span class="muted">Christmas</span> ${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s</span>`
+        );
+      }
+
+      const dayChipElsByKey = new Map();
+      let cachedSportsEvents = [];
+
+      function ensureDayChip(dayEl, dateKey) {
+        let chip = dayChipElsByKey.get(dateKey);
+        if (chip && chip.isConnected) return chip;
+
+        const frame = dayEl.querySelector(".fc-daygrid-day-frame") || dayEl;
+        frame.style.position = "relative";
+        chip = document.createElement("div");
+        chip.className = "day-chip";
+        chip.style.display = "none";
+        frame.appendChild(chip);
+        dayChipElsByKey.set(dateKey, chip);
+        return chip;
+      }
+
+      function clearDayChips() {
+        for (const chip of dayChipElsByKey.values()) {
+          chip.style.display = "none";
+        }
+      }
+
+      function shortCountdown(ms) {
+        if (ms <= 0) return "now";
+        const mins = Math.floor(ms / 60000);
+        const hours = Math.floor(mins / 60);
+        const days = Math.floor(hours / 24);
+        if (days >= 1) return `${days}d`;
+        if (hours >= 1) return `${hours}h`;
+        return `${Math.max(1, mins)}m`;
+      }
+
+      function normalizeSportsEvents(events) {
+        const now = Date.now();
+        return events
+          .map(event => {
+            const meta = classifyEvent(event.title || "");
+            if (meta.category !== "sports" || !event.start) return null;
+            const end = event.end || new Date(event.start.getTime() + 60 * 60 * 1000);
+            if (end.getTime() < now) return null;
+            return { title: event.title, start: event.start, end, icon: meta.icon || "🏟️" };
+          })
+          .filter(Boolean)
+          .sort((a, b) => a.start - b.start);
+      }
+
+      function updateGameDayChips(visibleStart, visibleEnd) {
+        if (!ENABLE_GAME_COUNTDOWN_CHIPS) return;
+        clearDayChips();
+
+        const now = new Date();
+        const horizon = addDays(startOfDay(now), COUNTDOWN_LOOKAHEAD_DAYS).getTime();
+        const perDay = new Map();
+
+        for (const event of cachedSportsEvents) {
+          const startMs = event.start.getTime();
+          if (startMs < now.getTime() || startMs > horizon) continue;
+          if (startMs < visibleStart.getTime() || startMs >= visibleEnd.getTime()) continue;
+          const key = toYYYYMMDD(event.start);
+          if (!perDay.has(key)) perDay.set(key, event);
+        }
+
+        for (const [key, event] of perDay) {
+          const chip = dayChipElsByKey.get(key);
+          if (!chip) continue;
+          chip.innerHTML = `${event.icon} <span class="muted">Game</span> in ${shortCountdown(event.start.getTime() - now.getTime())}`;
+          chip.style.display = "";
+        }
+      }
+
+      function renderSideList(container, items, emptyText) {
+        if (!container) return;
+        container.innerHTML = "";
+
+        if (!items.length) {
+          container.innerHTML = `
+            <div class="side-item">
+              <span class="dot" style="background:rgba(255,255,255,0.25)"></span>
+              <div class="side-lines">
+                <div class="line1">${escapeHtml(emptyText)}</div>
+                <div class="line2">Nothing else needs attention</div>
+              </div>
+            </div>`;
+          return;
+        }
+
+        for (const item of items) {
+          container.insertAdjacentHTML("beforeend", `
+            <div class="side-item">
+              <span class="dot" style="background:${categoryColor(item.category)}"></span>
+              <div class="side-lines">
+                <div class="line1">${escapeHtml(item.line1)}</div>
+                <div class="line2">${escapeHtml(item.line2)}</div>
+              </div>
+            </div>`);
+        }
+      }
+
+      function humanWhen(dt) {
+        const mins = Math.round((dt.getTime() - Date.now()) / 60000);
+        if (mins <= 0) return "now";
+        if (mins < 60) return `in ${mins}m`;
+        const hours = Math.floor(mins / 60);
+        const rem = mins % 60;
+        if (hours < 24) return `in ${hours}h ${rem}m`;
+        const days = Math.floor(hours / 24);
+        return `in ${days}d ${hours % 24}h`;
+      }
+
+      function buildSidebar(calendar) {
+        const sidebar = document.getElementById("sidebar");
+        if (!sidebar || getComputedStyle(sidebar).display === "none") return;
+
+        const now = new Date();
+        const todayStart = startOfDay(now);
+        const tomorrowStart = addDays(todayStart, 1);
+        if (els.todayDate) els.todayDate.textContent = formatPrettyDate(now);
+
+        const todays = [];
+        const future = [];
+        const games = [];
+
+        for (const event of calendar.getEvents()) {
+          if (!event.start) continue;
+          const end = event.end || new Date(event.start.getTime() + 60 * 60 * 1000);
+          const meta = classifyEvent(event.title || "");
+          const startsToday = event.start >= todayStart && event.start < tomorrowStart;
+          const overlapsToday = end > todayStart && event.start < tomorrowStart;
+          const stillRelevant = end >= now;
+
+          if (overlapsToday) todays.push({ event, end, meta });
+          if (!startsToday && stillRelevant) future.push({ event, end, meta });
+          if (meta.category === "sports" && stillRelevant) games.push({ event, end, meta });
+        }
+
+        todays.sort((a, b) => a.event.start - b.event.start);
+        future.sort((a, b) => a.event.start - b.event.start);
+        games.sort((a, b) => a.event.start - b.event.start);
+
+        const nextUp = [];
+        for (const item of todays) {
+          if (item.end < now) continue;
+          nextUp.push(sidebarItem(item));
+          if (nextUp.length >= 6) break;
+        }
+        for (const item of future) {
+          if (nextUp.length >= 6) break;
+          nextUp.push(sidebarItem(item, true));
+        }
+
+        const gameItems = games.slice(0, 3).map(item => sidebarItem(item, true));
+        const remainingToday = todays.filter(item => item.end >= now).length;
+        const nextGame = games.find(item => item.event.start >= now);
+        const nextGameText = nextGame ? `${nextGame.meta.icon ? nextGame.meta.icon + " " : ""}${humanWhen(nextGame.event.start)}` : "none soon";
+
+        if (els.todaySummary) {
+          els.todaySummary.textContent = `${remainingToday} remaining today • next game ${nextGameText}`;
+        }
+
+        renderSideList(els.todayUpcoming, nextUp, "Nothing scheduled");
+        renderSideList(els.todayGames, gameItems, "No games soon");
+      }
+
+      function sidebarItem(item, includeDate = false) {
+        const event = item.event;
+        const meta = item.meta;
+        const prefix = meta.icon ? `${meta.icon} ` : "";
+        const when = event.allDay
+          ? "All day"
+          : includeDate
+            ? `${formatPrettyDate(event.start)} ${formatTime(event.start)}`
+            : formatTime(event.start);
+
+        return {
+          category: meta.category,
+          line1: `${prefix}${event.title}`,
+          line2: `${when} • ${humanWhen(event.start)}`
+        };
+      }
+
+      function parseMenuTitleParts(title) {
+        const cleaned = String(title || "").trim();
+        const parts = cleaned.split("— Sides:");
+        const left = (parts[0] || "").trim();
+        const sides = (parts[1] || "").trim();
+        const colon = left.indexOf(":");
+        const menuText = colon >= 0 ? left.slice(colon + 1).trim() : left;
+        const items = menuText.split(" / ").map(s => s.trim()).filter(Boolean);
+        return { items, sides };
+      }
+
+      function shouldShowMealsFooter(mealsByDate) {
+        if (!AUTO_HIDE_MEALS_FOOTER) return true;
+        const today = new Date();
+        const dow = today.getDay();
+        if (dow === 0 || dow === 6) return false;
+        const info = mealsByDate[toYYYYMMDD(today)];
+        if (!info) return false;
+        return Boolean(info.breakfastItems.length || info.lunchEntrees.length || info.lunchSides);
+      }
+
+      function setMealsFooterVisible(visible) {
+        if (els.mealsFooter) els.mealsFooter.classList.toggle("hidden", !visible);
+      }
+
+      function renderMealsFooter(weekStart, mealsByDate) {
+        if (!els.mealsGrid) return;
+        els.mealsGrid.innerHTML = "";
+
+        for (let i = 0; i < 7; i++) {
+          const key = toYYYYMMDD(addDays(weekStart, i));
+          const info = mealsByDate[key] || { breakfastItems: [], lunchEntrees: [], lunchSides: "" };
+          const hasAny = Boolean(info.breakfastItems.length || info.lunchEntrees.length || info.lunchSides);
+          const col = document.createElement("div");
+          col.className = `meal-col${hasAny ? "" : " empty"}`;
+
+          if (info.breakfastItems.length) {
+            col.insertAdjacentHTML("beforeend", `
+              <div class="meal-row">
+                <span class="meal-pill">🍳</span>
+                <span class="meal-main">${escapeHtml(info.breakfastItems.join(" / "))}</span>
+              </div>`);
+          }
+
+          if (info.lunchEntrees.length || info.lunchSides) {
+            col.insertAdjacentHTML("beforeend", `
+              <div class="meal-row">
+                <span class="meal-pill">🥪</span>
+                <span class="meal-lunch">
+                  <span class="meal-entrees">${escapeHtml(info.lunchEntrees.join(" / "))}</span>
+                  <span class="meal-sides">${info.lunchSides ? "Sides: " + escapeHtml(info.lunchSides) : ""}</span>
+                </span>
+              </div>`);
+          }
+
+          els.mealsGrid.appendChild(col);
+        }
+
+        scheduleMealsLock();
+      }
+
+      function lockMealsGridToCalendarColumns() {
+        if (!els.mealsGrid || !els.calendar || !els.mealsFooter || els.mealsFooter.classList.contains("hidden")) return;
+        const headerCells = els.calendar.querySelectorAll(".fc-col-header-cell");
+        if (!headerCells || headerCells.length < 7) return;
+        const widths = Array.from(headerCells).slice(0, 7).map(cell => Math.round(cell.getBoundingClientRect().width));
+        if (widths.every(width => width > 0)) {
+          els.mealsGrid.style.gridTemplateColumns = widths.map(width => `${width}px`).join(" ");
+        }
+      }
+
+      function scheduleMealsLock() {
+        requestAnimationFrame(() => requestAnimationFrame(lockMealsGridToCalendarColumns));
+      }
+
+      async function fetchMealsForCurrentWeek() {
+        const weekStart = startOfCurrentWeekSunday(new Date());
+        const weekEnd = addDays(weekStart, 7);
+        const url = `${MENU_URL}?start=${encodeURIComponent(toYYYYMMDD(weekStart))}&end=${encodeURIComponent(toYYYYMMDD(weekEnd))}`;
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Meals HTTP ${response.status}`);
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error("Meals feed did not return an array");
+
+        const byDate = {};
+        for (const event of data) {
+          const key = menuDateKey(event && event.start);
+          const meal = event && event.extendedProps && event.extendedProps.meal;
+          if (!key || (meal !== "breakfast" && meal !== "lunch")) continue;
+
+          const parsed = parseMenuTitleParts(event.title);
+          if (!byDate[key]) byDate[key] = { breakfastItems: [], lunchEntrees: [], lunchSides: "" };
+
+          if (meal === "breakfast") {
+            byDate[key].breakfastItems = parsed.items.slice(0, BREAKFAST_MAX_ITEMS);
+          } else {
+            byDate[key].lunchEntrees = parsed.items.slice(0, LUNCH_MAX_ENTREES);
+            byDate[key].lunchSides = parsed.sides || "";
+          }
+        }
+
+        setMealsFooterVisible(shouldShowMealsFooter(byDate));
+        renderMealsFooter(weekStart, byDate);
+      }
+
+      function weatherCodeToEmoji(code, isDay = true) {
+        const c = Number(code);
+        if (c === 0) return isDay ? "☀️" : "🌙";
+        if ([1, 2].includes(c)) return isDay ? "🌤️" : "☁️";
+        if (c === 3) return "☁️";
+        if ([45, 48].includes(c)) return "🌫️";
+        if ([51, 53, 55, 56, 57].includes(c)) return "🌦️";
+        if ([61, 63, 65, 66, 67, 80, 81, 82].includes(c)) return "🌧️";
+        if ([71, 73, 75, 77, 85, 86].includes(c)) return "❄️";
+        if ([95, 96, 99].includes(c)) return "⛈️";
+        return "☁️";
+      }
+
+      function weatherCodeToText(code) {
+        const labels = {
+          0: "Clear",
+          1: "Mainly clear",
+          2: "Partly cloudy",
+          3: "Overcast",
+          45: "Fog",
+          48: "Rime fog",
+          51: "Light drizzle",
+          53: "Drizzle",
+          55: "Dense drizzle",
+          56: "Freezing drizzle",
+          57: "Freezing drizzle",
+          61: "Light rain",
+          63: "Rain",
+          65: "Heavy rain",
+          66: "Freezing rain",
+          67: "Freezing rain",
+          71: "Light snow",
+          73: "Snow",
+          75: "Heavy snow",
+          77: "Snow grains",
+          80: "Rain showers",
+          81: "Rain showers",
+          82: "Violent showers",
+          85: "Snow showers",
+          86: "Snow showers",
+          95: "Thunderstorm",
+          96: "Thunderstorm hail",
+          99: "Thunderstorm hail"
+        };
+        return labels[Number(code)] || "Weather";
+      }
+
+      async function loadWeather() {
+        const url =
+          `https://api.open-meteo.com/v1/forecast` +
+          `?latitude=${HOME_LAT}&longitude=${HOME_LON}` +
+          `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m,is_day` +
+          `&hourly=temperature_2m,weather_code` +
+          `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code,sunrise,sunset` +
+          `&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch` +
+          `&timezone=auto&forecast_days=5`;
+
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
+          const data = await response.json();
+          renderWeather(data);
+        } catch (err) {
+          document.getElementById("weather-cond").textContent = "Weather unavailable";
+          document.getElementById("weather-updated").textContent = err && err.message ? err.message : "Error";
+        }
+      }
+
+      function renderWeather(data) {
+        const current = data.current || {};
+        const hourly = data.hourly || {};
+        const daily = data.daily || {};
+        const currentCode = current.weather_code;
+        const isDay = current.is_day !== 0;
+        const temp = Math.round(current.temperature_2m);
+        const feels = Math.round(current.apparent_temperature);
+        const wind = Math.round(current.wind_speed_10m);
+        const pop = daily.precipitation_probability_max && daily.precipitation_probability_max[0];
+        const hi = daily.temperature_2m_max && Math.round(daily.temperature_2m_max[0]);
+        const lo = daily.temperature_2m_min && Math.round(daily.temperature_2m_min[0]);
+
+        document.getElementById("weather-temp").textContent = Number.isFinite(temp) ? `${temp}°` : "--°";
+        document.getElementById("weather-icon").textContent = weatherCodeToEmoji(currentCode, isDay);
+        document.getElementById("weather-cond").textContent = weatherCodeToText(currentCode);
+        document.getElementById("weather-hilo").textContent = `H:${Number.isFinite(hi) ? hi : "--"}° L:${Number.isFinite(lo) ? lo : "--"}°`;
+        document.getElementById("weather-feels").textContent = Number.isFinite(feels) ? `Feels ${feels}°` : "Feels —";
+        document.getElementById("weather-wind").textContent = Number.isFinite(wind) ? `Wind ${wind} mph` : "Wind —";
+        document.getElementById("weather-precip").textContent = pop != null ? `Precip ${Math.round(pop)}%` : "Precip —";
+        document.getElementById("weather-updated").textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+
+        renderHourly(hourly);
+        renderDaily(daily);
+      }
+
+      function renderHourly(hourly) {
+        const container = document.getElementById("weather-hourly");
+        container.innerHTML = "";
+        const times = hourly.time || [];
+        const temps = hourly.temperature_2m || [];
+        const codes = hourly.weather_code || [];
+        const now = new Date();
+        let startIdx = times.findIndex(time => new Date(time) >= now);
+        if (startIdx < 0) startIdx = 0;
+
+        for (let slot = 0; slot < 6; slot++) {
+          const idx = startIdx + slot * 2;
+          if (idx >= times.length) break;
+          const dt = new Date(times[idx]);
+          const temp = Math.round(temps[idx]);
+          container.insertAdjacentHTML("beforeend", `
+            <div class="wx-hour">
+              <div class="time">${escapeHtml(dt.toLocaleTimeString([], { hour: "numeric" }))}</div>
+              <div class="icon">${weatherCodeToEmoji(codes[idx], true)}</div>
+              <div class="temp">${Number.isFinite(temp) ? temp : "--"}°</div>
+            </div>`);
+        }
+      }
+
+      function renderDaily(daily) {
+        const container = document.getElementById("weather-forecast");
+        container.innerHTML = "";
+        const days = daily.time || [];
+        const highs = daily.temperature_2m_max || [];
+        const lows = daily.temperature_2m_min || [];
+        const codes = daily.weather_code || [];
+        const validTemps = highs.concat(lows).filter(n => Number.isFinite(Number(n))).map(Number);
+        const minAll = validTemps.length ? Math.min(...validTemps) : 0;
+        const maxAll = validTemps.length ? Math.max(...validTemps) : 1;
+        const span = Math.max(1, maxAll - minAll);
+
+        for (let i = 0; i < Math.min(5, days.length); i++) {
+          const dt = new Date(`${days[i]}T00:00:00`);
+          const low = Math.round(lows[i]);
+          const high = Math.round(highs[i]);
+          const hasRange = Number.isFinite(low) && Number.isFinite(high);
+          const left = hasRange ? Math.max(0, Math.min(92, ((low - minAll) / span) * 82)) : 0;
+          const width = hasRange ? Math.max(10, Math.min(96 - left, ((high - low) / span) * 82 + 10)) : 0;
+          container.insertAdjacentHTML("beforeend", `
+            <div class="wx-day">
+              <div class="day">${escapeHtml(dt.toLocaleDateString([], { weekday: "short" }))}</div>
+              <div class="icon">${weatherCodeToEmoji(codes[i], true)}</div>
+              <div class="wx-range">
+                <span class="wx-low">${Number.isFinite(low) ? low : "--"}°</span>
+                <span class="wx-bar"><span class="wx-fill" style="left:${left}%;width:${width}%;"></span></span>
+                <span class="wx-high">${Number.isFinite(high) ? high : "--"}°</span>
+              </div>
+            </div>`);
+        }
+      }
+
+      const calendar = new FullCalendar.Calendar(els.calendar, {
+        initialView: "rolling4Weeks",
+        views: {
+          rolling4Weeks: { type: "dayGrid", duration: { weeks: 4 } }
+        },
+        firstDay: 0,
+        height: "100%",
+        expandRows: true,
+        fixedWeekCount: false,
+        showNonCurrentDates: false,
+        dayMaxEvents: true,
+        dayMaxEventRows: 4,
+        eventMinHeight: 18,
+        headerToolbar: { left: "", center: "title", right: "" },
+        visibleRange(currentDate) {
+          const start = startOfCurrentWeekSunday(currentDate);
+          return { start, end: addDays(start, 28) };
+        },
+        eventSources: [
+          { url: ICS_URL, format: "ics" }
+        ],
+        dayCellDidMount(info) {
+          const date = startOfDay(info.date);
+          const label = holidayLabelForDate(date);
+          if (label) {
+            info.el.classList.add("holiday-date");
+            info.el.setAttribute("data-holiday-label", label);
+          }
+          ensureDayChip(info.el, toYYYYMMDD(date));
+        },
+        eventClassNames(arg) {
+          return [`event-${classifyEvent(arg.event.title || "").category}`];
+        },
+        eventDidMount(arg) {
+          if (arg.event.allDay || !arg.event.start) return;
+          const now = new Date();
+          const end = arg.event.end || new Date(arg.event.start.getTime() + 60 * 60 * 1000);
+          if (sameDay(arg.event.start, now) && end < now) {
+            arg.el.classList.add("evt-past-today");
+          }
+        },
+        eventContent(arg) {
+          const title = arg.event.title || "";
+          const meta = classifyEvent(title);
+          const parts = [];
+          if (meta.icon) parts.push(`<span class="evt-icon">${meta.icon}</span>`);
+          if (!arg.event.allDay && arg.timeText) parts.push(`<span class="evt-time">${escapeHtml(arg.timeText)}</span>`);
+          parts.push(`<span class="evt-title">${escapeHtml(title)}</span>`);
+          return { html: `<span class="evt">${parts.join("")}</span>` };
+        },
+        eventsSet(events) {
+          cachedSportsEvents = normalizeSportsEvents(events);
+          if (calendar.view) updateGameDayChips(calendar.view.currentStart, calendar.view.currentEnd);
+          buildSidebar(calendar);
+          scheduleMealsLock();
+        },
+        datesSet(info) {
+          updateChristmasChip();
+          updateGameDayChips(info.start, info.end);
+          buildSidebar(calendar);
+          scheduleMealsLock();
+        }
+      });
+
+      calendar.render();
+      updateChristmasChip();
+      scheduleMealsLock();
+
+      fetchMealsForCurrentWeek().catch(err => {
+        console.warn("Meals error:", err);
+        setMealsFooterVisible(true);
+        renderMealsFooter(startOfCurrentWeekSunday(new Date()), {});
+      });
+
+      loadWeather();
+
+      window.addEventListener("resize", scheduleMealsLock);
+
+      setInterval(() => {
+        updateChristmasChip();
+        if (calendar.view) updateGameDayChips(calendar.view.currentStart, calendar.view.currentEnd);
+        buildSidebar(calendar);
+      }, 1000);
+
+      setInterval(() => {
+        setLastRefreshed("auto");
+        calendar.refetchEvents();
+        fetchMealsForCurrentWeek().catch(err => console.warn("Meals refresh error:", err));
+      }, AUTO_REFRESH_MINUTES * 60 * 1000);
+
+      setInterval(loadWeather, WEATHER_REFRESH_MINUTES * 60 * 1000);
     });
   </script>
-  </div>
-
-  <div id="bottom-area">
-    <section class="bottom-panel" id="weather-panel" aria-label="Weather">
-      <!-- =========================================================
-           SECTION: WEATHER PANEL HTML
-           Search: SECTION: WEATHER PANEL HTML
-           ========================================================= -->
-      <div id="weather-top">
-        <div id="weather-now">
-          <div id="weather-icon" aria-hidden="true">⛅</div>
-          <div>
-            <div id="weather-temp">--°F</div>
-          </div>
-          <div id="weather-now-meta">
-            <div class="cond" id="weather-cond">Loading…</div>
-            <div class="sub" id="weather-updated">—</div>
-          </div>
-        </div>
-
-        <div id="weather-today">
-          <div id="weather-hilo">Hi/Lo: —</div>
-          <div class="wx-chiprow">
-            <div class="wx-chip" id="weather-feels">Feels: —</div>
-            <div class="wx-chip" id="weather-wind">Wind: —</div>
-            <div class="wx-chip" id="weather-precip">Precip: —</div>
-          </div>
-        </div>
-      </div>
-
-      <div id="weather-timeline" aria-label="Today timeline (2-hour intervals)"></div>
-      <div id="weather-forecast" aria-label="Next 3 days forecast"></div>
-    </section>
-
-        <div id="bottom-spacer"></div>
-
-        <section class="bottom-panel" id="traffic-panel" aria-label="Traffic map">
-      <div id="traffic-label">Traffic (Waze)</div>
-      <iframe
-        src="https://embed.waze.com/iframe?zoom=13&lat=38.638412&lon=-90.457971&ct=livemap"
-        allowfullscreen
-        loading="lazy"
-        referrerpolicy="no-referrer-when-downgrade">
-      </iframe>
-    </section>
-  </div>
-</div>
-
 </body>
 </html>
