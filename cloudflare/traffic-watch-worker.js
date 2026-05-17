@@ -1,8 +1,10 @@
 const CACHE_SECONDS = 10 * 60;
 const CACHE_KEY_VERSION = "speed-v3";
 const FLOW_ZOOM = 16;
+const SURFACE_FLOW_ZOOM = 12;
 const FREEWAY_WATCH_SPEED_MPH = 45;
 const FREEWAY_BAD_SPEED_MPH = 30;
+const FREEWAY_FRC_CLASSES = new Set(["FRC0", "FRC1", "FRC2"]);
 
 const SEGMENTS = [
   {
@@ -10,6 +12,7 @@ const SEGMENTS = [
     name: "Ladue Rd west of home",
     road: "Ladue Rd",
     direction: "surface",
+    zoom: SURFACE_FLOW_ZOOM,
     point: "38.6551,-90.4936",
   },
   {
@@ -17,6 +20,7 @@ const SEGMENTS = [
     name: "Ladue Rd east of home",
     road: "Ladue Rd",
     direction: "surface",
+    zoom: SURFACE_FLOW_ZOOM,
     point: "38.6548,-90.4247",
   },
   {
@@ -25,7 +29,7 @@ const SEGMENTS = [
     road: "I-64",
     direction: "EB",
     kind: "freeway",
-    point: "38.6361,-90.4826",
+    point: "38.6384,-90.4826",
   },
   {
     id: "i64-wb-mason",
@@ -33,7 +37,7 @@ const SEGMENTS = [
     road: "I-64",
     direction: "WB",
     kind: "freeway",
-    point: "38.6371,-90.4826",
+    point: "38.6386,-90.4826",
   },
   {
     id: "i64-eb-270",
@@ -57,7 +61,7 @@ const SEGMENTS = [
     road: "I-270",
     direction: "NB",
     kind: "freeway",
-    point: "38.6545,-90.4488",
+    point: "38.6545,-90.4480",
   },
   {
     id: "i270-sb-ladue",
@@ -65,7 +69,7 @@ const SEGMENTS = [
     road: "I-270",
     direction: "SB",
     kind: "freeway",
-    point: "38.6545,-90.4498",
+    point: "38.6545,-90.4495",
   },
 ];
 
@@ -103,7 +107,8 @@ export default {
 };
 
 async function fetchSegment(segment, apiKey) {
-  const url = new URL(`https://api.tomtom.com/traffic/services/4/flowSegmentData/relative-delay/${FLOW_ZOOM}/json`);
+  const zoom = segment.zoom || FLOW_ZOOM;
+  const url = new URL(`https://api.tomtom.com/traffic/services/4/flowSegmentData/relative-delay/${zoom}/json`);
   url.searchParams.set("key", apiKey);
   url.searchParams.set("point", segment.point);
   url.searchParams.set("unit", "mph");
@@ -125,10 +130,11 @@ async function fetchSegment(segment, apiKey) {
     const roadClosure = Boolean(flow.roadClosure);
     const ratio = freeFlowTravelTime > 0 ? currentTravelTime / freeFlowTravelTime : 1;
     const delayMinutes = Math.max(0, (currentTravelTime - freeFlowTravelTime) / 60);
-    const status = classifySegment({ segment, ratio, delayMinutes, currentSpeed, roadClosure });
+    const status = classifySegment({ segment, frc, ratio, delayMinutes, currentSpeed, roadClosure });
 
     return {
       ...segment,
+      zoom,
       frc,
       status,
       ratio: round(ratio, 2),
@@ -147,8 +153,9 @@ async function fetchSegment(segment, apiKey) {
   }
 }
 
-function classifySegment({ segment, ratio, delayMinutes, currentSpeed, roadClosure }) {
+function classifySegment({ segment, frc, ratio, delayMinutes, currentSpeed, roadClosure }) {
   if (roadClosure) return "closure";
+  if (segment.kind === "freeway" && frc && !FREEWAY_FRC_CLASSES.has(frc)) return "unknown";
   if (segment.kind === "freeway" && Number.isFinite(currentSpeed)) {
     if (currentSpeed <= FREEWAY_BAD_SPEED_MPH) return "bad";
     if (currentSpeed <= FREEWAY_WATCH_SPEED_MPH) return "watch";
