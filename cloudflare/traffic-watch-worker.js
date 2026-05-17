@@ -1,5 +1,5 @@
 const CACHE_SECONDS = 10 * 60;
-const CACHE_KEY_VERSION = "speed-v3";
+const CACHE_KEY_VERSION = "points-v4";
 const FLOW_ZOOM = 16;
 const SURFACE_FLOW_ZOOM = 12;
 const FREEWAY_WATCH_SPEED_MPH = 45;
