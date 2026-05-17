@@ -1,4 +1,5 @@
 const CACHE_SECONDS = 10 * 60;
+const CACHE_KEY_VERSION = "direction-v2";
 
 const SEGMENTS = [
   {
@@ -78,7 +79,7 @@ export default {
     }
 
     const cache = caches.default;
-    const cacheKey = new Request(new URL(request.url).origin + "/traffic-status");
+    const cacheKey = new Request(new URL(request.url).origin + `/traffic-status-${CACHE_KEY_VERSION}`);
     const cached = await cache.match(cacheKey);
     if (cached) return cached;
 
