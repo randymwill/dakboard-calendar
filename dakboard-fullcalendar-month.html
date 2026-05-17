@@ -1,7 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.17.2
+Version: v1.17.3
+
+v1.17.3 camp tabs update:
+- groups Mary-Jean camp events by camp name
+- shows camp tabs in upcoming chronological order
 
 v1.17.2 today highlight refinement:
 - removes the Today text badge from the calendar cell
@@ -849,6 +853,65 @@ v1.17.0 traffic alerts update:
       background: linear-gradient(90deg, #22c55e, #facc15, #ef4444);
     }
 
+    .camp-tabs {
+      display: flex;
+      gap: 6px;
+      min-height: 38px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .camp-tabs:empty {
+      display: none;
+    }
+
+    .camp-tab {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 9px 8px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: rgba(255,255,255,0.68);
+      font: inherit;
+      font-size: 0.76em;
+      font-weight: 900;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+
+    .camp-tab.active {
+      background: linear-gradient(180deg, rgba(125,211,252,0.24), rgba(56,189,248,0.13));
+      color: rgba(255,255,255,0.96);
+      box-shadow: inset 0 -2px 0 rgba(125,211,252,0.86);
+    }
+
+    .camp-summary {
+      padding: 10px 11px;
+      border: 1px solid rgba(125,211,252,0.16);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.14);
+    }
+
+    .camp-name {
+      color: rgba(255,255,255,0.96);
+      font-size: 1.05em;
+      font-weight: 950;
+      line-height: 1.1;
+    }
+
+    .camp-date-range {
+      margin-top: 4px;
+      color: rgba(255,255,255,0.68);
+      font-size: 0.78em;
+      font-weight: 820;
+    }
+
     .mini-list {
       display: flex;
       flex-direction: column;
@@ -992,6 +1055,7 @@ v1.17.0 traffic alerts update:
             <div class="panel-title">Mary-Jean Camp</div>
             <div class="panel-chip" id="camp-count">Loading</div>
           </div>
+          <div class="camp-tabs" id="camp-tabs" role="tablist" aria-label="Camp list"></div>
           <div class="mini-list" id="camp-list">
             <div class="load-note">Looking for upcoming camp details…</div>
           </div>
@@ -1026,7 +1090,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.17.2";
+      const APP_VERSION = "v1.17.3";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1057,6 +1121,7 @@ v1.17.0 traffic alerts update:
         sideRefresh: document.getElementById("side-last-refresh"),
         sideVersion: document.getElementById("side-status-version"),
         campList: document.getElementById("camp-list"),
+        campTabs: document.getElementById("camp-tabs"),
         campCount: document.getElementById("camp-count"),
         trafficUpdated: document.getElementById("traffic-updated"),
         trafficStatusCard: document.getElementById("traffic-status-card"),
@@ -1065,6 +1130,8 @@ v1.17.0 traffic alerts update:
         trafficMeterFill: document.getElementById("traffic-meter-fill"),
         trafficSegments: document.getElementById("traffic-segments")
       };
+
+      let activeCampKey = "";
 
       if (!ENABLE_HOLIDAY_MODE) {
         document.documentElement.classList.remove("holiday-mode");
@@ -1685,7 +1752,69 @@ v1.17.0 traffic alerts update:
 
       function isCampEvent(event) {
         const haystack = `${event.title || ""} ${eventLocation(event)} ${eventDescription(event)}`;
-        return /camp|science center|t-shirt|dashboard sign/i.test(haystack);
+        return /camp|science center|zoo|funtastic|t-shirt|dashboard sign/i.test(haystack);
+      }
+
+      function campNameForEvent(event) {
+        const haystack = `${event.title || ""} ${eventLocation(event)} ${eventDescription(event)}`;
+        const rules = [
+          { name: "Science Center", pattern: /science center/i },
+          { name: "Camp Funtastic", pattern: /camp funtastic|funtastic/i },
+          { name: "Zoo Camp", pattern: /zoo/i }
+        ];
+        const match = rules.find(rule => rule.pattern.test(haystack));
+        if (match) return match.name;
+
+        const title = cleanText(event.title || "");
+        const campMatch = title.match(/([A-Z][A-Za-z0-9 &'’.-]*(?:Camp|camp)[A-Za-z0-9 &'’.-]*)/);
+        if (campMatch) return cleanCampName(campMatch[1]);
+        return "Other Camp";
+      }
+
+      function cleanCampName(name) {
+        return cleanText(name)
+          .replace(/\bMary-Jean\b/gi, "")
+          .replace(/\bT-?shirt\b/gi, "")
+          .replace(/\bDashboard Sign\b/gi, "")
+          .replace(/\bpick ?up\b/gi, "")
+          .replace(/\s*[-:|]\s*$/g, "")
+          .trim() || "Camp";
+      }
+
+      function campKey(name) {
+        return String(name || "camp").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      }
+
+      function campDateLabel(event) {
+        return event.allDay ? formatPrettyDate(event.start) : `${formatPrettyDate(event.start)} ${formatTime(event.start)}`;
+      }
+
+      function campDateRange(events) {
+        const starts = events.map(event => event.start).filter(Boolean).sort((a, b) => a - b);
+        if (!starts.length) return "Upcoming";
+        const first = starts[0];
+        const last = starts[starts.length - 1];
+        if (sameDay(first, last)) return formatPrettyDate(first);
+        return `${first.toLocaleDateString([], { month: "short", day: "numeric" })} - ${last.toLocaleDateString([], { month: "short", day: "numeric" })}`;
+      }
+
+      function campGroupsFromEvents(events) {
+        const byKey = new Map();
+        for (const event of events) {
+          const name = campNameForEvent(event);
+          const key = campKey(name);
+          if (!byKey.has(key)) byKey.set(key, { key, name, events: [], firstStart: event.start });
+          const group = byKey.get(key);
+          group.events.push(event);
+          if (event.start < group.firstStart) group.firstStart = event.start;
+        }
+
+        return Array.from(byKey.values())
+          .map(group => ({
+            ...group,
+            events: group.events.slice().sort((a, b) => a.start - b.start)
+          }))
+          .sort((a, b) => a.firstStart - b.firstStart);
       }
 
       function renderCampPanel(calendar) {
@@ -1694,15 +1823,16 @@ v1.17.0 traffic alerts update:
         const now = new Date();
         const campEvents = calendar.getEvents()
           .filter(event => event.start && (event.end || event.start) >= now && isCampEvent(event))
-          .sort((a, b) => a.start - b.start)
-          .slice(0, 5);
+          .sort((a, b) => a.start - b.start);
+        const campGroups = campGroupsFromEvents(campEvents);
 
         if (els.campCount) {
-          els.campCount.textContent = campEvents.length ? `${campEvents.length} upcoming` : "No upcoming";
+          els.campCount.textContent = campGroups.length ? `${campGroups.length} camps` : "No upcoming";
         }
 
+        if (els.campTabs) els.campTabs.innerHTML = "";
         els.campList.innerHTML = "";
-        if (!campEvents.length) {
+        if (!campGroups.length) {
           els.campList.innerHTML = `
             <div class="mini-item">
               <div class="mini-date">Camp</div>
@@ -1714,8 +1844,27 @@ v1.17.0 traffic alerts update:
           return;
         }
 
-        for (const event of campEvents) {
-          const dateLabel = event.allDay ? formatPrettyDate(event.start) : `${formatPrettyDate(event.start)} ${formatTime(event.start)}`;
+        if (!activeCampKey || !campGroups.some(group => group.key === activeCampKey)) {
+          activeCampKey = campGroups[0].key;
+        }
+
+        for (const group of campGroups) {
+          if (!els.campTabs) continue;
+          els.campTabs.insertAdjacentHTML("beforeend", `
+            <button class="camp-tab ${group.key === activeCampKey ? "active" : ""}" type="button" role="tab" aria-selected="${group.key === activeCampKey ? "true" : "false"}" data-camp-key="${escapeHtml(group.key)}" title="${escapeHtml(group.name)}">
+              ${escapeHtml(group.name)}
+            </button>`);
+        }
+
+        const activeGroup = campGroups.find(group => group.key === activeCampKey) || campGroups[0];
+        els.campList.insertAdjacentHTML("beforeend", `
+          <div class="camp-summary">
+            <div class="camp-name">${escapeHtml(activeGroup.name)}</div>
+            <div class="camp-date-range">${escapeHtml(campDateRange(activeGroup.events))} • ${activeGroup.events.length} item${activeGroup.events.length === 1 ? "" : "s"}</div>
+          </div>`);
+
+        for (const event of activeGroup.events.slice(0, 5)) {
+          const dateLabel = campDateLabel(event);
           const detail = eventLocation(event) || eventDescription(event) || "Details in calendar";
           els.campList.insertAdjacentHTML("beforeend", `
             <div class="mini-item">
@@ -1899,6 +2048,15 @@ v1.17.0 traffic alerts update:
           scheduleMealsLock();
         }
       });
+
+      if (els.campTabs) {
+        els.campTabs.addEventListener("click", event => {
+          const tab = event.target.closest(".camp-tab");
+          if (!tab || !tab.dataset.campKey) return;
+          activeCampKey = tab.dataset.campKey;
+          renderCampPanel(calendar);
+        });
+      }
 
       calendar.render();
       updateMajorDateChip();
