@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.17.5
+Version: v1.17.6
+
+v1.17.6 calendar updates box:
+- repurposes the status box for recent calendar additions, changes, and cancellations
 
 v1.17.5 canceled event filtering:
 - removes canceled/cancelled calendar events before they render
@@ -242,13 +245,53 @@ v1.17.0 traffic alerts update:
       font-weight: 720;
     }
 
-    #side-status-version {
-      margin: 0;
-      color: rgba(255,255,255,0.80);
-    }
-
     .status-line {
       margin-bottom: 4px;
+    }
+
+    .status-updates {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+
+    .status-update {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      min-width: 0;
+      padding: 7px 8px;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 7px;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .status-update-tag {
+      color: rgba(255,255,255,0.82);
+      font-size: 0.68em;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .status-update-title,
+    .status-update-detail {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-update-title {
+      font-size: 0.80em;
+      font-weight: 850;
+    }
+
+    .status-update-detail {
+      margin-top: 2px;
+      color: rgba(255,255,255,0.60);
+      font-size: 0.70em;
+      font-weight: 720;
     }
 
     #bottom-area {
@@ -1020,9 +1063,11 @@ v1.17.0 traffic alerts update:
 
             <div class="side-card">
               <div class="side-title">
-                <strong>Status</strong>
+                <strong>Breaking News</strong>
               </div>
-              <div class="side-sub status-line" id="side-status-version">Version: —</div>
+              <div class="status-updates" id="calendar-updates">
+                <div class="side-sub status-line">Checking calendar…</div>
+              </div>
               <div class="side-sub status-line" id="side-last-refresh">Last refreshed: —</div>
             </div>
           </aside>
@@ -1096,7 +1141,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.17.5";
+      const APP_VERSION = "v1.17.6";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1117,6 +1162,8 @@ v1.17.0 traffic alerts update:
       const LUNCH_MAX_ENTREES = 3;
       const CALENDAR_WHEEL_STEP = 90;
       const CALENDAR_MAX_SCROLL_WEEKS = 52;
+      const CALENDAR_UPDATES_LOOKBACK_DAYS = 14;
+      const CALENDAR_UPDATES_MAX = 4;
 
       const els = {
         calendar: document.getElementById("calendar"),
@@ -1127,7 +1174,7 @@ v1.17.0 traffic alerts update:
         todayUpcoming: document.getElementById("today-upcoming"),
         todayGames: document.getElementById("today-games"),
         sideRefresh: document.getElementById("side-last-refresh"),
-        sideVersion: document.getElementById("side-status-version"),
+        calendarUpdates: document.getElementById("calendar-updates"),
         campList: document.getElementById("camp-list"),
         campTabs: document.getElementById("camp-tabs"),
         campCount: document.getElementById("camp-count"),
@@ -1145,7 +1192,6 @@ v1.17.0 traffic alerts update:
         document.documentElement.classList.remove("holiday-mode");
       }
 
-      setVersionDisplays();
       setLastRefreshed("loaded");
 
       const rules = {
@@ -1156,12 +1202,6 @@ v1.17.0 traffic alerts update:
         soccer: /soccer|rainbow unicorns/i,
         rainbowUnicorns: /rainbow unicorns/i
       };
-
-      function setVersionDisplays() {
-        if (els.sideVersion) {
-          els.sideVersion.innerHTML = `Version: <strong>${APP_VERSION}</strong>`;
-        }
-      }
 
       function setLastRefreshed(reason) {
         const text = formatLocalTime(new Date());
@@ -2029,6 +2069,146 @@ v1.17.0 traffic alerts update:
           /^cancel(?:ed|led)$/i.test(extendedStatus);
       }
 
+      async function loadCalendarUpdates() {
+        if (!els.calendarUpdates) return;
+
+        try {
+          const response = await fetch(WILLIAMS_ICS_URL, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Calendar HTTP ${response.status}`);
+          const updates = calendarUpdatesFromIcs(await response.text());
+          renderCalendarUpdates(updates);
+        } catch (err) {
+          els.calendarUpdates.innerHTML = `
+            <div class="status-update">
+              <div class="status-update-tag">Check</div>
+              <div>
+                <div class="status-update-title">Calendar updates unavailable</div>
+                <div class="status-update-detail">${escapeHtml(err && err.message ? err.message : "Could not load feed")}</div>
+              </div>
+            </div>`;
+        }
+      }
+
+      function calendarUpdatesFromIcs(icsText) {
+        const now = new Date();
+        const today = startOfDay(now);
+        const cutoff = new Date(now.getTime() - CALENDAR_UPDATES_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+        const events = parseIcsEvents(icsText);
+        const updates = [];
+
+        for (const event of events) {
+          const title = event.SUMMARY || "Calendar event";
+          const status = event.STATUS || "";
+          const startsAt = parseIcsDate(event.DTSTART);
+          const createdAt = parseIcsDate(event.CREATED);
+          const modifiedAt = parseIcsDate(event["LAST-MODIFIED"]);
+          const stampAt = parseIcsDate(event.DTSTAMP);
+          const isCancelled = /^cancel(?:ed|led)\b/i.test(title) || /^cancel(?:ed|led)$/i.test(status);
+
+          if (startsAt && startsAt < addDays(today, -1)) continue;
+
+          if (isCancelled) {
+            const changedAt = modifiedAt || stampAt || createdAt || startsAt;
+            if (changedAt && changedAt >= cutoff) {
+              updates.push({ type: "Canceled", title: cleanCancelledTitle(title), startsAt, changedAt });
+            }
+            continue;
+          }
+
+          if (createdAt && createdAt >= cutoff) {
+            updates.push({ type: "Added", title, startsAt, changedAt: createdAt });
+            continue;
+          }
+
+          if (modifiedAt && modifiedAt >= cutoff && (!createdAt || Math.abs(modifiedAt - createdAt) > 60 * 1000)) {
+            updates.push({ type: "Changed", title, startsAt, changedAt: modifiedAt });
+          }
+        }
+
+        return updates
+          .sort((a, b) => b.changedAt - a.changedAt)
+          .slice(0, CALENDAR_UPDATES_MAX);
+      }
+
+      function parseIcsEvents(icsText) {
+        const unfolded = String(icsText || "").replace(/\r?\n[ \t]/g, "");
+        const blocks = unfolded.split("BEGIN:VEVENT").slice(1);
+        return blocks.map(block => {
+          const event = {};
+          for (const rawLine of block.split(/\r?\n/)) {
+            if (!rawLine || rawLine === "END:VEVENT") continue;
+            const colon = rawLine.indexOf(":");
+            if (colon < 0) continue;
+            const name = rawLine.slice(0, colon).split(";")[0].toUpperCase();
+            const value = rawLine.slice(colon + 1);
+            if (!event[name]) event[name] = unescapeIcsText(value);
+          }
+          return event;
+        });
+      }
+
+      function parseIcsDate(value) {
+        if (!value) return null;
+        const text = String(value).trim();
+        let match = text.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+        if (match) {
+          return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]), Number(match[6])));
+        }
+
+        match = text.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/);
+        if (match) {
+          return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]), Number(match[6]));
+        }
+
+        match = text.match(/^(\d{4})(\d{2})(\d{2})$/);
+        if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        return null;
+      }
+
+      function unescapeIcsText(value) {
+        return String(value || "")
+          .replace(/\\n/g, " ")
+          .replace(/\\,/g, ",")
+          .replace(/\\;/g, ";")
+          .replace(/\\\\/g, "\\")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function cleanCancelledTitle(title) {
+        return cleanText(title).replace(/^cancel(?:ed|led)\s*/i, "").replace(/^[-:]\s*/, "");
+      }
+
+      function renderCalendarUpdates(updates) {
+        if (!els.calendarUpdates) return;
+        if (!updates.length) {
+          els.calendarUpdates.innerHTML = `
+            <div class="status-update">
+              <div class="status-update-tag">Clear</div>
+              <div>
+                <div class="status-update-title">No recent calendar changes</div>
+                <div class="status-update-detail">Watching additions, changes, and cancellations.</div>
+              </div>
+            </div>`;
+          return;
+        }
+
+        els.calendarUpdates.innerHTML = "";
+        for (const update of updates) {
+          const detail = update.startsAt
+            ? `${formatPrettyDate(update.startsAt)} • updated ${formatLocalTime(update.changedAt)}`
+            : `Updated ${formatLocalTime(update.changedAt)}`;
+          els.calendarUpdates.insertAdjacentHTML("beforeend", `
+            <div class="status-update">
+              <div class="status-update-tag">${escapeHtml(update.type)}</div>
+              <div>
+                <div class="status-update-title">${escapeHtml(update.title)}</div>
+                <div class="status-update-detail">${escapeHtml(detail)}</div>
+              </div>
+            </div>`);
+        }
+      }
+
       const calendar = new FullCalendar.Calendar(els.calendar, {
         initialView: "rolling4Weeks",
         views: {
@@ -2119,6 +2299,7 @@ v1.17.0 traffic alerts update:
 
       loadWeather();
       loadTrafficStatus();
+      loadCalendarUpdates();
 
       window.addEventListener("resize", scheduleMealsLock);
 
@@ -2132,6 +2313,7 @@ v1.17.0 traffic alerts update:
       setInterval(() => {
         setLastRefreshed("auto");
         calendar.refetchEvents();
+        loadCalendarUpdates();
         fetchMealsForCurrentWeek().catch(err => console.warn("Meals refresh error:", err));
       }, AUTO_REFRESH_MINUTES * 60 * 1000);
 
