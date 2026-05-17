@@ -1,5 +1,5 @@
 const CACHE_SECONDS = 10 * 60;
-const CACHE_KEY_VERSION = "points-v4";
+const CACHE_KEY_VERSION = "ladue-west-v5";
 const FLOW_ZOOM = 16;
 const SURFACE_FLOW_ZOOM = 12;
 const FREEWAY_WATCH_SPEED_MPH = 45;
@@ -13,7 +13,7 @@ const SEGMENTS = [
     road: "Ladue Rd",
     direction: "surface",
     zoom: SURFACE_FLOW_ZOOM,
-    point: "38.6551,-90.4936",
+    point: "38.6548,-90.4936",
   },
   {
     id: "ladue-east",

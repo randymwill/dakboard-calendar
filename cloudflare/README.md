@@ -6,7 +6,7 @@ The monitored points are:
 
 | ID | Label | Point |
 | --- | --- | --- |
-| `ladue-west` | Ladue Rd west of home | `38.6551,-90.4936` |
+| `ladue-west` | Ladue Rd west of home | `38.6548,-90.4936` |
 | `ladue-east` | Ladue Rd east of home | `38.6548,-90.4247` |
 | `i64-eb-mason` | I-64 EB near Mason | `38.6384,-90.4826` |
 | `i64-wb-mason` | I-64 WB near Mason | `38.6386,-90.4826` |
