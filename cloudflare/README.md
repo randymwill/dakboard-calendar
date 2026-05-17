@@ -17,6 +17,8 @@ The monitored points are:
 
 For divided highways, the sample point is offset onto the expected carriageway so the label indicates direction. Ladue Road is monitored as surface-road segments by location.
 
+The Worker asks TomTom for flow segment data at zoom level 16. Higher zoom levels reduce the chance that an interstate sample point snaps to a nearby ramp or local road instead of the main freeway segment.
+
 ## Free-tier usage
 
 TomTom Flow Segment Data is a non-tile request. With 8 sample points and a 10-minute Worker cache:
@@ -66,4 +68,6 @@ If Cloudflare gives you a different URL, update `TRAFFIC_STATUS_URL` in `dakboar
 - Clear: less than 20% slower than normal
 - Watch: 20% slower or 8+ minutes delay
 - Major backup: 45% slower or 15+ minutes delay
+- Interstate watch: 45 mph or slower, even if TomTom reports that as normal for the sampled segment
+- Interstate major backup: 30 mph or slower
 - Closure: TomTom road closure flag
