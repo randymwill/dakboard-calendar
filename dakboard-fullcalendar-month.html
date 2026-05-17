@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.17.4
+Version: v1.17.5
+
+v1.17.5 canceled event filtering:
+- removes canceled/cancelled calendar events before they render
 
 v1.17.4 calendar wheel navigation:
 - mouse wheel over the calendar moves the 4-week window one week at a time
@@ -1093,7 +1096,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.17.4";
+      const APP_VERSION = "v1.17.5";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2012,6 +2015,20 @@ v1.17.0 traffic alerts update:
         }, { passive: false });
       }
 
+      function calendarEventTransform(eventData) {
+        if (isCancelledEventData(eventData)) return false;
+        return eventData;
+      }
+
+      function isCancelledEventData(eventData) {
+        const title = String(eventData && eventData.title || "");
+        const status = String(eventData && eventData.status || "");
+        const extendedStatus = String(eventData && eventData.extendedProps && eventData.extendedProps.status || "");
+        return /^cancel(?:ed|led)\b/i.test(title) ||
+          /^cancel(?:ed|led)$/i.test(status) ||
+          /^cancel(?:ed|led)$/i.test(extendedStatus);
+      }
+
       const calendar = new FullCalendar.Calendar(els.calendar, {
         initialView: "rolling4Weeks",
         views: {
@@ -2032,8 +2049,8 @@ v1.17.0 traffic alerts update:
           return { start, end: addDays(start, 28) };
         },
         eventSources: [
-          { url: ICS_URL, format: "ics" },
-          { url: WILLIAMS_ICS_URL, format: "ics" }
+          { url: ICS_URL, format: "ics", eventDataTransform: calendarEventTransform },
+          { url: WILLIAMS_ICS_URL, format: "ics", eventDataTransform: calendarEventTransform }
         ],
         dayCellDidMount(info) {
           const date = startOfDay(info.date);
