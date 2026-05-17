@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.17.3
+Version: v1.17.4
+
+v1.17.4 calendar wheel navigation:
+- mouse wheel over the calendar moves the 4-week window one week at a time
 
 v1.17.3 camp tabs update:
 - groups Mary-Jean camp events by camp name
@@ -1090,7 +1093,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.17.3";
+      const APP_VERSION = "v1.17.4";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1109,6 +1112,8 @@ v1.17.0 traffic alerts update:
       const COUNTDOWN_LOOKAHEAD_DAYS = 14;
       const BREAKFAST_MAX_ITEMS = 2;
       const LUNCH_MAX_ENTREES = 3;
+      const CALENDAR_WHEEL_STEP = 90;
+      const CALENDAR_MAX_SCROLL_WEEKS = 52;
 
       const els = {
         calendar: document.getElementById("calendar"),
@@ -1981,6 +1986,32 @@ v1.17.0 traffic alerts update:
         }
       }
 
+      function installCalendarWheelNavigation(calendar) {
+        if (!els.calendar) return;
+
+        let wheelRemainder = 0;
+        const minStart = startOfCurrentWeekSunday(new Date());
+        const maxStart = addDays(minStart, CALENDAR_MAX_SCROLL_WEEKS * 7);
+
+        els.calendar.addEventListener("wheel", event => {
+          event.preventDefault();
+          wheelRemainder += event.deltaY;
+
+          if (Math.abs(wheelRemainder) < CALENDAR_WHEEL_STEP) return;
+
+          const direction = wheelRemainder > 0 ? 1 : -1;
+          wheelRemainder = 0;
+
+          const currentStart = startOfCurrentWeekSunday(calendar.view.currentStart || new Date());
+          let nextStart = addDays(currentStart, direction * 7);
+          if (nextStart < minStart) nextStart = minStart;
+          if (nextStart > maxStart) nextStart = maxStart;
+          if (nextStart.getTime() === currentStart.getTime()) return;
+
+          calendar.gotoDate(nextStart);
+        }, { passive: false });
+      }
+
       const calendar = new FullCalendar.Calendar(els.calendar, {
         initialView: "rolling4Weeks",
         views: {
@@ -2058,6 +2089,7 @@ v1.17.0 traffic alerts update:
         });
       }
 
+      installCalendarWheelNavigation(calendar);
       calendar.render();
       updateMajorDateChip();
       scheduleMealsLock();
