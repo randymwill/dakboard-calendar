@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.0
+Version: v1.18.1
+
+v1.18.1 calendar controls placement:
+- moves week buttons into the Saturday meals/footer area
 
 v1.18.0 calendar week controls:
 - replaces mouse-wheel navigation with up/down week buttons
@@ -146,17 +149,6 @@ v1.17.0 traffic alerts update:
       max-width: 100%;
       min-height: 0;
       overflow: hidden;
-    }
-
-    #calendar-nav {
-      flex: 0 0 34px;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 6px;
-      padding-bottom: 14px;
     }
 
     .calendar-nav-btn {
@@ -819,6 +811,40 @@ v1.17.0 traffic alerts update:
       box-shadow: none !important;
     }
 
+    .meal-col.with-nav {
+      visibility: visible;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      border-color: transparent !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .meal-col.with-nav.has-meals {
+      align-items: flex-start;
+      justify-content: space-between;
+      border-color: rgba(255,255,255,0.10) !important;
+      background: var(--meal-bg) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06) !important;
+    }
+
+    .meal-content {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .calendar-nav {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+    }
+
     .meal-row {
       display: flex;
       align-items: flex-start;
@@ -1077,7 +1103,6 @@ v1.17.0 traffic alerts update:
 
     @media (max-width: 1200px) {
       #sidebar { display: none; }
-      #calendar-nav { display: none; }
       #bottom-area { grid-template-columns: 1fr; }
       #center-stack { grid-template-columns: 1fr; }
     }
@@ -1094,11 +1119,6 @@ v1.17.0 traffic alerts update:
             <div id="meals-footer">
               <div id="meals-grid" aria-label="Current week school meals"></div>
             </div>
-          </div>
-
-          <div id="calendar-nav" aria-label="Calendar week navigation">
-            <button class="calendar-nav-btn" id="calendar-week-prev" type="button" aria-label="Previous week">▲</button>
-            <button class="calendar-nav-btn" id="calendar-week-next" type="button" aria-label="Next week">▼</button>
           </div>
 
           <aside id="sidebar" aria-label="Today and status">
@@ -1201,7 +1221,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.0";
+      const APP_VERSION = "v1.18.1";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1234,8 +1254,6 @@ v1.17.0 traffic alerts update:
         todayGames: document.getElementById("today-games"),
         sideRefresh: document.getElementById("side-last-refresh"),
         breakingNewsVersion: document.getElementById("breaking-news-version"),
-        calendarWeekPrev: document.getElementById("calendar-week-prev"),
-        calendarWeekNext: document.getElementById("calendar-week-next"),
         calendarUpdates: document.getElementById("calendar-updates"),
         campList: document.getElementById("camp-list"),
         campTabs: document.getElementById("camp-tabs"),
@@ -1249,6 +1267,7 @@ v1.17.0 traffic alerts update:
       };
 
       let activeCampKey = "";
+      let calendarWeekControls = null;
 
       if (!ENABLE_HOLIDAY_MODE) {
         document.documentElement.classList.remove("holiday-mode");
@@ -1636,10 +1655,12 @@ v1.17.0 traffic alerts update:
           const info = mealsByDate[key] || { breakfastItems: [], lunchEntrees: [], lunchSides: "" };
           const hasAny = Boolean(info.breakfastItems.length || info.lunchEntrees.length || info.lunchSides);
           const col = document.createElement("div");
-          col.className = `meal-col${hasAny ? "" : " empty"}`;
+          col.className = `meal-col${hasAny ? "" : " empty"}${i === 6 ? " with-nav" : ""}${i === 6 && hasAny ? " has-meals" : ""}`;
+          const content = document.createElement("div");
+          content.className = "meal-content";
 
           if (info.breakfastItems.length) {
-            col.insertAdjacentHTML("beforeend", `
+            content.insertAdjacentHTML("beforeend", `
               <div class="meal-row">
                 <span class="meal-pill">🍳</span>
                 <span class="meal-main">${escapeHtml(info.breakfastItems.join(" / "))}</span>
@@ -1647,7 +1668,7 @@ v1.17.0 traffic alerts update:
           }
 
           if (info.lunchEntrees.length || info.lunchSides) {
-            col.insertAdjacentHTML("beforeend", `
+            content.insertAdjacentHTML("beforeend", `
               <div class="meal-row">
                 <span class="meal-pill">🥪</span>
                 <span class="meal-lunch">
@@ -1655,6 +1676,19 @@ v1.17.0 traffic alerts update:
                   <span class="meal-sides">${info.lunchSides ? "Sides: " + escapeHtml(info.lunchSides) : ""}</span>
                 </span>
               </div>`);
+          }
+
+          col.appendChild(content);
+
+          if (i === 6) {
+            col.insertAdjacentHTML("beforeend", `
+              <div class="calendar-nav" aria-label="Calendar week navigation">
+                <button class="calendar-nav-btn" id="calendar-week-prev" type="button" aria-label="Previous week">▲</button>
+                <button class="calendar-nav-btn" id="calendar-week-next" type="button" aria-label="Next week">▼</button>
+              </div>`);
+            els.calendarWeekPrev = document.getElementById("calendar-week-prev");
+            els.calendarWeekNext = document.getElementById("calendar-week-next");
+            wireCalendarWeekButtons();
           }
 
           els.mealsGrid.appendChild(col);
@@ -2099,10 +2133,9 @@ v1.17.0 traffic alerts update:
       }
 
       function installCalendarWeekControls(calendar) {
-        const minStart = startOfCurrentWeekSunday(new Date());
-        const maxStart = addDays(minStart, CALENDAR_MAX_SCROLL_WEEKS * 7);
-
         function shiftWeek(direction) {
+          const minStart = startOfCurrentWeekSunday(new Date());
+          const maxStart = addDays(minStart, CALENDAR_MAX_SCROLL_WEEKS * 7);
           const currentStart = startOfCurrentWeekSunday(calendar.view.currentStart || new Date());
           let nextStart = addDays(currentStart, direction * 7);
           if (nextStart < minStart) nextStart = minStart;
@@ -2114,15 +2147,21 @@ v1.17.0 traffic alerts update:
           updateCalendarWeekButtons(calendar, minStart, maxStart);
         }
 
+        calendarWeekControls = { calendar, shiftWeek };
+        wireCalendarWeekButtons();
+      }
+
+      function wireCalendarWeekButtons() {
+        if (!calendarWeekControls) return;
         if (els.calendarWeekPrev) {
-          els.calendarWeekPrev.addEventListener("click", () => shiftWeek(-1));
+          els.calendarWeekPrev.onclick = () => calendarWeekControls.shiftWeek(-1);
         }
 
         if (els.calendarWeekNext) {
-          els.calendarWeekNext.addEventListener("click", () => shiftWeek(1));
+          els.calendarWeekNext.onclick = () => calendarWeekControls.shiftWeek(1);
         }
 
-        updateCalendarWeekButtons(calendar, minStart, maxStart);
+        updateCalendarWeekButtonsForCurrentRange(calendarWeekControls.calendar);
       }
 
       function updateCalendarWeekButtons(calendar, minStart, maxStart) {
@@ -2382,6 +2421,7 @@ v1.17.0 traffic alerts update:
       installCalendarWeekControls(calendar);
       calendar.render();
       updateMajorDateChip();
+      renderMealsFooter(startOfCurrentWeekSunday(new Date()), {});
       scheduleMealsLock();
 
       fetchMealsForCurrentWeek().catch(err => {
