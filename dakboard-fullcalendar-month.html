@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.17.7
+Version: v1.17.8
+
+v1.17.8 calendar wheel sizing fix:
+- keeps FullCalendar from expanding horizontally after wheel navigation
 
 v1.17.7 today border-only highlight:
 - removes the glow/wash from the Today cell so events stay crisp
@@ -133,7 +136,10 @@ v1.17.0 traffic alerts update:
 
     #calendar {
       flex: 1 1 auto;
+      width: 100%;
+      max-width: 100%;
       min-height: 0;
+      overflow: hidden;
     }
 
     #sidebar {
@@ -517,7 +523,14 @@ v1.17.0 traffic alerts update:
     .fc,
     .fc .fc-view-harness,
     .fc .fc-view-harness-active {
+      max-width: 100%;
       height: 100% !important;
+    }
+
+    .fc .fc-scroller,
+    .fc .fc-scrollgrid,
+    .fc .fc-scrollgrid table {
+      max-width: 100% !important;
     }
 
     .fc .fc-header-toolbar {
@@ -1139,7 +1152,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.17.7";
+      const APP_VERSION = "v1.17.8";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1158,7 +1171,8 @@ v1.17.0 traffic alerts update:
       const COUNTDOWN_LOOKAHEAD_DAYS = 14;
       const BREAKFAST_MAX_ITEMS = 2;
       const LUNCH_MAX_ENTREES = 3;
-      const CALENDAR_WHEEL_STEP = 90;
+      const CALENDAR_WHEEL_STEP = 160;
+      const CALENDAR_WHEEL_COOLDOWN_MS = 220;
       const CALENDAR_MAX_SCROLL_WEEKS = 52;
       const CALENDAR_UPDATES_LOOKBACK_DAYS = 14;
       const CALENDAR_UPDATES_MAX = 4;
@@ -2031,17 +2045,24 @@ v1.17.0 traffic alerts update:
         if (!els.calendar) return;
 
         let wheelRemainder = 0;
+        let lastWheelNavigation = 0;
         const minStart = startOfCurrentWeekSunday(new Date());
         const maxStart = addDays(minStart, CALENDAR_MAX_SCROLL_WEEKS * 7);
 
-        els.calendar.addEventListener("wheel", event => {
+        document.addEventListener("wheel", event => {
+          if (!els.calendar.contains(event.target)) return;
           event.preventDefault();
+          event.stopPropagation();
+          const now = Date.now();
+          if (now - lastWheelNavigation < CALENDAR_WHEEL_COOLDOWN_MS) return;
+
           wheelRemainder += event.deltaY;
 
           if (Math.abs(wheelRemainder) < CALENDAR_WHEEL_STEP) return;
 
           const direction = wheelRemainder > 0 ? 1 : -1;
           wheelRemainder = 0;
+          lastWheelNavigation = now;
 
           const currentStart = startOfCurrentWeekSunday(calendar.view.currentStart || new Date());
           let nextStart = addDays(currentStart, direction * 7);
@@ -2050,7 +2071,15 @@ v1.17.0 traffic alerts update:
           if (nextStart.getTime() === currentStart.getTime()) return;
 
           calendar.gotoDate(nextStart);
-        }, { passive: false });
+          scheduleCalendarSizeUpdate(calendar);
+        }, { passive: false, capture: true });
+      }
+
+      function scheduleCalendarSizeUpdate(calendar) {
+        requestAnimationFrame(() => {
+          calendar.updateSize();
+          scheduleMealsLock();
+        });
       }
 
       function calendarEventTransform(eventData) {
@@ -2264,6 +2293,7 @@ v1.17.0 traffic alerts update:
           if (calendar.view) updateGameDayChips(calendar.view.currentStart, calendar.view.currentEnd);
           buildSidebar(calendar);
           renderCampPanel(calendar);
+          scheduleCalendarSizeUpdate(calendar);
           scheduleMealsLock();
         },
         datesSet(info) {
@@ -2271,6 +2301,7 @@ v1.17.0 traffic alerts update:
           updateGameDayChips(info.start, info.end);
           buildSidebar(calendar);
           renderCampPanel(calendar);
+          scheduleCalendarSizeUpdate(calendar);
           scheduleMealsLock();
         }
       });
