@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.17.9
+Version: v1.18.0
+
+v1.18.0 calendar week controls:
+- replaces mouse-wheel navigation with up/down week buttons
 
 v1.17.9 breaking news version label:
 - shows the dashboard version in the Breaking News header
@@ -143,6 +146,42 @@ v1.17.0 traffic alerts update:
       max-width: 100%;
       min-height: 0;
       overflow: hidden;
+    }
+
+    #calendar-nav {
+      flex: 0 0 34px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      padding-bottom: 14px;
+    }
+
+    .calendar-nav-btn {
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(125,211,252,0.35);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.055);
+      color: rgba(224,242,254,0.94);
+      font-size: 1.05em;
+      font-weight: 950;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .calendar-nav-btn:hover,
+    .calendar-nav-btn:focus-visible {
+      background: rgba(56,189,248,0.20);
+      outline: none;
+    }
+
+    .calendar-nav-btn:disabled {
+      opacity: 0.34;
+      cursor: default;
     }
 
     #sidebar {
@@ -1038,6 +1077,7 @@ v1.17.0 traffic alerts update:
 
     @media (max-width: 1200px) {
       #sidebar { display: none; }
+      #calendar-nav { display: none; }
       #bottom-area { grid-template-columns: 1fr; }
       #center-stack { grid-template-columns: 1fr; }
     }
@@ -1054,6 +1094,11 @@ v1.17.0 traffic alerts update:
             <div id="meals-footer">
               <div id="meals-grid" aria-label="Current week school meals"></div>
             </div>
+          </div>
+
+          <div id="calendar-nav" aria-label="Calendar week navigation">
+            <button class="calendar-nav-btn" id="calendar-week-prev" type="button" aria-label="Previous week">▲</button>
+            <button class="calendar-nav-btn" id="calendar-week-next" type="button" aria-label="Next week">▼</button>
           </div>
 
           <aside id="sidebar" aria-label="Today and status">
@@ -1156,7 +1201,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.17.9";
+      const APP_VERSION = "v1.18.0";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1175,8 +1220,6 @@ v1.17.0 traffic alerts update:
       const COUNTDOWN_LOOKAHEAD_DAYS = 14;
       const BREAKFAST_MAX_ITEMS = 2;
       const LUNCH_MAX_ENTREES = 3;
-      const CALENDAR_WHEEL_STEP = 160;
-      const CALENDAR_WHEEL_COOLDOWN_MS = 220;
       const CALENDAR_MAX_SCROLL_WEEKS = 52;
       const CALENDAR_UPDATES_LOOKBACK_DAYS = 14;
       const CALENDAR_UPDATES_MAX = 4;
@@ -1191,6 +1234,8 @@ v1.17.0 traffic alerts update:
         todayGames: document.getElementById("today-games"),
         sideRefresh: document.getElementById("side-last-refresh"),
         breakingNewsVersion: document.getElementById("breaking-news-version"),
+        calendarWeekPrev: document.getElementById("calendar-week-prev"),
+        calendarWeekNext: document.getElementById("calendar-week-next"),
         calendarUpdates: document.getElementById("calendar-updates"),
         campList: document.getElementById("camp-list"),
         campTabs: document.getElementById("camp-tabs"),
@@ -2053,29 +2098,11 @@ v1.17.0 traffic alerts update:
         }
       }
 
-      function installCalendarWheelNavigation(calendar) {
-        if (!els.calendar) return;
-
-        let wheelRemainder = 0;
-        let lastWheelNavigation = 0;
+      function installCalendarWeekControls(calendar) {
         const minStart = startOfCurrentWeekSunday(new Date());
         const maxStart = addDays(minStart, CALENDAR_MAX_SCROLL_WEEKS * 7);
 
-        document.addEventListener("wheel", event => {
-          if (!els.calendar.contains(event.target)) return;
-          event.preventDefault();
-          event.stopPropagation();
-          const now = Date.now();
-          if (now - lastWheelNavigation < CALENDAR_WHEEL_COOLDOWN_MS) return;
-
-          wheelRemainder += event.deltaY;
-
-          if (Math.abs(wheelRemainder) < CALENDAR_WHEEL_STEP) return;
-
-          const direction = wheelRemainder > 0 ? 1 : -1;
-          wheelRemainder = 0;
-          lastWheelNavigation = now;
-
+        function shiftWeek(direction) {
           const currentStart = startOfCurrentWeekSunday(calendar.view.currentStart || new Date());
           let nextStart = addDays(currentStart, direction * 7);
           if (nextStart < minStart) nextStart = minStart;
@@ -2084,7 +2111,30 @@ v1.17.0 traffic alerts update:
 
           calendar.gotoDate(nextStart);
           scheduleCalendarSizeUpdate(calendar);
-        }, { passive: false, capture: true });
+          updateCalendarWeekButtons(calendar, minStart, maxStart);
+        }
+
+        if (els.calendarWeekPrev) {
+          els.calendarWeekPrev.addEventListener("click", () => shiftWeek(-1));
+        }
+
+        if (els.calendarWeekNext) {
+          els.calendarWeekNext.addEventListener("click", () => shiftWeek(1));
+        }
+
+        updateCalendarWeekButtons(calendar, minStart, maxStart);
+      }
+
+      function updateCalendarWeekButtons(calendar, minStart, maxStart) {
+        const currentStart = startOfCurrentWeekSunday(calendar.view && calendar.view.currentStart ? calendar.view.currentStart : new Date());
+        if (els.calendarWeekPrev) els.calendarWeekPrev.disabled = currentStart <= minStart;
+        if (els.calendarWeekNext) els.calendarWeekNext.disabled = currentStart >= maxStart;
+      }
+
+      function updateCalendarWeekButtonsForCurrentRange(calendar) {
+        const minStart = startOfCurrentWeekSunday(new Date());
+        const maxStart = addDays(minStart, CALENDAR_MAX_SCROLL_WEEKS * 7);
+        updateCalendarWeekButtons(calendar, minStart, maxStart);
       }
 
       function scheduleCalendarSizeUpdate(calendar) {
@@ -2306,6 +2356,7 @@ v1.17.0 traffic alerts update:
           buildSidebar(calendar);
           renderCampPanel(calendar);
           scheduleCalendarSizeUpdate(calendar);
+          updateCalendarWeekButtonsForCurrentRange(calendar);
           scheduleMealsLock();
         },
         datesSet(info) {
@@ -2314,6 +2365,7 @@ v1.17.0 traffic alerts update:
           buildSidebar(calendar);
           renderCampPanel(calendar);
           scheduleCalendarSizeUpdate(calendar);
+          updateCalendarWeekButtonsForCurrentRange(calendar);
           scheduleMealsLock();
         }
       });
@@ -2327,7 +2379,7 @@ v1.17.0 traffic alerts update:
         });
       }
 
-      installCalendarWheelNavigation(calendar);
+      installCalendarWeekControls(calendar);
       calendar.render();
       updateMajorDateChip();
       scheduleMealsLock();
