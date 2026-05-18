@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.3
+Version: v1.18.4
+
+v1.18.4 dashboard notes calendar:
+- adds the Family Dashboard Notes feed and Mary-Jean reminder color rule
 
 v1.18.3 calendar controls polish:
 - centers footer week controls and hides calendar scrollbars
@@ -86,6 +89,7 @@ v1.17.0 traffic alerts update:
       --other: #22d3ee;
       --randy: #3b82f6;
       --leslie: #22c55e;
+      --mary-jean: #ec4899;
       --today: #38bdf8;
       --meal-bg: rgba(255,255,255,0.055);
     }
@@ -758,6 +762,7 @@ v1.17.0 traffic alerts update:
     .fc .fc-daygrid-event.event-other { background: var(--other); }
     .fc .fc-daygrid-event.event-randy { background: var(--randy); }
     .fc .fc-daygrid-event.event-leslie { background: var(--leslie); }
+    .fc .fc-daygrid-event.event-mary-jean { background: var(--mary-jean); }
 
     .fc .evt {
       display: inline-flex;
@@ -1255,7 +1260,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.3";
+      const APP_VERSION = "v1.18.4";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1263,6 +1268,7 @@ v1.17.0 traffic alerts update:
 
       const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
       const WILLIAMS_ICS_URL = "https://randymwill.github.io/williams-family-calendar/calendar.ics";
+      const NOTES_ICS_URL = "https://family-dashboard-notes-calendar.randywilliams-us.workers.dev/";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
       const HOME_LAT = 38.654398639984805;
       const HOME_LON = -90.45877499401288;
@@ -1318,7 +1324,8 @@ v1.17.0 traffic alerts update:
         school: /school|dismissal|class|winter break|no school|mason ridge|party/i,
         basketball: /basketball|bball|little dribblers/i,
         soccer: /soccer|rainbow unicorns/i,
-        rainbowUnicorns: /rainbow unicorns/i
+        rainbowUnicorns: /rainbow unicorns/i,
+        maryJean: /mary[\s-]*jean/i
       };
 
       function setVersionDisplays() {
@@ -1396,6 +1403,7 @@ v1.17.0 traffic alerts update:
         const t = title || "";
         if (rules.randy.test(t)) return { category: "randy", icon: "" };
         if (rules.leslie.test(t)) return { category: "leslie", icon: "" };
+        if (rules.maryJean.test(t)) return { category: "mary-jean", icon: "" };
         if (rules.basketball.test(t)) return { category: "sports", icon: "🏀", sport: "basketball" };
         if (rules.soccer.test(t)) {
           return { category: "sports", icon: rules.rainbowUnicorns.test(t) ? "🌈🦄⚽" : "⚽", sport: "soccer" };
@@ -1409,6 +1417,7 @@ v1.17.0 traffic alerts update:
         if (category === "sports") return "var(--sports)";
         if (category === "randy") return "var(--randy)";
         if (category === "leslie") return "var(--leslie)";
+        if (category === "mary-jean") return "var(--mary-jean)";
         return "var(--other)";
       }
 
@@ -2380,7 +2389,8 @@ v1.17.0 traffic alerts update:
         },
         eventSources: [
           { url: ICS_URL, format: "ics", eventDataTransform: calendarEventTransform },
-          { url: WILLIAMS_ICS_URL, format: "ics", eventDataTransform: calendarEventTransform }
+          { url: WILLIAMS_ICS_URL, format: "ics", eventDataTransform: calendarEventTransform },
+          { url: NOTES_ICS_URL, format: "ics", eventDataTransform: calendarEventTransform }
         ],
         dayCellDidMount(info) {
           const date = startOfDay(info.date);
