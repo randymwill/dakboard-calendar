@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.17.8
+Version: v1.17.9
+
+v1.17.9 breaking news version label:
+- shows the dashboard version in the Breaking News header
 
 v1.17.8 calendar wheel sizing fix:
 - keeps FullCalendar from expanding horizontally after wheel navigation
@@ -1075,6 +1078,7 @@ v1.17.0 traffic alerts update:
             <div class="side-card">
               <div class="side-title">
                 <strong>Breaking News</strong>
+                <span id="breaking-news-version">—</span>
               </div>
               <div class="status-updates" id="calendar-updates">
                 <div class="side-sub status-line">Checking calendar…</div>
@@ -1152,7 +1156,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.17.8";
+      const APP_VERSION = "v1.17.9";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1186,6 +1190,7 @@ v1.17.0 traffic alerts update:
         todayUpcoming: document.getElementById("today-upcoming"),
         todayGames: document.getElementById("today-games"),
         sideRefresh: document.getElementById("side-last-refresh"),
+        breakingNewsVersion: document.getElementById("breaking-news-version"),
         calendarUpdates: document.getElementById("calendar-updates"),
         campList: document.getElementById("camp-list"),
         campTabs: document.getElementById("camp-tabs"),
@@ -1204,6 +1209,7 @@ v1.17.0 traffic alerts update:
         document.documentElement.classList.remove("holiday-mode");
       }
 
+      setVersionDisplays();
       setLastRefreshed("loaded");
 
       const rules = {
@@ -1214,6 +1220,12 @@ v1.17.0 traffic alerts update:
         soccer: /soccer|rainbow unicorns/i,
         rainbowUnicorns: /rainbow unicorns/i
       };
+
+      function setVersionDisplays() {
+        if (els.breakingNewsVersion) {
+          els.breakingNewsVersion.textContent = `(${APP_VERSION})`;
+        }
+      }
 
       function setLastRefreshed(reason) {
         const text = formatLocalTime(new Date());
