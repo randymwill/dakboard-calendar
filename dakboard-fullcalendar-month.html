@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.2
+Version: v1.18.3
+
+v1.18.3 calendar controls polish:
+- centers footer week controls and hides calendar scrollbars
 
 v1.18.2 calendar controls overlay:
 - anchors week buttons inside the meals/footer area without affecting calendar width
@@ -157,15 +160,35 @@ v1.17.0 traffic alerts update:
     .calendar-nav-btn {
       width: 30px;
       height: 30px;
+      display: grid;
+      place-items: center;
+      padding: 0;
       border: 1px solid rgba(125,211,252,0.35);
       border-radius: 8px;
       background: rgba(255,255,255,0.055);
       color: rgba(224,242,254,0.94);
-      font-size: 1.05em;
+      font-size: 0;
       font-weight: 950;
       line-height: 1;
       cursor: pointer;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .calendar-nav-btn::before {
+      content: "";
+      display: block;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+    }
+
+    #calendar-week-prev::before {
+      border-bottom: 8px solid rgba(224,242,254,0.94);
+    }
+
+    #calendar-week-next::before {
+      border-top: 8px solid rgba(224,242,254,0.94);
     }
 
     .calendar-nav-btn:hover,
@@ -570,6 +593,30 @@ v1.17.0 traffic alerts update:
       max-width: 100% !important;
     }
 
+    html,
+    body,
+    #calendar,
+    .fc,
+    .fc .fc-view-harness,
+    .fc .fc-scroller {
+      scrollbar-width: none;
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar,
+    #calendar::-webkit-scrollbar,
+    .fc::-webkit-scrollbar,
+    .fc .fc-view-harness::-webkit-scrollbar,
+    .fc .fc-scroller::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+
+    .fc .fc-scroller {
+      overflow: hidden !important;
+    }
+
     .fc .fc-header-toolbar {
       margin: 8px 8px 6px;
     }
@@ -817,8 +864,9 @@ v1.17.0 traffic alerts update:
 
     #calendar-nav {
       position: absolute;
-      right: 8px;
-      top: 10px;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
       z-index: 5;
       display: flex;
       flex-direction: column;
@@ -1101,8 +1149,8 @@ v1.17.0 traffic alerts update:
             <div id="meals-footer">
               <div id="meals-grid" aria-label="Current week school meals"></div>
               <div id="calendar-nav" aria-label="Calendar week navigation">
-                <button class="calendar-nav-btn" id="calendar-week-prev" type="button" aria-label="Previous week">▲</button>
-                <button class="calendar-nav-btn" id="calendar-week-next" type="button" aria-label="Next week">▼</button>
+                <button class="calendar-nav-btn" id="calendar-week-prev" type="button" aria-label="Previous week"></button>
+                <button class="calendar-nav-btn" id="calendar-week-next" type="button" aria-label="Next week"></button>
               </div>
             </div>
           </div>
@@ -1207,7 +1255,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.2";
+      const APP_VERSION = "v1.18.3";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
