@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.4
+Version: v1.18.5
+
+v1.18.5 Science Center camp details:
+- adds membership ticket details to the Science Center camp tab
 
 v1.18.4 dashboard notes calendar:
 - adds the Family Dashboard Notes feed and Mary-Jean reminder color rule
@@ -1075,6 +1078,63 @@ v1.17.0 traffic alerts update:
       font-weight: 820;
     }
 
+    .camp-info-card {
+      display: grid;
+      gap: 7px;
+      padding: 10px 11px;
+      border: 1px solid rgba(45,212,191,0.26);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(20,184,166,0.16), rgba(15,118,110,0.10));
+    }
+
+    .camp-info-title {
+      color: rgba(255,255,255,0.96);
+      font-size: 0.92em;
+      font-weight: 950;
+      line-height: 1.1;
+    }
+
+    .camp-info-list {
+      display: grid;
+      gap: 5px;
+    }
+
+    .camp-info-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+      color: rgba(255,255,255,0.78);
+      font-size: 0.74em;
+      font-weight: 800;
+      line-height: 1.14;
+    }
+
+    .camp-info-row span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .camp-info-pill {
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(8,47,73,0.72);
+      color: rgba(255,255,255,0.90);
+      font-size: 0.90em;
+      white-space: nowrap;
+    }
+
+    .camp-info-note {
+      margin-top: -2px;
+      color: rgba(255,255,255,0.58);
+      font-size: 0.68em;
+      font-weight: 740;
+      line-height: 1.15;
+    }
+
     .mini-list {
       display: flex;
       flex-direction: column;
@@ -1260,7 +1320,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.4";
+      const APP_VERSION = "v1.18.5";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1999,6 +2059,29 @@ v1.17.0 traffic alerts update:
           .sort((a, b) => a.firstStart - b.firstStart);
       }
 
+      function renderScienceCenterCampInfo() {
+        const perks = [
+          "Free OMNIMAX Theater Tickets",
+          "Free Planetarium Star Show Tickets",
+          "Free Discovery Room Tickets",
+          "Discounted Special Exhibition Tickets",
+          "Discounted feature-length film tickets"
+        ];
+
+        els.campList.insertAdjacentHTML("beforeend", `
+          <div class="camp-info-card">
+            <div class="camp-info-title">Family &amp; Friends membership: $135</div>
+            <div class="camp-info-list">
+              ${perks.map(perk => `
+                <div class="camp-info-row">
+                  <span>${escapeHtml(perk)}</span>
+                  <span class="camp-info-pill">6 per visit</span>
+                </div>
+                ${perk === "Free OMNIMAX Theater Tickets" ? '<div class="camp-info-note">Does not apply to feature-length films</div>' : ''}`).join("")}
+            </div>
+          </div>`);
+      }
+
       function renderCampPanel(calendar) {
         if (!els.campList) return;
 
@@ -2044,6 +2127,10 @@ v1.17.0 traffic alerts update:
             <div class="camp-name">${escapeHtml(activeGroup.name)}</div>
             <div class="camp-date-range">${escapeHtml(campDateRange(activeGroup.events))} • ${activeGroup.events.length} item${activeGroup.events.length === 1 ? "" : "s"}</div>
           </div>`);
+
+        if (activeGroup.key === "science-center") {
+          renderScienceCenterCampInfo();
+        }
 
         for (const event of activeGroup.events.slice(0, 5)) {
           const dateLabel = campDateLabel(event);
