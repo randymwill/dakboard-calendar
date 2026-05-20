@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.6
+Version: v1.18.7
+
+v1.18.7 upcoming event details:
+- adds Science Center featured event, hours, and reordered membership details
 
 v1.18.6 upcoming events label:
 - renames the camp section and removes the Science Center membership price
@@ -1081,6 +1084,14 @@ v1.17.0 traffic alerts update:
       font-weight: 820;
     }
 
+    .camp-summary .camp-detail {
+      margin-top: 7px;
+      color: rgba(255,255,255,0.74);
+      font-size: 0.78em;
+      font-weight: 760;
+      line-height: 1.2;
+    }
+
     .camp-info-card {
       display: grid;
       gap: 7px;
@@ -1136,6 +1147,36 @@ v1.17.0 traffic alerts update:
       font-size: 0.68em;
       font-weight: 740;
       line-height: 1.15;
+    }
+
+    .camp-hours-card {
+      display: grid;
+      gap: 6px;
+      padding: 10px 11px;
+      border: 1px solid rgba(125,211,252,0.18);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .camp-hours-title {
+      color: rgba(255,255,255,0.92);
+      font-size: 0.88em;
+      font-weight: 950;
+    }
+
+    .camp-hours-row {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 8px;
+      color: rgba(255,255,255,0.76);
+      font-size: 0.75em;
+      font-weight: 820;
+      line-height: 1.12;
+    }
+
+    .camp-hours-row span:last-child {
+      color: rgba(255,255,255,0.90);
+      text-align: right;
     }
 
     .mini-list {
@@ -1323,7 +1364,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.6";
+      const APP_VERSION = "v1.18.7";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2043,6 +2084,19 @@ v1.17.0 traffic alerts update:
         return `${first.toLocaleDateString([], { month: "short", day: "numeric" })} - ${last.toLocaleDateString([], { month: "short", day: "numeric" })}`;
       }
 
+      function eventDisplayTitle(event) {
+        const title = cleanText(event && event.title || "");
+        if (/mando/i.test(title)) return "Mando at the IMAX";
+        return title;
+      }
+
+      function eventDateTimeLabel(event) {
+        if (!event || !event.start) return "Date to be announced";
+        if (event.allDay) return formatPrettyDate(event.start);
+        const start = `${formatPrettyDate(event.start)} ${formatTime(event.start)}`;
+        return event.end ? `${start} - ${formatTime(event.end)}` : start;
+      }
+
       function campGroupsFromEvents(events) {
         const byKey = new Map();
         for (const event of events) {
@@ -2082,6 +2136,28 @@ v1.17.0 traffic alerts update:
                 </div>
                 ${perk === "Free OMNIMAX Theater Tickets" ? '<div class="camp-info-note">Does not apply to feature-length films</div>' : ''}`).join("")}
             </div>
+          </div>`);
+      }
+
+      function renderScienceCenterHours() {
+        const hours = [
+          ["Sunday", "11:00 AM - 4:30 PM"],
+          ["Monday", "9:30 AM - 4:30 PM"],
+          ["Tuesday", "Closed"],
+          ["Wednesday", "Closed"],
+          ["Thursday", "9:30 AM - 4:30 PM"],
+          ["Friday", "9:30 AM - 4:30 PM"],
+          ["Saturday", "9:30 AM - 4:30 PM"]
+        ];
+
+        els.campList.insertAdjacentHTML("beforeend", `
+          <div class="camp-hours-card">
+            <div class="camp-hours-title">Science Center Hours</div>
+            ${hours.map(([day, time]) => `
+              <div class="camp-hours-row">
+                <span>${escapeHtml(day)}</span>
+                <span>${escapeHtml(time)}</span>
+              </div>`).join("")}
           </div>`);
       }
 
@@ -2125,17 +2201,21 @@ v1.17.0 traffic alerts update:
         }
 
         const activeGroup = campGroups.find(group => group.key === activeCampKey) || campGroups[0];
+        const featuredEvent = activeGroup.events[0];
+        const featuredDetail = featuredEvent ? eventLocation(featuredEvent) || eventDescription(featuredEvent) : "";
         els.campList.insertAdjacentHTML("beforeend", `
           <div class="camp-summary">
-            <div class="camp-name">${escapeHtml(activeGroup.name)}</div>
-            <div class="camp-date-range">${escapeHtml(campDateRange(activeGroup.events))} • ${activeGroup.events.length} item${activeGroup.events.length === 1 ? "" : "s"}</div>
+            <div class="camp-name">${escapeHtml(featuredEvent ? eventDisplayTitle(featuredEvent) : activeGroup.name)}</div>
+            <div class="camp-date-range">${escapeHtml(featuredEvent ? eventDateTimeLabel(featuredEvent) : campDateRange(activeGroup.events))}</div>
+            ${featuredDetail ? `<div class="camp-detail">${escapeHtml(featuredDetail)}</div>` : ""}
           </div>`);
 
         if (activeGroup.key === "science-center") {
+          renderScienceCenterHours();
           renderScienceCenterCampInfo();
         }
 
-        for (const event of activeGroup.events.slice(0, 5)) {
+        for (const event of activeGroup.events.slice(1, 6)) {
           const dateLabel = campDateLabel(event);
           const detail = eventLocation(event) || eventDescription(event) || "Details in calendar";
           els.campList.insertAdjacentHTML("beforeend", `
