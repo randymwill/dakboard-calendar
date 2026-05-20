@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.5
+Version: v1.18.6
+
+v1.18.6 upcoming events label:
+- renames the camp section and removes the Science Center membership price
 
 v1.18.5 Science Center camp details:
 - adds membership ticket details to the Science Center camp tab
@@ -1282,7 +1285,7 @@ v1.17.0 traffic alerts update:
       <div id="center-stack">
         <section class="bottom-panel" id="camp-panel" aria-label="Mary-Jean camp schedule">
           <div class="panel-head">
-            <div class="panel-title">Mary-Jean Camp</div>
+            <div class="panel-title">Upcoming Events</div>
             <div class="panel-chip" id="camp-count">Loading</div>
           </div>
           <div class="camp-tabs" id="camp-tabs" role="tablist" aria-label="Camp list"></div>
@@ -1320,7 +1323,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.5";
+      const APP_VERSION = "v1.18.6";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2070,7 +2073,7 @@ v1.17.0 traffic alerts update:
 
         els.campList.insertAdjacentHTML("beforeend", `
           <div class="camp-info-card">
-            <div class="camp-info-title">Family &amp; Friends membership: $135</div>
+            <div class="camp-info-title">Family &amp; Friends membership</div>
             <div class="camp-info-list">
               ${perks.map(perk => `
                 <div class="camp-info-row">
