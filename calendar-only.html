@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 Williams Family Calendar Only
-Version: v1.19.3
+Version: v1.19.4
+
+v1.19.4 phone calendar theme:
+- removes the light FullCalendar strip above the week grid
 
 v1.19.3 phone event taps:
 - makes tapping an event select that event's day in the agenda
@@ -123,7 +126,7 @@ v1.19.0 phone calendar view:
     #calendar-shell {
       flex: 0 0 auto;
       min-height: 0;
-      overflow: visible;
+      overflow: hidden;
       border: 1px solid rgba(255,255,255,0.14);
       border-radius: 12px;
       background: rgba(13,26,43,0.74);
@@ -233,19 +236,28 @@ v1.19.0 phone calendar view:
     .fc .fc-view-harness,
     .fc .fc-view-harness-active {
       max-width: 100%;
+      background: transparent;
     }
 
     .fc .fc-header-toolbar {
       display: none;
     }
 
-    .fc .fc-scrollgrid {
+    .fc .fc-scrollgrid,
+    .fc .fc-scrollgrid-section,
+    .fc .fc-scrollgrid-section > td,
+    .fc .fc-scrollgrid-section > th,
+    .fc .fc-scrollgrid-sync-table,
+    .fc .fc-daygrid-body,
+    .fc .fc-daygrid-body table {
       border-color: rgba(255,255,255,0.16) !important;
+      background: transparent !important;
     }
 
     .fc-theme-standard td,
     .fc-theme-standard th {
       border-color: rgba(255,255,255,0.14);
+      background: transparent;
     }
 
     .fc .fc-col-header-cell {
@@ -369,7 +381,7 @@ v1.19.0 phone calendar view:
     </div>
     <div class="subbar">
       <button class="today-btn" id="today-btn" type="button">Today</button>
-      <span id="version-label">v1.19.3</span>
+      <span id="version-label">v1.19.4</span>
     </div>
     <section id="calendar-shell" aria-label="Williams family calendar">
       <div id="calendar"></div>
