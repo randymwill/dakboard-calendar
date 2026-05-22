@@ -1,0 +1,430 @@
+<!doctype html>
+<!--
+Williams Family Calendar Only
+Version: v1.19.0
+
+v1.19.0 phone calendar view:
+- adds a focused calendar-only page for iPhone home screen use
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Williams Calendar</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+  <script src="https://unpkg.com/ical.js/dist/ical.es5.min.cjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.19/index.global.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #07111d;
+      --panel: #0d1a2b;
+      --line: rgba(255,255,255,0.16);
+      --text: rgba(255,255,255,0.94);
+      --muted: rgba(255,255,255,0.62);
+      --school: #ef4444;
+      --sports: #ec4899;
+      --other: #22d3ee;
+      --randy: #3b82f6;
+      --leslie: #22c55e;
+      --mary-jean: #ec4899;
+      --today: #38bdf8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+    }
+
+    body {
+      background:
+        radial-gradient(800px 520px at 18% -8%, rgba(34,211,238,0.14), transparent 62%),
+        radial-gradient(720px 500px at 95% 115%, rgba(236,72,153,0.12), transparent 58%),
+        linear-gradient(180deg, #081423 0%, #040912 100%);
+    }
+
+    #app {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 38px 1fr 38px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .nav-btn {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 1px solid rgba(125,211,252,0.28);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.055);
+      color: rgba(224,242,254,0.95);
+      font-size: 1.15rem;
+      font-weight: 900;
+    }
+
+    #range-label {
+      min-width: 0;
+      text-align: center;
+      color: rgba(255,255,255,0.94);
+      font-size: 1.04rem;
+      font-weight: 900;
+      line-height: 1.15;
+    }
+
+    .subbar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 760;
+    }
+
+    .today-btn {
+      min-height: 30px;
+      padding: 5px 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.84);
+      font: inherit;
+      font-weight: 850;
+    }
+
+    #calendar-shell {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      background: rgba(13,26,43,0.74);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+    }
+
+    #calendar {
+      width: 100%;
+      height: 100%;
+    }
+
+    .fc,
+    .fc .fc-view-harness,
+    .fc .fc-view-harness-active {
+      height: 100% !important;
+      max-width: 100%;
+    }
+
+    .fc .fc-header-toolbar {
+      display: none;
+    }
+
+    .fc .fc-scrollgrid {
+      border-color: rgba(255,255,255,0.16) !important;
+    }
+
+    .fc-theme-standard td,
+    .fc-theme-standard th {
+      border-color: rgba(255,255,255,0.14);
+    }
+
+    .fc .fc-col-header-cell {
+      padding: 6px 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025));
+    }
+
+    .fc .fc-col-header-cell-cushion {
+      color: rgba(255,255,255,0.72);
+      font-size: 0.74rem;
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .fc .fc-daygrid-day {
+      background: rgba(3,10,18,0.34);
+    }
+
+    .fc .fc-day-today {
+      background: rgba(56,189,248,0.12) !important;
+      box-shadow: inset 0 0 0 2px rgba(56,189,248,0.72);
+    }
+
+    .fc .fc-daygrid-day-number {
+      padding: 4px 5px 1px 0;
+      color: rgba(255,255,255,0.68);
+      font-size: 0.70rem;
+      font-weight: 880;
+      text-decoration: none;
+    }
+
+    .fc .fc-day-today .fc-daygrid-day-number {
+      color: #06111d;
+      margin: 3px 3px 0 0;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(125,211,252,0.94);
+    }
+
+    .fc .fc-daygrid-event {
+      border: 0;
+      border-radius: 5px;
+      margin: 2px 2px 0;
+      padding: 2px 4px;
+      color: #fff;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+    }
+
+    .fc .fc-daygrid-event.event-school { background: var(--school); }
+    .fc .fc-daygrid-event.event-sports { background: var(--sports); }
+    .fc .fc-daygrid-event.event-other { background: var(--other); }
+    .fc .fc-daygrid-event.event-randy { background: var(--randy); }
+    .fc .fc-daygrid-event.event-leslie { background: var(--leslie); }
+    .fc .fc-daygrid-event.event-mary-jean { background: var(--mary-jean); }
+
+    .evt {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      min-width: 0;
+      max-width: 100%;
+      font-size: 0.67rem;
+      font-weight: 850;
+      line-height: 1.1;
+    }
+
+    .evt-time,
+    .evt-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .evt-time {
+      flex: 0 0 auto;
+      opacity: 0.88;
+    }
+
+    .evt-icon {
+      flex: 0 0 auto;
+      font-size: 0.72rem;
+      line-height: 1;
+    }
+
+    .fc .fc-daygrid-more-link {
+      color: rgba(255,255,255,0.70);
+      font-size: 0.66rem;
+      font-weight: 850;
+    }
+
+    @media (orientation: portrait) {
+      body { font-size: 15px; }
+      #app { padding-left: 7px; padding-right: 7px; }
+      .fc .fc-daygrid-day-frame { min-height: 74px; }
+    }
+
+    @media (min-width: 700px) {
+      #app { padding: 14px; }
+      .fc .fc-col-header-cell-cushion { font-size: 0.86rem; }
+      .evt { font-size: 0.78rem; }
+      .fc .fc-daygrid-day-number { font-size: 0.82rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <main id="app">
+    <div class="topbar">
+      <button class="nav-btn" id="prev-week" type="button" aria-label="Previous week">‹</button>
+      <div id="range-label">Loading calendar…</div>
+      <button class="nav-btn" id="next-week" type="button" aria-label="Next week">›</button>
+    </div>
+    <div class="subbar">
+      <button class="today-btn" id="today-btn" type="button">Today</button>
+      <span id="version-label">v1.19.0</span>
+    </div>
+    <section id="calendar-shell" aria-label="Williams family calendar">
+      <div id="calendar"></div>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
+      const WILLIAMS_ICS_URL = "https://randymwill.github.io/williams-family-calendar/calendar.ics";
+      const NOTES_ICS_URL = "https://family-dashboard-notes-calendar.randywilliams-us.workers.dev/";
+      const CALENDAR_MAX_SCROLL_WEEKS = 52;
+
+      const els = {
+        calendar: document.getElementById("calendar"),
+        rangeLabel: document.getElementById("range-label"),
+        prevWeek: document.getElementById("prev-week"),
+        nextWeek: document.getElementById("next-week"),
+        todayBtn: document.getElementById("today-btn")
+      };
+
+      const rules = {
+        randy: /randy/i,
+        leslie: /leslie/i,
+        maryJean: /mary[\s-]*jean/i,
+        school: /school|dismissal|class|winter break|no school|mason ridge|party/i,
+        basketball: /basketball|bball|little dribblers/i,
+        soccer: /soccer|rainbow unicorns/i,
+        rainbowUnicorns: /rainbow unicorns/i
+      };
+
+      function startOfCurrentWeekSunday(d = new Date()) {
+        const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        date.setDate(date.getDate() - date.getDay());
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
+
+      function addDays(date, days) {
+        const d = new Date(date);
+        d.setDate(d.getDate() + days);
+        return d;
+      }
+
+      function sameDay(a, b) {
+        return a && b &&
+          a.getFullYear() === b.getFullYear() &&
+          a.getMonth() === b.getMonth() &&
+          a.getDate() === b.getDate();
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function classifyEvent(title) {
+        const t = title || "";
+        if (rules.randy.test(t)) return { category: "randy", icon: "" };
+        if (rules.leslie.test(t)) return { category: "leslie", icon: "" };
+        if (rules.maryJean.test(t)) return { category: "mary-jean", icon: "" };
+        if (rules.basketball.test(t)) return { category: "sports", icon: "🏀", sport: "basketball" };
+        if (rules.soccer.test(t)) {
+          return { category: "sports", icon: rules.rainbowUnicorns.test(t) ? "🌈🦄⚽" : "⚽", sport: "soccer" };
+        }
+        if (rules.school.test(t)) return { category: "school", icon: "🐎" };
+        return { category: "other", icon: "" };
+      }
+
+      function isCancelledEventData(eventData) {
+        const title = String(eventData && eventData.title || "");
+        const status = String(eventData && eventData.status || "");
+        const extendedStatus = String(eventData && eventData.extendedProps && eventData.extendedProps.status || "");
+        return /^cancel(?:ed|led)\b/i.test(title) ||
+          /^cancel(?:ed|led)$/i.test(status) ||
+          /^cancel(?:ed|led)$/i.test(extendedStatus);
+      }
+
+      function calendarEventTransform(eventData) {
+        if (isCancelledEventData(eventData)) return false;
+        return eventData;
+      }
+
+      function visibleWeeks() {
+        return window.matchMedia("(orientation: portrait) and (max-width: 699px)").matches ? 2 : 4;
+      }
+
+      function updateRangeLabel(calendar) {
+        const start = calendar.view.currentStart;
+        const end = addDays(calendar.view.currentEnd, -1);
+        const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+        const startText = start.toLocaleDateString([], { month: "short", day: "numeric" });
+        const endText = end.toLocaleDateString([], sameMonth ? { day: "numeric", year: "numeric" } : { month: "short", day: "numeric", year: "numeric" });
+        els.rangeLabel.textContent = `${startText} - ${endText}`;
+      }
+
+      function updateButtons(calendar) {
+        const minStart = startOfCurrentWeekSunday(new Date());
+        const maxStart = addDays(minStart, CALENDAR_MAX_SCROLL_WEEKS * 7);
+        const currentStart = startOfCurrentWeekSunday(calendar.view.currentStart || new Date());
+        els.prevWeek.disabled = currentStart <= minStart;
+        els.nextWeek.disabled = currentStart >= maxStart;
+      }
+
+      function shiftWeek(calendar, weeks) {
+        const currentStart = startOfCurrentWeekSunday(calendar.view.currentStart || new Date());
+        calendar.gotoDate(addDays(currentStart, weeks * 7));
+      }
+
+      const calendar = new FullCalendar.Calendar(els.calendar, {
+        initialView: "phoneRolling",
+        views: {
+          phoneRolling: { type: "dayGrid", duration: { weeks: visibleWeeks() } }
+        },
+        firstDay: 0,
+        height: "100%",
+        expandRows: true,
+        fixedWeekCount: false,
+        showNonCurrentDates: false,
+        dayMaxEvents: true,
+        dayMaxEventRows: 3,
+        eventMinHeight: 16,
+        headerToolbar: false,
+        dayHeaderFormat: { weekday: "short" },
+        visibleRange(currentDate) {
+          const start = startOfCurrentWeekSunday(currentDate);
+          return { start, end: addDays(start, visibleWeeks() * 7) };
+        },
+        eventSources: [
+          { url: ICS_URL, format: "ics", eventDataTransform: calendarEventTransform },
+          { url: WILLIAMS_ICS_URL, format: "ics", eventDataTransform: calendarEventTransform },
+          { url: NOTES_ICS_URL, format: "ics", eventDataTransform: calendarEventTransform }
+        ],
+        eventClassNames(arg) {
+          return [`event-${classifyEvent(arg.event.title || "").category}`];
+        },
+        eventContent(arg) {
+          const title = arg.event.title || "";
+          const meta = classifyEvent(title);
+          const parts = [];
+          if (meta.icon) parts.push(`<span class="evt-icon">${meta.icon}</span>`);
+          if (!arg.event.allDay && arg.timeText) parts.push(`<span class="evt-time">${escapeHtml(arg.timeText)}</span>`);
+          parts.push(`<span class="evt-title">${escapeHtml(title)}</span>`);
+          return { html: `<span class="evt">${parts.join("")}</span>` };
+        },
+        datesSet() {
+          updateRangeLabel(calendar);
+          updateButtons(calendar);
+        }
+      });
+
+      els.prevWeek.addEventListener("click", () => shiftWeek(calendar, -1));
+      els.nextWeek.addEventListener("click", () => shiftWeek(calendar, 1));
+      els.todayBtn.addEventListener("click", () => calendar.gotoDate(startOfCurrentWeekSunday(new Date())));
+      window.addEventListener("resize", () => {
+        calendar.changeView("phoneRolling", calendar.view.currentStart);
+        calendar.updateSize();
+      });
+
+      calendar.render();
+    });
+  </script>
+</body>
+</html>
