@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.7
+Version: v1.18.8
+
+v1.18.8 past event styling:
+- greys out any event that has ended, including all-day and previous-day events
 
 v1.18.7 upcoming event details:
 - adds Science Center featured event, hours, and reordered membership details
@@ -811,9 +814,9 @@ v1.17.0 traffic alerts update:
       line-height: 1.12;
     }
 
-    .fc .evt-past-today {
-      opacity: 0.42;
-      filter: saturate(0.8);
+    .fc .evt-past {
+      opacity: 0.34;
+      filter: grayscale(0.7) saturate(0.55);
     }
 
     .day-chip {
@@ -1364,7 +1367,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.7";
+      const APP_VERSION = "v1.18.8";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2389,6 +2392,12 @@ v1.17.0 traffic alerts update:
         return eventData;
       }
 
+      function eventHasEnded(event, now = new Date()) {
+        if (!event || !event.start) return false;
+        const end = event.end || (event.allDay ? addDays(startOfDay(event.start), 1) : new Date(event.start.getTime() + 60 * 60 * 1000));
+        return end < now;
+      }
+
       function isCancelledEventData(eventData) {
         const title = String(eventData && eventData.title || "");
         const status = String(eventData && eventData.status || "");
@@ -2572,15 +2581,9 @@ v1.17.0 traffic alerts update:
           ensureDayChip(info.el, toYYYYMMDD(date));
         },
         eventClassNames(arg) {
-          return [`event-${classifyEvent(arg.event.title || "").category}`];
-        },
-        eventDidMount(arg) {
-          if (arg.event.allDay || !arg.event.start) return;
-          const now = new Date();
-          const end = arg.event.end || new Date(arg.event.start.getTime() + 60 * 60 * 1000);
-          if (sameDay(arg.event.start, now) && end < now) {
-            arg.el.classList.add("evt-past-today");
-          }
+          const classes = [`event-${classifyEvent(arg.event.title || "").category}`];
+          if (eventHasEnded(arg.event)) classes.push("evt-past");
+          return classes;
         },
         eventContent(arg) {
           const title = arg.event.title || "";

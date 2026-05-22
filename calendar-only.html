@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 Williams Family Calendar Only
-Version: v1.19.5
+Version: v1.19.6
+
+v1.19.6 phone past events:
+- greys out calendar events that have ended
 
 v1.19.5 phone refresh:
 - adds a small in-page refresh button for home screen use
@@ -341,6 +344,11 @@ v1.19.0 phone calendar view:
     .fc .fc-daygrid-event.event-leslie { background: var(--leslie); }
     .fc .fc-daygrid-event.event-mary-jean { background: var(--mary-jean); }
 
+    .fc .fc-daygrid-event.evt-past {
+      opacity: 0.34;
+      filter: grayscale(0.7) saturate(0.55);
+    }
+
     .evt {
       display: inline-flex;
       align-items: center;
@@ -404,7 +412,7 @@ v1.19.0 phone calendar view:
     </div>
     <div class="subbar">
       <button class="today-btn" id="today-btn" type="button">Today</button>
-      <span id="version-label">v1.19.5</span>
+      <span id="version-label">v1.19.6</span>
       <button class="refresh-btn" id="refresh-btn" type="button" aria-label="Refresh calendar">↻</button>
     </div>
     <section id="calendar-shell" aria-label="Williams family calendar">
@@ -512,6 +520,12 @@ v1.19.0 phone calendar view:
       function calendarEventTransform(eventData) {
         if (isCancelledEventData(eventData)) return false;
         return eventData;
+      }
+
+      function eventHasEnded(event, now = new Date()) {
+        if (!event || !event.start) return false;
+        const end = event.end || (event.allDay ? addDays(startOfDay(event.start), 1) : new Date(event.start.getTime() + 60 * 60 * 1000));
+        return end < now;
       }
 
       function visibleWeeks() {
@@ -662,7 +676,9 @@ v1.19.0 phone calendar view:
           { url: NOTES_ICS_URL, format: "ics", eventDataTransform: calendarEventTransform }
         ],
         eventClassNames(arg) {
-          return [`event-${classifyEvent(arg.event.title || "").category}`];
+          const classes = [`event-${classifyEvent(arg.event.title || "").category}`];
+          if (eventHasEnded(arg.event)) classes.push("evt-past");
+          return classes;
         },
         eventContent(arg) {
           const title = arg.event.title || "";
