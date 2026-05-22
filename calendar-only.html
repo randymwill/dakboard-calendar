@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 Williams Family Calendar Only
-Version: v1.19.6
+Version: v1.19.7
+
+v1.19.7 phone page refresh:
+- changes the refresh button to reload the whole page
 
 v1.19.6 phone past events:
 - greys out calendar events that have ended
@@ -412,7 +415,7 @@ v1.19.0 phone calendar view:
     </div>
     <div class="subbar">
       <button class="today-btn" id="today-btn" type="button">Today</button>
-      <span id="version-label">v1.19.6</span>
+      <span id="version-label">v1.19.7</span>
       <button class="refresh-btn" id="refresh-btn" type="button" aria-label="Refresh calendar">↻</button>
     </div>
     <section id="calendar-shell" aria-label="Williams family calendar">
@@ -630,15 +633,10 @@ v1.19.0 phone calendar view:
         renderAgenda(calendar);
       }
 
-      function refreshCalendar(calendar) {
+      function refreshPage() {
         els.refreshBtn.classList.add("refreshing");
         els.refreshBtn.textContent = "…";
-        calendar.refetchEvents();
-        window.setTimeout(() => {
-          els.refreshBtn.classList.remove("refreshing");
-          els.refreshBtn.textContent = "↻";
-          renderAgenda(calendar);
-        }, 1400);
+        window.location.reload();
       }
 
       const calendar = new FullCalendar.Calendar(els.calendar, {
@@ -701,7 +699,7 @@ v1.19.0 phone calendar view:
 
       els.prevWeek.addEventListener("click", () => shiftWeek(calendar, -1));
       els.nextWeek.addEventListener("click", () => shiftWeek(calendar, 1));
-      els.refreshBtn.addEventListener("click", () => refreshCalendar(calendar));
+      els.refreshBtn.addEventListener("click", refreshPage);
       els.todayBtn.addEventListener("click", () => {
         selectDate(new Date(), calendar);
         calendar.gotoDate(startOfCurrentWeekSunday(selectedDate));
