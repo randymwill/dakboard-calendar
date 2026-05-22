@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 Williams Family Calendar Only
-Version: v1.19.1
+Version: v1.19.2
+
+v1.19.2 phone agenda:
+- adds selected-day agenda below the calendar and simplifies grid events
 
 v1.19.1 phone calendar sizing:
 - fixes Safari range label formatting and uses compact auto-height calendar rows
@@ -124,6 +127,101 @@ v1.19.0 phone calendar view:
       box-shadow: 0 14px 40px rgba(0,0,0,0.35);
     }
 
+    #agenda {
+      flex: 1 1 auto;
+      min-height: 180px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      background: rgba(13,26,43,0.72);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.30);
+    }
+
+    .agenda-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    #agenda-date {
+      color: rgba(255,255,255,0.96);
+      font-size: 1.05rem;
+      font-weight: 950;
+      line-height: 1.1;
+    }
+
+    #agenda-count {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    #agenda-list {
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 2px;
+    }
+
+    .agenda-item {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 9px;
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-left: 5px solid var(--other);
+      border-radius: 9px;
+      background: rgba(255,255,255,0.055);
+    }
+
+    .agenda-item.event-school { border-left-color: var(--school); }
+    .agenda-item.event-sports { border-left-color: var(--sports); }
+    .agenda-item.event-randy { border-left-color: var(--randy); }
+    .agenda-item.event-leslie { border-left-color: var(--leslie); }
+    .agenda-item.event-mary-jean { border-left-color: var(--mary-jean); }
+
+    .agenda-time {
+      color: rgba(255,255,255,0.70);
+      font-size: 0.76rem;
+      font-weight: 900;
+      line-height: 1.15;
+    }
+
+    .agenda-title {
+      min-width: 0;
+      color: rgba(255,255,255,0.95);
+      font-size: 0.88rem;
+      font-weight: 860;
+      line-height: 1.18;
+    }
+
+    .agenda-detail {
+      margin-top: 3px;
+      color: rgba(255,255,255,0.58);
+      font-size: 0.76rem;
+      font-weight: 720;
+      line-height: 1.22;
+    }
+
+    .agenda-empty {
+      padding: 14px 10px;
+      border: 1px dashed rgba(255,255,255,0.14);
+      border-radius: 9px;
+      color: rgba(255,255,255,0.60);
+      font-size: 0.86rem;
+      font-weight: 760;
+      text-align: center;
+    }
+
     #calendar {
       width: 100%;
     }
@@ -168,6 +266,11 @@ v1.19.0 phone calendar view:
       box-shadow: inset 0 0 0 2px rgba(56,189,248,0.72);
     }
 
+    .fc .fc-day.selected-day {
+      background: rgba(236,72,153,0.12) !important;
+      box-shadow: inset 0 0 0 2px rgba(236,72,153,0.72);
+    }
+
     .fc .fc-daygrid-day-number {
       padding: 4px 5px 1px 0;
       color: rgba(255,255,255,0.68);
@@ -188,7 +291,7 @@ v1.19.0 phone calendar view:
       border: 0;
       border-radius: 5px;
       margin: 2px 2px 0;
-      padding: 2px 4px;
+      padding: 3px 4px;
       color: #fff;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
     }
@@ -239,7 +342,10 @@ v1.19.0 phone calendar view:
     @media (orientation: portrait) {
       body { font-size: 15px; }
       #app { padding-left: 7px; padding-right: 7px; }
-      .fc .fc-daygrid-day-frame { min-height: 86px; }
+      .fc .fc-daygrid-day-frame { min-height: 74px; }
+      .evt { font-size: 0.62rem; }
+      .evt-time { display: none; }
+      .fc .fc-daygrid-event { padding: 3px; }
     }
 
     @media (min-width: 700px) {
@@ -260,10 +366,19 @@ v1.19.0 phone calendar view:
     </div>
     <div class="subbar">
       <button class="today-btn" id="today-btn" type="button">Today</button>
-      <span id="version-label">v1.19.1</span>
+      <span id="version-label">v1.19.2</span>
     </div>
     <section id="calendar-shell" aria-label="Williams family calendar">
       <div id="calendar"></div>
+    </section>
+    <section id="agenda" aria-label="Selected day schedule">
+      <div class="agenda-head">
+        <div id="agenda-date">Today</div>
+        <div id="agenda-count">Loading…</div>
+      </div>
+      <div id="agenda-list">
+        <div class="agenda-empty">Loading schedule…</div>
+      </div>
     </section>
   </main>
 
@@ -279,8 +394,13 @@ v1.19.0 phone calendar view:
         rangeLabel: document.getElementById("range-label"),
         prevWeek: document.getElementById("prev-week"),
         nextWeek: document.getElementById("next-week"),
-        todayBtn: document.getElementById("today-btn")
+        todayBtn: document.getElementById("today-btn"),
+        agendaDate: document.getElementById("agenda-date"),
+        agendaCount: document.getElementById("agenda-count"),
+        agendaList: document.getElementById("agenda-list")
       };
+
+      let selectedDate = startOfDay(new Date());
 
       const rules = {
         randy: /randy/i,
@@ -302,6 +422,12 @@ v1.19.0 phone calendar view:
       function addDays(date, days) {
         const d = new Date(date);
         d.setDate(d.getDate() + days);
+        return d;
+      }
+
+      function startOfDay(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
         return d;
       }
 
@@ -380,6 +506,70 @@ v1.19.0 phone calendar view:
         calendar.gotoDate(addDays(currentStart, weeks * 7));
       }
 
+      function selectedDateLabel(date) {
+        const today = startOfDay(new Date());
+        if (sameDay(date, today)) return "Today";
+        if (sameDay(date, addDays(today, 1))) return "Tomorrow";
+        return date.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+      }
+
+      function eventOverlapsDay(event, date) {
+        const dayStart = startOfDay(date);
+        const dayEnd = addDays(dayStart, 1);
+        const start = event.start;
+        if (!start) return false;
+        const end = event.end || (event.allDay ? addDays(startOfDay(start), 1) : new Date(start.getTime() + 60 * 60 * 1000));
+        return start < dayEnd && end > dayStart;
+      }
+
+      function cleanText(value) {
+        return String(value || "").replace(/\\n/g, " ").replace(/\s+/g, " ").trim();
+      }
+
+      function eventDetail(event) {
+        return cleanText(event.extendedProps && (event.extendedProps.location || event.extendedProps.description));
+      }
+
+      function agendaTime(event) {
+        if (event.allDay) return "All day";
+        if (!event.start) return "";
+        const start = event.start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        if (!event.end) return start;
+        return `${start} - ${event.end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+      }
+
+      function renderAgenda(calendar) {
+        const events = calendar.getEvents()
+          .filter(event => eventOverlapsDay(event, selectedDate))
+          .sort((a, b) => {
+            if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+            return (a.start || 0) - (b.start || 0);
+          });
+
+        els.agendaDate.textContent = selectedDateLabel(selectedDate);
+        els.agendaCount.textContent = events.length === 1 ? "1 item" : `${events.length} items`;
+        els.agendaList.innerHTML = "";
+
+        if (!events.length) {
+          els.agendaList.innerHTML = `<div class="agenda-empty">Nothing scheduled for this day.</div>`;
+          return;
+        }
+
+        for (const event of events) {
+          const title = event.title || "Calendar event";
+          const meta = classifyEvent(title);
+          const detail = eventDetail(event);
+          els.agendaList.insertAdjacentHTML("beforeend", `
+            <div class="agenda-item event-${meta.category}">
+              <div class="agenda-time">${escapeHtml(agendaTime(event))}</div>
+              <div>
+                <div class="agenda-title">${meta.icon ? `${escapeHtml(meta.icon)} ` : ""}${escapeHtml(title)}</div>
+                ${detail ? `<div class="agenda-detail">${escapeHtml(detail)}</div>` : ""}
+              </div>
+            </div>`);
+        }
+      }
+
       const calendar = new FullCalendar.Calendar(els.calendar, {
         initialView: "phoneRolling",
         views: {
@@ -395,6 +585,14 @@ v1.19.0 phone calendar view:
         eventMinHeight: 16,
         headerToolbar: false,
         dayHeaderFormat: { weekday: "short" },
+        dateClick(info) {
+          selectedDate = startOfDay(info.date);
+          calendar.render();
+          renderAgenda(calendar);
+        },
+        dayCellClassNames(info) {
+          return sameDay(info.date, selectedDate) ? ["selected-day"] : [];
+        },
         visibleRange(currentDate) {
           const start = startOfCurrentWeekSunday(currentDate);
           return { start, end: addDays(start, visibleWeeks() * 7) };
@@ -419,12 +617,21 @@ v1.19.0 phone calendar view:
         datesSet() {
           updateRangeLabel(calendar);
           updateButtons(calendar);
+          renderAgenda(calendar);
+        },
+        eventsSet() {
+          renderAgenda(calendar);
         }
       });
 
       els.prevWeek.addEventListener("click", () => shiftWeek(calendar, -1));
       els.nextWeek.addEventListener("click", () => shiftWeek(calendar, 1));
-      els.todayBtn.addEventListener("click", () => calendar.gotoDate(startOfCurrentWeekSunday(new Date())));
+      els.todayBtn.addEventListener("click", () => {
+        selectedDate = startOfDay(new Date());
+        calendar.gotoDate(startOfCurrentWeekSunday(selectedDate));
+        calendar.render();
+        renderAgenda(calendar);
+      });
       window.addEventListener("resize", () => {
         calendar.changeView("phoneRolling", calendar.view.currentStart);
         calendar.updateSize();
