@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 Williams Family Calendar Only
-Version: v1.19.4
+Version: v1.19.5
+
+v1.19.5 phone refresh:
+- adds a small in-page refresh button for home screen use
 
 v1.19.4 phone calendar theme:
 - removes the light FullCalendar strip above the week grid
@@ -121,6 +124,26 @@ v1.19.0 phone calendar view:
       color: rgba(255,255,255,0.84);
       font: inherit;
       font-weight: 850;
+    }
+
+    .refresh-btn {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.045);
+      color: rgba(255,255,255,0.72);
+      font-size: 0.96rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .refresh-btn.refreshing {
+      color: rgba(125,211,252,0.96);
+      border-color: rgba(125,211,252,0.38);
     }
 
     #calendar-shell {
@@ -381,7 +404,8 @@ v1.19.0 phone calendar view:
     </div>
     <div class="subbar">
       <button class="today-btn" id="today-btn" type="button">Today</button>
-      <span id="version-label">v1.19.4</span>
+      <span id="version-label">v1.19.5</span>
+      <button class="refresh-btn" id="refresh-btn" type="button" aria-label="Refresh calendar">↻</button>
     </div>
     <section id="calendar-shell" aria-label="Williams family calendar">
       <div id="calendar"></div>
@@ -410,6 +434,7 @@ v1.19.0 phone calendar view:
         prevWeek: document.getElementById("prev-week"),
         nextWeek: document.getElementById("next-week"),
         todayBtn: document.getElementById("today-btn"),
+        refreshBtn: document.getElementById("refresh-btn"),
         agendaDate: document.getElementById("agenda-date"),
         agendaCount: document.getElementById("agenda-count"),
         agendaList: document.getElementById("agenda-list")
@@ -591,6 +616,17 @@ v1.19.0 phone calendar view:
         renderAgenda(calendar);
       }
 
+      function refreshCalendar(calendar) {
+        els.refreshBtn.classList.add("refreshing");
+        els.refreshBtn.textContent = "…";
+        calendar.refetchEvents();
+        window.setTimeout(() => {
+          els.refreshBtn.classList.remove("refreshing");
+          els.refreshBtn.textContent = "↻";
+          renderAgenda(calendar);
+        }, 1400);
+      }
+
       const calendar = new FullCalendar.Calendar(els.calendar, {
         initialView: "phoneRolling",
         views: {
@@ -649,6 +685,7 @@ v1.19.0 phone calendar view:
 
       els.prevWeek.addEventListener("click", () => shiftWeek(calendar, -1));
       els.nextWeek.addEventListener("click", () => shiftWeek(calendar, 1));
+      els.refreshBtn.addEventListener("click", () => refreshCalendar(calendar));
       els.todayBtn.addEventListener("click", () => {
         selectDate(new Date(), calendar);
         calendar.gotoDate(startOfCurrentWeekSunday(selectedDate));
