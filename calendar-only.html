@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 Williams Family Calendar Only
-Version: v1.19.0
+Version: v1.19.1
+
+v1.19.1 phone calendar sizing:
+- fixes Safari range label formatting and uses compact auto-height calendar rows
 
 v1.19.0 phone calendar view:
 - adds a focused calendar-only page for iPhone home screen use
@@ -112,9 +115,9 @@ v1.19.0 phone calendar view:
     }
 
     #calendar-shell {
-      flex: 1 1 auto;
+      flex: 0 0 auto;
       min-height: 0;
-      overflow: hidden;
+      overflow: visible;
       border: 1px solid rgba(255,255,255,0.14);
       border-radius: 12px;
       background: rgba(13,26,43,0.74);
@@ -123,13 +126,11 @@ v1.19.0 phone calendar view:
 
     #calendar {
       width: 100%;
-      height: 100%;
     }
 
     .fc,
     .fc .fc-view-harness,
     .fc .fc-view-harness-active {
-      height: 100% !important;
       max-width: 100%;
     }
 
@@ -238,7 +239,7 @@ v1.19.0 phone calendar view:
     @media (orientation: portrait) {
       body { font-size: 15px; }
       #app { padding-left: 7px; padding-right: 7px; }
-      .fc .fc-daygrid-day-frame { min-height: 74px; }
+      .fc .fc-daygrid-day-frame { min-height: 86px; }
     }
 
     @media (min-width: 700px) {
@@ -259,7 +260,7 @@ v1.19.0 phone calendar view:
     </div>
     <div class="subbar">
       <button class="today-btn" id="today-btn" type="button">Today</button>
-      <span id="version-label">v1.19.0</span>
+      <span id="version-label">v1.19.1</span>
     </div>
     <section id="calendar-shell" aria-label="Williams family calendar">
       <div id="calendar"></div>
@@ -355,8 +356,14 @@ v1.19.0 phone calendar view:
         const start = calendar.view.currentStart;
         const end = addDays(calendar.view.currentEnd, -1);
         const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+        if (sameMonth) {
+          const month = start.toLocaleDateString([], { month: "short" });
+          els.rangeLabel.textContent = `${month} ${start.getDate()}-${end.getDate()}, ${end.getFullYear()}`;
+          return;
+        }
+
         const startText = start.toLocaleDateString([], { month: "short", day: "numeric" });
-        const endText = end.toLocaleDateString([], sameMonth ? { day: "numeric", year: "numeric" } : { month: "short", day: "numeric", year: "numeric" });
+        const endText = end.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
         els.rangeLabel.textContent = `${startText} - ${endText}`;
       }
 
@@ -379,8 +386,8 @@ v1.19.0 phone calendar view:
           phoneRolling: { type: "dayGrid", duration: { weeks: visibleWeeks() } }
         },
         firstDay: 0,
-        height: "100%",
-        expandRows: true,
+        height: "auto",
+        expandRows: false,
         fixedWeekCount: false,
         showNonCurrentDates: false,
         dayMaxEvents: true,
