@@ -1,7 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.10
+Version: v1.18.11
+
+v1.18.11 Vetta soccer cleanup:
+- renames Vetta Rainbow Unicorns games to "Rainbow Unicorns vs. Opponent"
+- removes duplicate Rainbow Unicorns games when the Vetta feed has the same date/time
 
 v1.18.10 simpler notes strip:
 - removes the lower strip label card so only actual items show
@@ -1431,7 +1435,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.10";
+      const APP_VERSION = "v1.18.11";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2522,9 +2526,32 @@ v1.17.0 traffic alerts update:
         });
       }
 
-      function calendarEventTransform(eventData) {
+      let dedupeInProgress = false;
+
+      function makeCalendarEventTransform(sourceKey) {
+        return function calendarEventTransformForSource(eventData) {
+          return calendarEventTransform(eventData, sourceKey);
+        };
+      }
+
+      function calendarEventTransform(eventData, sourceKey = "main") {
         if (isCancelledEventData(eventData)) return false;
-        return eventData;
+        const next = {
+          ...eventData,
+          extendedProps: {
+            ...(eventData.extendedProps || {}),
+            sourceKey
+          }
+        };
+
+        const vettaTitle = normalizeVettaRainbowTitle(next.title || "");
+        if (sourceKey === "williams" && vettaTitle) {
+          next.extendedProps.rawTitle = next.title;
+          next.extendedProps.isVettaSports = true;
+          next.title = vettaTitle;
+        }
+
+        return next;
       }
 
       function eventHasEnded(event, now = new Date()) {
@@ -2540,6 +2567,74 @@ v1.17.0 traffic alerts update:
         return /^cancel(?:ed|led)\b/i.test(title) ||
           /^cancel(?:ed|led)$/i.test(status) ||
           /^cancel(?:ed|led)$/i.test(extendedStatus);
+      }
+
+      function normalizeVettaRainbowTitle(title) {
+        const text = cleanText(title).replace(/^Vetta Soccer\s*-\s*/i, "");
+        if (!/rainbow unicorns/i.test(text) || !/\bvs\b/i.test(text)) return "";
+
+        const sides = text.split(/\s+vs\s+/i);
+        if (sides.length < 2) return "";
+
+        const rainbowIndex = sides.findIndex(side => /rainbow unicorns/i.test(side));
+        if (rainbowIndex < 0) return "";
+
+        const opponentSide = sides[rainbowIndex === 0 ? 1 : 0];
+        const opponent = extractSoccerTeamName(opponentSide);
+        if (!opponent) return "";
+
+        return `Rainbow Unicorns vs. ${opponent}`;
+      }
+
+      function extractSoccerTeamName(side) {
+        const beforeCoach = cleanText(side).split(/\s*\(/)[0];
+        const yearMatch = beforeCoach.match(/\b20(?:17|18|19)\b\s+(.+)$/i);
+        const name = yearMatch ? yearMatch[1] : beforeCoach;
+        return name
+          .replace(/\b(?:M\/C\/D|D\/M\/C|M\/D\/C|M|D|C)\s*\d*$/i, "")
+          .replace(/\s+\d+$/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function dedupeSportsEvents(calendar) {
+        if (dedupeInProgress) return false;
+
+        const groups = new Map();
+        for (const event of calendar.getEvents()) {
+          const key = rainbowGameDedupeKey(event);
+          if (!key) continue;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(event);
+        }
+
+        const toRemove = [];
+        for (const events of groups.values()) {
+          if (events.length < 2) continue;
+          const preferred = events.find(event => event.extendedProps && event.extendedProps.isVettaSports) || events[0];
+          for (const event of events) {
+            if (event !== preferred) toRemove.push(event);
+          }
+        }
+
+        if (!toRemove.length) return false;
+        dedupeInProgress = true;
+        toRemove.forEach(event => event.remove());
+        dedupeInProgress = false;
+        return true;
+      }
+
+      function rainbowGameDedupeKey(event) {
+        if (!event || !event.start || !/rainbow unicorns/i.test(event.title || "")) return "";
+        const rawTitle = String(event.extendedProps && event.extendedProps.rawTitle || event.title || "");
+        if (!/\bvs\b/i.test(rawTitle) && !/rainbow unicorns vs\./i.test(event.title || "")) return "";
+
+        const start = event.start;
+        const dateKey = toYYYYMMDD(start);
+        const timeKey = event.allDay
+          ? "all-day"
+          : `${String(start.getHours()).padStart(2, "0")}${String(start.getMinutes()).padStart(2, "0")}`;
+        return `rainbow-game|${dateKey}|${timeKey}`;
       }
 
       async function loadCalendarUpdates() {
@@ -2702,9 +2797,9 @@ v1.17.0 traffic alerts update:
           return { start, end: addDays(start, 28) };
         },
         eventSources: [
-          { url: ICS_URL, format: "ics", eventDataTransform: calendarEventTransform },
-          { url: WILLIAMS_ICS_URL, format: "ics", eventDataTransform: calendarEventTransform },
-          { url: NOTES_ICS_URL, format: "ics", eventDataTransform: calendarEventTransform }
+          { url: ICS_URL, format: "ics", eventDataTransform: makeCalendarEventTransform("main") },
+          { url: WILLIAMS_ICS_URL, format: "ics", eventDataTransform: makeCalendarEventTransform("williams") },
+          { url: NOTES_ICS_URL, format: "ics", eventDataTransform: makeCalendarEventTransform("notes") }
         ],
         dayCellDidMount(info) {
           const date = startOfDay(info.date);
@@ -2730,6 +2825,7 @@ v1.17.0 traffic alerts update:
           return { html: `<span class="evt">${parts.join("")}</span>` };
         },
         eventsSet(events) {
+          if (dedupeSportsEvents(calendar)) return;
           cachedSportsEvents = normalizeSportsEvents(events);
           if (calendar.view) updateGameDayChips(calendar.view.currentStart, calendar.view.currentEnd);
           buildSidebar(calendar);
