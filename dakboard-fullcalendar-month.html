@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.9
+Version: v1.18.10
+
+v1.18.10 simpler notes strip:
+- removes the lower strip label card so only actual items show
 
 v1.18.9 summer lower strip:
 - replaces school meals with Today Notes while keeping meals available by mode
@@ -864,7 +867,7 @@ v1.17.0 traffic alerts update:
     }
 
     #meals-grid.notes-grid {
-      grid-template-columns: 1.1fr repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
       padding: 0 48px 8px 4px;
     }
@@ -1428,7 +1431,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.9";
+      const APP_VERSION = "v1.18.10";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1905,13 +1908,6 @@ v1.17.0 traffic alerts update:
 
         const remaining = todays.filter(item => !eventHasEnded(item.event));
         const displayItems = (remaining.length ? remaining : todays).slice(0, 5);
-
-        els.mealsGrid.insertAdjacentHTML("beforeend", `
-          <div class="note-strip-card note-strip-head">
-            <div class="note-strip-kicker">Summer Strip</div>
-            <div class="note-strip-title">Today Notes</div>
-            <div class="note-strip-detail">${displayItems.length ? `${remaining.length} remaining today` : "No dashboard notes today"}</div>
-          </div>`);
 
         if (!displayItems.length) {
           els.mealsGrid.insertAdjacentHTML("beforeend", `
