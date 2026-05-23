@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.8
+Version: v1.18.9
+
+v1.18.9 summer lower strip:
+- replaces school meals with Today Notes while keeping meals available by mode
 
 v1.18.8 past event styling:
 - greys out any event that has ended, including all-day and previous-day events
@@ -860,6 +863,12 @@ v1.17.0 traffic alerts update:
       align-items: stretch;
     }
 
+    #meals-grid.notes-grid {
+      grid-template-columns: 1.1fr repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 48px 8px 4px;
+    }
+
     .meal-col {
       min-width: 0;
       min-height: 54px;
@@ -877,6 +886,58 @@ v1.17.0 traffic alerts update:
       border-color: transparent !important;
       background: transparent !important;
       box-shadow: none !important;
+    }
+
+    .note-strip-card {
+      min-width: 0;
+      min-height: 54px;
+      padding: 8px 10px 7px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 7px;
+      background: rgba(255,255,255,0.055);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .note-strip-card.note-strip-head {
+      border-color: rgba(125,211,252,0.20);
+      background: linear-gradient(180deg, rgba(14,165,233,0.16), rgba(255,255,255,0.045));
+    }
+
+    .note-strip-kicker {
+      color: rgba(255,255,255,0.58);
+      font-size: 0.68em;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .note-strip-title {
+      min-width: 0;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(255,255,255,0.94);
+      font-size: 0.86em;
+      font-weight: 930;
+      line-height: 1.12;
+    }
+
+    .note-strip-detail {
+      min-width: 0;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(255,255,255,0.62);
+      font-size: 0.72em;
+      font-weight: 760;
+      line-height: 1.12;
+    }
+
+    .note-strip-card.evt-past {
+      opacity: 0.38;
+      filter: grayscale(0.7) saturate(0.55);
     }
 
     #calendar-nav {
@@ -1367,10 +1428,11 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.8";
+      const APP_VERSION = "v1.18.9";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
+      const LOWER_STRIP_MODE = "notes"; // options: "notes", "meals", "hidden"
       const AUTO_HIDE_MEALS_FOOTER = false;
 
       const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
@@ -1798,8 +1860,84 @@ v1.17.0 traffic alerts update:
         if (els.mealsFooter) els.mealsFooter.classList.toggle("hidden", !visible);
       }
 
+      function setLowerStripMode(mode) {
+        if (!els.mealsGrid) return;
+        els.mealsGrid.classList.toggle("notes-grid", mode === "notes");
+      }
+
+      function eventDisplayEnd(event) {
+        if (!event || !event.start) return null;
+        return event.end || (event.allDay ? addDays(startOfDay(event.start), 1) : new Date(event.start.getTime() + 60 * 60 * 1000));
+      }
+
+      function eventOverlapsDay(event, date) {
+        const dayStart = startOfDay(date);
+        const dayEnd = addDays(dayStart, 1);
+        const end = eventDisplayEnd(event);
+        return Boolean(event && event.start && end && event.start < dayEnd && end > dayStart);
+      }
+
+      function lowerStripTime(event) {
+        if (event.allDay) return "All day";
+        return formatTime(event.start);
+      }
+
+      function renderTodayNotesStrip(calendar) {
+        if (!els.mealsGrid) return;
+        setMealsFooterVisible(LOWER_STRIP_MODE !== "hidden");
+        setLowerStripMode("notes");
+        els.mealsGrid.innerHTML = "";
+        els.mealsGrid.style.gridTemplateColumns = "";
+
+        const now = new Date();
+        const today = startOfDay(now);
+        const todays = calendar.getEvents()
+          .filter(event => eventOverlapsDay(event, today))
+          .map(event => ({
+            event,
+            meta: classifyEvent(event.title || ""),
+            end: eventDisplayEnd(event)
+          }))
+          .sort((a, b) => {
+            if (a.event.allDay !== b.event.allDay) return a.event.allDay ? -1 : 1;
+            return (a.event.start || 0) - (b.event.start || 0);
+          });
+
+        const remaining = todays.filter(item => !eventHasEnded(item.event));
+        const displayItems = (remaining.length ? remaining : todays).slice(0, 5);
+
+        els.mealsGrid.insertAdjacentHTML("beforeend", `
+          <div class="note-strip-card note-strip-head">
+            <div class="note-strip-kicker">Summer Strip</div>
+            <div class="note-strip-title">Today Notes</div>
+            <div class="note-strip-detail">${displayItems.length ? `${remaining.length} remaining today` : "No dashboard notes today"}</div>
+          </div>`);
+
+        if (!displayItems.length) {
+          els.mealsGrid.insertAdjacentHTML("beforeend", `
+            <div class="note-strip-card">
+              <div class="note-strip-kicker">Clear</div>
+              <div class="note-strip-title">Nothing scheduled</div>
+              <div class="note-strip-detail">Use Dashboard Note to add something here.</div>
+            </div>`);
+        }
+
+        for (const item of displayItems) {
+          const prefix = item.meta.icon ? `${item.meta.icon} ` : "";
+          els.mealsGrid.insertAdjacentHTML("beforeend", `
+            <div class="note-strip-card event-${item.meta.category}${eventHasEnded(item.event) ? " evt-past" : ""}">
+              <div class="note-strip-kicker">${escapeHtml(lowerStripTime(item.event))}</div>
+              <div class="note-strip-title">${escapeHtml(prefix + item.event.title)}</div>
+              <div class="note-strip-detail">${escapeHtml(item.event.allDay ? "All day" : humanWhen(item.event.start))}</div>
+            </div>`);
+        }
+
+        wireCalendarWeekButtons();
+      }
+
       function renderMealsFooter(weekStart, mealsByDate) {
         if (!els.mealsGrid) return;
+        setLowerStripMode("meals");
         els.mealsGrid.innerHTML = "";
 
         for (let i = 0; i < 7; i++) {
@@ -1836,7 +1974,7 @@ v1.17.0 traffic alerts update:
       }
 
       function lockMealsGridToCalendarColumns() {
-        if (!els.mealsGrid || !els.calendar || !els.mealsFooter || els.mealsFooter.classList.contains("hidden")) return;
+        if (!els.mealsGrid || els.mealsGrid.classList.contains("notes-grid") || !els.calendar || !els.mealsFooter || els.mealsFooter.classList.contains("hidden")) return;
         const headerCells = els.calendar.querySelectorAll(".fc-col-header-cell");
         if (!headerCells || headerCells.length < 7) return;
         const widths = Array.from(headerCells).slice(0, 7).map(cell => Math.round(cell.getBoundingClientRect().width));
@@ -1850,6 +1988,7 @@ v1.17.0 traffic alerts update:
       }
 
       async function fetchMealsForCurrentWeek() {
+        if (LOWER_STRIP_MODE !== "meals") return;
         const weekStart = startOfCurrentWeekSunday(new Date());
         const weekEnd = addDays(weekStart, 7);
         const url = `${MENU_URL}?start=${encodeURIComponent(toYYYYMMDD(weekStart))}&end=${encodeURIComponent(toYYYYMMDD(weekEnd))}`;
@@ -2599,6 +2738,7 @@ v1.17.0 traffic alerts update:
           if (calendar.view) updateGameDayChips(calendar.view.currentStart, calendar.view.currentEnd);
           buildSidebar(calendar);
           renderCampPanel(calendar);
+          if (LOWER_STRIP_MODE === "notes") renderTodayNotesStrip(calendar);
           scheduleCalendarSizeUpdate(calendar);
           updateCalendarWeekButtonsForCurrentRange(calendar);
           scheduleMealsLock();
@@ -2608,6 +2748,7 @@ v1.17.0 traffic alerts update:
           updateGameDayChips(info.start, info.end);
           buildSidebar(calendar);
           renderCampPanel(calendar);
+          if (LOWER_STRIP_MODE === "notes") renderTodayNotesStrip(calendar);
           scheduleCalendarSizeUpdate(calendar);
           updateCalendarWeekButtonsForCurrentRange(calendar);
           scheduleMealsLock();
@@ -2626,14 +2767,19 @@ v1.17.0 traffic alerts update:
       installCalendarWeekControls(calendar);
       calendar.render();
       updateMajorDateChip();
-      renderMealsFooter(startOfCurrentWeekSunday(new Date()), {});
-      scheduleMealsLock();
-
-      fetchMealsForCurrentWeek().catch(err => {
-        console.warn("Meals error:", err);
-        setMealsFooterVisible(true);
+      if (LOWER_STRIP_MODE === "notes") {
+        renderTodayNotesStrip(calendar);
+      } else if (LOWER_STRIP_MODE === "meals") {
         renderMealsFooter(startOfCurrentWeekSunday(new Date()), {});
-      });
+        fetchMealsForCurrentWeek().catch(err => {
+          console.warn("Meals error:", err);
+          setMealsFooterVisible(true);
+          renderMealsFooter(startOfCurrentWeekSunday(new Date()), {});
+        });
+      } else {
+        setMealsFooterVisible(false);
+      }
+      scheduleMealsLock();
 
       loadWeather();
       loadTrafficStatus();
