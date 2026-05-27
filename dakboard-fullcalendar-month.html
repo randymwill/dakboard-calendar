@@ -1,7 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.13
+Version: v1.18.14
+
+v1.18.14 upcoming event grouping:
+- summarizes multi-week camps with one full start-to-end range
+- removes repeated duplicate camp week rows
 
 v1.18.13 upcoming event details:
 - shows both location and description for Upcoming Events details
@@ -1441,7 +1445,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.13";
+      const APP_VERSION = "v1.18.14";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2173,7 +2177,11 @@ v1.17.0 traffic alerts update:
       }
 
       function cleanText(value) {
-        return String(value || "").replace(/\\n/g, " ").replace(/\s+/g, " ").trim();
+        return String(value || "")
+          .replace(/<[^>]*>/g, " ")
+          .replace(/\\n/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
       }
 
       function eventLocation(event) {
@@ -2233,11 +2241,35 @@ v1.17.0 traffic alerts update:
 
       function campDateRange(events) {
         const starts = events.map(event => event.start).filter(Boolean).sort((a, b) => a - b);
+        const ends = events.map(event => campDisplayEnd(event)).filter(Boolean).sort((a, b) => a - b);
         if (!starts.length) return "Upcoming";
         const first = starts[0];
-        const last = starts[starts.length - 1];
+        const last = ends.length ? ends[ends.length - 1] : starts[starts.length - 1];
         if (sameDay(first, last)) return formatPrettyDate(first);
-        return `${first.toLocaleDateString([], { month: "short", day: "numeric" })} - ${last.toLocaleDateString([], { month: "short", day: "numeric" })}`;
+        return `${formatWeekdayDate(first)} - ${formatWeekdayDate(last)}`;
+      }
+
+      function campDisplayEnd(event) {
+        if (!event) return null;
+        if (!event.end) return event.start || null;
+        return event.allDay ? addDays(event.end, -1) : event.end;
+      }
+
+      function formatWeekdayDate(date) {
+        return date.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+      }
+
+      function campGroupDetailText(group) {
+        const details = [];
+        for (const event of group.events) {
+          const detail = eventDetailText(event);
+          if (detail && !details.includes(detail)) details.push(detail);
+        }
+        return details.join(" • ");
+      }
+
+      function isDuplicateCampRow(event, group) {
+        return eventDisplayTitle(event) === group.name && eventDetailText(event) === campGroupDetailText(group);
       }
 
       function eventDisplayTitle(event) {
@@ -2327,7 +2359,9 @@ v1.17.0 traffic alerts update:
         const campGroups = campGroupsFromEvents(campEvents);
 
         if (els.campCount) {
-          els.campCount.textContent = campGroups.length ? `${campGroups.length} camps` : "No upcoming";
+          els.campCount.textContent = campGroups.length
+            ? `${campGroups.length} ${campGroups.length === 1 ? "camp" : "camps"}`
+            : "No upcoming";
         }
 
         if (els.campTabs) els.campTabs.innerHTML = "";
@@ -2357,12 +2391,11 @@ v1.17.0 traffic alerts update:
         }
 
         const activeGroup = campGroups.find(group => group.key === activeCampKey) || campGroups[0];
-        const featuredEvent = activeGroup.events[0];
-        const featuredDetail = featuredEvent ? eventDetailText(featuredEvent) : "";
+        const featuredDetail = campGroupDetailText(activeGroup);
         els.campList.insertAdjacentHTML("beforeend", `
           <div class="camp-summary">
-            <div class="camp-name">${escapeHtml(featuredEvent ? eventDisplayTitle(featuredEvent) : activeGroup.name)}</div>
-            <div class="camp-date-range">${escapeHtml(featuredEvent ? eventDateTimeLabel(featuredEvent) : campDateRange(activeGroup.events))}</div>
+            <div class="camp-name">${escapeHtml(activeGroup.name)}</div>
+            <div class="camp-date-range">${escapeHtml(campDateRange(activeGroup.events))}</div>
             ${featuredDetail ? `<div class="camp-detail">${escapeHtml(featuredDetail)}</div>` : ""}
           </div>`);
 
@@ -2371,7 +2404,7 @@ v1.17.0 traffic alerts update:
           renderScienceCenterCampInfo();
         }
 
-        for (const event of activeGroup.events.slice(1, 6)) {
+        for (const event of activeGroup.events.filter(event => !isDuplicateCampRow(event, activeGroup)).slice(0, 5)) {
           const dateLabel = campDateLabel(event);
           const detail = eventDetailText(event) || "Details in calendar";
           els.campList.insertAdjacentHTML("beforeend", `
