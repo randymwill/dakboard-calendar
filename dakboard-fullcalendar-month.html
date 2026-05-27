@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.12
+Version: v1.18.13
+
+v1.18.13 upcoming event details:
+- shows both location and description for Upcoming Events details
 
 v1.18.12 camp naming:
 - recognizes Camp Pegasus as its own Upcoming Events tab
@@ -1438,7 +1441,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.12";
+      const APP_VERSION = "v1.18.13";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2181,6 +2184,13 @@ v1.17.0 traffic alerts update:
         return cleanText(event.extendedProps && event.extendedProps.description);
       }
 
+      function eventDetailText(event) {
+        const location = eventLocation(event);
+        const description = eventDescription(event);
+        if (location && description) return `${location} • ${description}`;
+        return location || description || "";
+      }
+
       function isCampEvent(event) {
         const haystack = `${event.title || ""} ${eventLocation(event)} ${eventDescription(event)}`;
         return /camp|science center|zoo|funtastic|t-shirt|dashboard sign/i.test(haystack);
@@ -2348,7 +2358,7 @@ v1.17.0 traffic alerts update:
 
         const activeGroup = campGroups.find(group => group.key === activeCampKey) || campGroups[0];
         const featuredEvent = activeGroup.events[0];
-        const featuredDetail = featuredEvent ? eventLocation(featuredEvent) || eventDescription(featuredEvent) : "";
+        const featuredDetail = featuredEvent ? eventDetailText(featuredEvent) : "";
         els.campList.insertAdjacentHTML("beforeend", `
           <div class="camp-summary">
             <div class="camp-name">${escapeHtml(featuredEvent ? eventDisplayTitle(featuredEvent) : activeGroup.name)}</div>
@@ -2363,7 +2373,7 @@ v1.17.0 traffic alerts update:
 
         for (const event of activeGroup.events.slice(1, 6)) {
           const dateLabel = campDateLabel(event);
-          const detail = eventLocation(event) || eventDescription(event) || "Details in calendar";
+          const detail = eventDetailText(event) || "Details in calendar";
           els.campList.insertAdjacentHTML("beforeend", `
             <div class="mini-item">
               <div class="mini-date">${escapeHtml(dateLabel)}</div>
