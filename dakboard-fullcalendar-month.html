@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.11
+Version: v1.18.12
+
+v1.18.12 camp naming:
+- recognizes Camp Pegasus as its own Upcoming Events tab
 
 v1.18.11 Vetta soccer cleanup:
 - renames Vetta Rainbow Unicorns games to "Rainbow Unicorns vs. Opponent"
@@ -1435,7 +1438,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.11";
+      const APP_VERSION = "v1.18.12";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2188,6 +2191,7 @@ v1.17.0 traffic alerts update:
         const rules = [
           { name: "Science Center", pattern: /science center/i },
           { name: "Camp Funtastic", pattern: /camp funtastic|funtastic/i },
+          { name: "Camp Pegasus", pattern: /camp pegasus|pegasus/i },
           { name: "Zoo Camp", pattern: /zoo/i }
         ];
         const match = rules.find(rule => rule.pattern.test(haystack));
