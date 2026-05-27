@@ -1,7 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.14
+Version: v1.18.15
+
+v1.18.15 dashboard-only upcoming notes:
+- loads Upcoming Events notes from the Apps Script note store
+- displays dashboard-only notes under the matching event tab
 
 v1.18.14 upcoming event grouping:
 - summarizes multi-week camps with one full start-to-end range
@@ -1230,6 +1234,36 @@ v1.17.0 traffic alerts update:
       line-height: 1.15;
     }
 
+    .camp-notes-card {
+      display: grid;
+      gap: 7px;
+      padding: 10px 11px;
+      border: 1px solid rgba(236,72,153,0.28);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(236,72,153,0.14), rgba(14,22,36,0.22));
+    }
+
+    .camp-notes-title {
+      color: rgba(255,255,255,0.96);
+      font-size: 0.9em;
+      font-weight: 950;
+      line-height: 1.1;
+    }
+
+    .camp-note {
+      color: rgba(255,255,255,0.80);
+      font-size: 0.76em;
+      font-weight: 780;
+      line-height: 1.18;
+    }
+
+    .camp-note-time {
+      margin-top: 2px;
+      color: rgba(255,255,255,0.50);
+      font-size: 0.84em;
+      font-weight: 740;
+    }
+
     .camp-hours-card {
       display: grid;
       gap: 6px;
@@ -1445,7 +1479,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.14";
+      const APP_VERSION = "v1.18.15";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1455,6 +1489,7 @@ v1.17.0 traffic alerts update:
       const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
       const WILLIAMS_ICS_URL = "https://randymwill.github.io/williams-family-calendar/calendar.ics";
       const NOTES_ICS_URL = "https://family-dashboard-notes-calendar.randywilliams-us.workers.dev/";
+      const UPCOMING_NOTES_URL = "https://script.google.com/macros/s/AKfycbySI44rTuR1AqJNbIZE4mQZP8EWqmmBfjNJPnS-6UymSvmJmBJygmmaKVjilvXmVI97/exec";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
       const HOME_LAT = 38.654398639984805;
       const HOME_LON = -90.45877499401288;
@@ -1496,6 +1531,7 @@ v1.17.0 traffic alerts update:
 
       let activeCampKey = "";
       let calendarWeekControls = null;
+      let upcomingEventNotes = {};
 
       if (!ENABLE_HOLIDAY_MODE) {
         document.documentElement.classList.remove("holiday-mode");
@@ -2235,6 +2271,10 @@ v1.17.0 traffic alerts update:
         return String(name || "camp").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       }
 
+      function upcomingNotesForGroup(group) {
+        return Array.isArray(upcomingEventNotes[group.key]) ? upcomingEventNotes[group.key] : [];
+      }
+
       function campDateLabel(event) {
         return event.allDay ? formatPrettyDate(event.start) : `${formatPrettyDate(event.start)} ${formatTime(event.start)}`;
       }
@@ -2349,6 +2389,70 @@ v1.17.0 traffic alerts update:
           </div>`);
       }
 
+      function renderUpcomingEventNotes(group) {
+        const notes = upcomingNotesForGroup(group);
+        if (!notes.length) return;
+
+        els.campList.insertAdjacentHTML("beforeend", `
+          <div class="camp-notes-card">
+            <div class="camp-notes-title">Notes</div>
+            ${notes.map(note => `
+              <div class="camp-note">
+                ${escapeHtml(note.text || "")}
+                ${note.createdAt ? `<div class="camp-note-time">${escapeHtml(formatNoteTime(note.createdAt))}</div>` : ""}
+              </div>`).join("")}
+          </div>`);
+      }
+
+      function formatNoteTime(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "";
+        return `Added ${date.toLocaleDateString([], { month: "short", day: "numeric" })}`;
+      }
+
+      function jsonpFetch(url, params = {}) {
+        return new Promise((resolve, reject) => {
+          const callbackName = `dashboardJsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          const script = document.createElement("script");
+          const search = new URLSearchParams({ ...params, callback: callbackName });
+          const separator = url.includes("?") ? "&" : "?";
+          const timeout = window.setTimeout(() => {
+            cleanup();
+            reject(new Error("Upcoming notes request timed out"));
+          }, 10000);
+
+          function cleanup() {
+            window.clearTimeout(timeout);
+            delete window[callbackName];
+            script.remove();
+          }
+
+          window[callbackName] = data => {
+            cleanup();
+            resolve(data);
+          };
+
+          script.onerror = () => {
+            cleanup();
+            reject(new Error("Upcoming notes request failed"));
+          };
+          script.src = `${url}${separator}${search.toString()}`;
+          document.head.appendChild(script);
+        });
+      }
+
+      async function loadUpcomingEventNotes(calendar) {
+        if (!UPCOMING_NOTES_URL) return;
+        try {
+          const data = await jsonpFetch(UPCOMING_NOTES_URL, { action: "getUpcomingEventNotes" });
+          if (!data || data.ok === false) throw new Error(data && data.error ? data.error : "Upcoming notes unavailable");
+          upcomingEventNotes = data.notes || {};
+          renderCampPanel(calendar);
+        } catch (err) {
+          console.warn("Upcoming notes error:", err);
+        }
+      }
+
       function renderCampPanel(calendar) {
         if (!els.campList) return;
 
@@ -2403,6 +2507,8 @@ v1.17.0 traffic alerts update:
           renderScienceCenterHours();
           renderScienceCenterCampInfo();
         }
+
+        renderUpcomingEventNotes(activeGroup);
 
         for (const event of activeGroup.events.filter(event => !isDuplicateCampRow(event, activeGroup)).slice(0, 5)) {
           const dateLabel = campDateLabel(event);
@@ -2923,6 +3029,7 @@ v1.17.0 traffic alerts update:
       loadWeather();
       loadTrafficStatus();
       loadCalendarUpdates();
+      loadUpcomingEventNotes(calendar);
 
       window.addEventListener("resize", scheduleMealsLock);
 
@@ -2937,6 +3044,7 @@ v1.17.0 traffic alerts update:
         setLastRefreshed("auto");
         calendar.refetchEvents();
         loadCalendarUpdates();
+        loadUpcomingEventNotes(calendar);
         fetchMealsForCurrentWeek().catch(err => console.warn("Meals refresh error:", err));
       }, AUTO_REFRESH_MINUTES * 60 * 1000);
 
