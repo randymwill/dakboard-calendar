@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.20
+Version: v1.18.21
+
+v1.18.21 Science Center camp cleanup:
+- stops showing movie/member hours on Science Center Day Camp
 
 v1.18.20 upcoming events duration rule:
 - includes timed multi-day events that last at least 24 hours
@@ -1496,7 +1499,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.20";
+      const APP_VERSION = "v1.18.21";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2636,7 +2639,7 @@ v1.17.0 traffic alerts update:
             ${featuredDetail ? `<div class="camp-detail">${escapeHtml(featuredDetail)}</div>` : ""}
           </div>`);
 
-        if (activeGroup.key.startsWith("science-center")) {
+        if (activeGroup.key === "science-center") {
           renderScienceCenterHours();
           renderScienceCenterCampInfo();
         }
