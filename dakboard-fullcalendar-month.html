@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.16
+Version: v1.18.17
+
+v1.18.17 future upcoming events:
+- loads Upcoming Events from the family calendar feed beyond the visible 4-week calendar window
 
 v1.18.16 upcoming notes URL:
 - points Upcoming Events notes at the active Apps Script deployment
@@ -1482,7 +1485,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.16";
+      const APP_VERSION = "v1.18.17";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1507,6 +1510,7 @@ v1.17.0 traffic alerts update:
       const CALENDAR_MAX_SCROLL_WEEKS = 52;
       const CALENDAR_UPDATES_LOOKBACK_DAYS = 14;
       const CALENDAR_UPDATES_MAX = 4;
+      const UPCOMING_EVENTS_LOOKAHEAD_DAYS = 240;
 
       const els = {
         calendar: document.getElementById("calendar"),
@@ -1535,6 +1539,7 @@ v1.17.0 traffic alerts update:
       let activeCampKey = "";
       let calendarWeekControls = null;
       let upcomingEventNotes = {};
+      let futureUpcomingEvents = [];
 
       if (!ENABLE_HOLIDAY_MODE) {
         document.documentElement.classList.remove("holiday-mode");
@@ -2240,16 +2245,18 @@ v1.17.0 traffic alerts update:
 
       function isCampEvent(event) {
         const haystack = `${event.title || ""} ${eventLocation(event)} ${eventDescription(event)}`;
-        return /camp|science center|zoo|funtastic|t-shirt|dashboard sign/i.test(haystack);
+        return /camp|science center|zoo|funtastic|t-shirt|dashboard sign|vacation|north carolina/i.test(haystack);
       }
 
       function campNameForEvent(event) {
         const haystack = `${event.title || ""} ${eventLocation(event)} ${eventDescription(event)}`;
         const rules = [
+          { name: "North Carolina Vacation", pattern: /north carolina|vacation/i },
+          { name: "Science Center Day Camp", pattern: /science center day camp/i },
           { name: "Science Center", pattern: /science center/i },
           { name: "Camp Funtastic", pattern: /camp funtastic|funtastic/i },
           { name: "Camp Pegasus", pattern: /camp pegasus|pegasus/i },
-          { name: "Zoo Camp", pattern: /zoo/i }
+          { name: "Zoo Camp", pattern: /zoo camp|zoo/i }
         ];
         const match = rules.find(rule => rule.pattern.test(haystack));
         if (match) return match.name;
@@ -2345,6 +2352,95 @@ v1.17.0 traffic alerts update:
             events: group.events.slice().sort((a, b) => a.start - b.start)
           }))
           .sort((a, b) => a.firstStart - b.firstStart);
+      }
+
+      function eventIdentity(event) {
+        const dateKey = event && event.start ? event.start.toISOString().slice(0, 10) : "";
+        return `${campKey(event && event.title)}|${dateKey}|${event && event.allDay ? "all-day" : "timed"}`;
+      }
+
+      function combineUpcomingEventSources(visibleEvents, lookaheadEvents) {
+        const byIdentity = new Map();
+        for (const event of [...lookaheadEvents, ...visibleEvents]) {
+          if (!event || !event.start) continue;
+          const key = eventIdentity(event);
+          if (!byIdentity.has(key)) byIdentity.set(key, event);
+        }
+        return Array.from(byIdentity.values()).sort((a, b) => a.start - b.start);
+      }
+
+      function icalDateToJsDate(value) {
+        return value && typeof value.toJSDate === "function" ? value.toJSDate() : null;
+      }
+
+      function icalEventToCalendarEvent(item, startDate, endDate) {
+        const start = icalDateToJsDate(startDate || item.startDate);
+        const end = icalDateToJsDate(endDate || item.endDate);
+        const eventData = calendarEventTransform({
+          title: item.summary || "",
+          start,
+          end,
+          allDay: Boolean((startDate || item.startDate) && (startDate || item.startDate).isDate),
+          extendedProps: {
+            location: item.location || "",
+            description: item.description || "",
+            status: item.component && item.component.getFirstPropertyValue("status") || ""
+          }
+        }, "upcoming-lookahead");
+
+        return eventData && eventData.start ? eventData : null;
+      }
+
+      function parseUpcomingEventsFromIcs(icsText, rangeStart, rangeEnd) {
+        if (!window.ICAL || !icsText) return [];
+
+        const parsed = ICAL.parse(icsText);
+        const component = new ICAL.Component(parsed);
+        const vevents = component.getAllSubcomponents("vevent");
+        const events = [];
+
+        for (const vevent of vevents) {
+          const item = new ICAL.Event(vevent);
+
+          if (item.isRecurring()) {
+            const iterator = item.iterator();
+            let occurrenceDate = iterator.next();
+            let guard = 0;
+
+            while (occurrenceDate && guard < 500) {
+              guard += 1;
+              const details = item.getOccurrenceDetails(occurrenceDate);
+              const start = icalDateToJsDate(details.startDate);
+              if (start && start > rangeEnd) break;
+              if (start && start >= rangeStart) {
+                const event = icalEventToCalendarEvent(details.item || item, details.startDate, details.endDate);
+                if (event) events.push(event);
+              }
+              occurrenceDate = iterator.next();
+            }
+          } else {
+            const event = icalEventToCalendarEvent(item);
+            if (!event || !event.start) continue;
+            const eventEnd = event.end || event.start;
+            if (eventEnd >= rangeStart && event.start <= rangeEnd) events.push(event);
+          }
+        }
+
+        return events.filter(isCampEvent).sort((a, b) => a.start - b.start);
+      }
+
+      async function loadFutureUpcomingEvents(calendar) {
+        try {
+          const rangeStart = startOfDay(new Date());
+          const rangeEnd = addDays(rangeStart, UPCOMING_EVENTS_LOOKAHEAD_DAYS);
+          const response = await fetch(ICS_URL, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Family calendar feed ${response.status}`);
+          const icsText = await response.text();
+          futureUpcomingEvents = parseUpcomingEventsFromIcs(icsText, rangeStart, rangeEnd);
+          renderCampPanel(calendar);
+        } catch (err) {
+          console.warn("Future upcoming events error:", err);
+        }
       }
 
       function renderScienceCenterCampInfo() {
@@ -2460,14 +2556,17 @@ v1.17.0 traffic alerts update:
         if (!els.campList) return;
 
         const now = new Date();
-        const campEvents = calendar.getEvents()
+        const visibleCampEvents = calendar.getEvents()
           .filter(event => event.start && (event.end || event.start) >= now && isCampEvent(event))
           .sort((a, b) => a.start - b.start);
+        const lookaheadCampEvents = futureUpcomingEvents
+          .filter(event => event.start && (event.end || event.start) >= now && isCampEvent(event));
+        const campEvents = combineUpcomingEventSources(visibleCampEvents, lookaheadCampEvents);
         const campGroups = campGroupsFromEvents(campEvents);
 
         if (els.campCount) {
           els.campCount.textContent = campGroups.length
-            ? `${campGroups.length} ${campGroups.length === 1 ? "camp" : "camps"}`
+            ? `${campGroups.length} ${campGroups.length === 1 ? "event" : "events"}`
             : "No upcoming";
         }
 
@@ -2476,10 +2575,10 @@ v1.17.0 traffic alerts update:
         if (!campGroups.length) {
           els.campList.innerHTML = `
             <div class="mini-item">
-              <div class="mini-date">Camp</div>
+              <div class="mini-date">Events</div>
               <div>
-                <div class="mini-title">No upcoming camp items found</div>
-                <div class="mini-detail">Camp events will appear here when they are in the calendar feed.</div>
+                <div class="mini-title">No upcoming events found</div>
+                <div class="mini-detail">Upcoming events will appear here when they are in the calendar feed.</div>
               </div>
             </div>`;
           return;
@@ -3033,6 +3132,7 @@ v1.17.0 traffic alerts update:
       loadTrafficStatus();
       loadCalendarUpdates();
       loadUpcomingEventNotes(calendar);
+      loadFutureUpcomingEvents(calendar);
 
       window.addEventListener("resize", scheduleMealsLock);
 
@@ -3048,6 +3148,7 @@ v1.17.0 traffic alerts update:
         calendar.refetchEvents();
         loadCalendarUpdates();
         loadUpcomingEventNotes(calendar);
+        loadFutureUpcomingEvents(calendar);
         fetchMealsForCurrentWeek().catch(err => console.warn("Meals refresh error:", err));
       }, AUTO_REFRESH_MINUTES * 60 * 1000);
 
