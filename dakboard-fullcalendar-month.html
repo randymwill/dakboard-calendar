@@ -1,7 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.18
+Version: v1.18.19
+
+v1.18.19 event status cleanup:
+- excludes move placeholders from Event Status
+- hides redundant single-event detail rows
 
 v1.18.18 event status rules:
 - includes all all-day events in the next 3 months in Event Status
@@ -1488,7 +1492,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.18";
+      const APP_VERSION = "v1.18.19";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2259,8 +2263,11 @@ v1.17.0 traffic alerts update:
 
       function isEventStatusEvent(event, rangeStart = startOfDay(new Date()), rangeEnd = addMonths(rangeStart, EVENT_STATUS_LOOKAHEAD_MONTHS)) {
         if (!event || !event.start || !event.allDay) return false;
+        if (/\bmove\b/i.test(event.title || "")) return false;
         const end = eventStatusEnd(event);
-        return end >= rangeStart && event.start <= rangeEnd;
+        if (!end) return false;
+        const durationMs = end.getTime() - event.start.getTime();
+        return durationMs >= 24 * 60 * 60 * 1000 && end >= rangeStart && event.start <= rangeEnd;
       }
 
       function campNameForEvent(event) {
@@ -2334,6 +2341,7 @@ v1.17.0 traffic alerts update:
       }
 
       function isDuplicateCampRow(event, group) {
+        if (group.events.length === 1) return true;
         return eventDisplayTitle(event) === group.name && eventDetailText(event) === campGroupDetailText(group);
       }
 
