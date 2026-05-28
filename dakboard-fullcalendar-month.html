@@ -1,7 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.19
+Version: v1.18.20
+
+v1.18.20 upcoming events duration rule:
+- includes timed multi-day events that last at least 24 hours
+- renames Event Status back to Upcoming Events
 
 v1.18.19 event status cleanup:
 - excludes move placeholders from Event Status
@@ -1454,7 +1458,7 @@ v1.17.0 traffic alerts update:
       <div id="center-stack">
         <section class="bottom-panel" id="camp-panel" aria-label="Mary-Jean camp schedule">
           <div class="panel-head">
-            <div class="panel-title">Event Status</div>
+            <div class="panel-title">Upcoming Events</div>
             <div class="panel-chip" id="camp-count">Loading</div>
           </div>
           <div class="camp-tabs" id="camp-tabs" role="tablist" aria-label="Camp list"></div>
@@ -1492,7 +1496,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.19";
+      const APP_VERSION = "v1.18.20";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2262,7 +2266,7 @@ v1.17.0 traffic alerts update:
       }
 
       function isEventStatusEvent(event, rangeStart = startOfDay(new Date()), rangeEnd = addMonths(rangeStart, EVENT_STATUS_LOOKAHEAD_MONTHS)) {
-        if (!event || !event.start || !event.allDay) return false;
+        if (!event || !event.start) return false;
         if (/\bmove\b/i.test(event.title || "")) return false;
         const end = eventStatusEnd(event);
         if (!end) return false;
