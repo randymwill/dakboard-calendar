@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.17
+Version: v1.18.18
+
+v1.18.18 event status rules:
+- includes all all-day events in the next 3 months in Event Status
 
 v1.18.17 future upcoming events:
 - loads Upcoming Events from the family calendar feed beyond the visible 4-week calendar window
@@ -1447,7 +1450,7 @@ v1.17.0 traffic alerts update:
       <div id="center-stack">
         <section class="bottom-panel" id="camp-panel" aria-label="Mary-Jean camp schedule">
           <div class="panel-head">
-            <div class="panel-title">Upcoming Events</div>
+            <div class="panel-title">Event Status</div>
             <div class="panel-chip" id="camp-count">Loading</div>
           </div>
           <div class="camp-tabs" id="camp-tabs" role="tablist" aria-label="Camp list"></div>
@@ -1485,7 +1488,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.17";
+      const APP_VERSION = "v1.18.18";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1510,7 +1513,7 @@ v1.17.0 traffic alerts update:
       const CALENDAR_MAX_SCROLL_WEEKS = 52;
       const CALENDAR_UPDATES_LOOKBACK_DAYS = 14;
       const CALENDAR_UPDATES_MAX = 4;
-      const UPCOMING_EVENTS_LOOKAHEAD_DAYS = 240;
+      const EVENT_STATUS_LOOKAHEAD_MONTHS = 3;
 
       const els = {
         calendar: document.getElementById("calendar"),
@@ -1580,6 +1583,12 @@ v1.17.0 traffic alerts update:
       function addDays(date, days) {
         const d = new Date(date);
         d.setDate(d.getDate() + days);
+        return d;
+      }
+
+      function addMonths(date, months) {
+        const d = new Date(date);
+        d.setMonth(d.getMonth() + months);
         return d;
       }
 
@@ -2243,9 +2252,15 @@ v1.17.0 traffic alerts update:
         return location || description || "";
       }
 
-      function isCampEvent(event) {
-        const haystack = `${event.title || ""} ${eventLocation(event)} ${eventDescription(event)}`;
-        return /camp|science center|zoo|funtastic|t-shirt|dashboard sign|vacation|north carolina/i.test(haystack);
+      function eventStatusEnd(event) {
+        if (!event || !event.start) return null;
+        return event.end || (event.allDay ? addDays(event.start, 1) : event.start);
+      }
+
+      function isEventStatusEvent(event, rangeStart = startOfDay(new Date()), rangeEnd = addMonths(rangeStart, EVENT_STATUS_LOOKAHEAD_MONTHS)) {
+        if (!event || !event.start || !event.allDay) return false;
+        const end = eventStatusEnd(event);
+        return end >= rangeStart && event.start <= rangeEnd;
       }
 
       function campNameForEvent(event) {
@@ -2264,7 +2279,7 @@ v1.17.0 traffic alerts update:
         const title = cleanText(event.title || "");
         const campMatch = title.match(/([A-Z][A-Za-z0-9 &'’.-]*(?:Camp|camp)[A-Za-z0-9 &'’.-]*)/);
         if (campMatch) return cleanCampName(campMatch[1]);
-        return "Other Camp";
+        return eventDisplayTitle(event) || "Event";
       }
 
       function cleanCampName(name) {
@@ -2426,13 +2441,15 @@ v1.17.0 traffic alerts update:
           }
         }
 
-        return events.filter(isCampEvent).sort((a, b) => a.start - b.start);
+        return events
+          .filter(event => isEventStatusEvent(event, rangeStart, rangeEnd))
+          .sort((a, b) => a.start - b.start);
       }
 
       async function loadFutureUpcomingEvents(calendar) {
         try {
           const rangeStart = startOfDay(new Date());
-          const rangeEnd = addDays(rangeStart, UPCOMING_EVENTS_LOOKAHEAD_DAYS);
+          const rangeEnd = addMonths(rangeStart, EVENT_STATUS_LOOKAHEAD_MONTHS);
           const response = await fetch(ICS_URL, { cache: "no-store" });
           if (!response.ok) throw new Error(`Family calendar feed ${response.status}`);
           const icsText = await response.text();
@@ -2556,11 +2573,13 @@ v1.17.0 traffic alerts update:
         if (!els.campList) return;
 
         const now = new Date();
+        const rangeStart = startOfDay(now);
+        const rangeEnd = addMonths(rangeStart, EVENT_STATUS_LOOKAHEAD_MONTHS);
         const visibleCampEvents = calendar.getEvents()
-          .filter(event => event.start && (event.end || event.start) >= now && isCampEvent(event))
+          .filter(event => isEventStatusEvent(event, rangeStart, rangeEnd))
           .sort((a, b) => a.start - b.start);
         const lookaheadCampEvents = futureUpcomingEvents
-          .filter(event => event.start && (event.end || event.start) >= now && isCampEvent(event));
+          .filter(event => isEventStatusEvent(event, rangeStart, rangeEnd));
         const campEvents = combineUpcomingEventSources(visibleCampEvents, lookaheadCampEvents);
         const campGroups = campGroupsFromEvents(campEvents);
 
@@ -2605,7 +2624,7 @@ v1.17.0 traffic alerts update:
             ${featuredDetail ? `<div class="camp-detail">${escapeHtml(featuredDetail)}</div>` : ""}
           </div>`);
 
-        if (activeGroup.key === "science-center") {
+        if (activeGroup.key.startsWith("science-center")) {
           renderScienceCenterHours();
           renderScienceCenterCampInfo();
         }
