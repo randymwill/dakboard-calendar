@@ -1,7 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.21
+Version: v1.18.22
+
+v1.18.22 multiline upcoming notes:
+- preserves line breaks inside Upcoming Events notes
 
 v1.18.21 Science Center camp cleanup:
 - stops showing movie/member hours on Science Center Day Camp
@@ -1275,6 +1278,7 @@ v1.17.0 traffic alerts update:
       font-size: 0.76em;
       font-weight: 780;
       line-height: 1.18;
+      white-space: pre-line;
     }
 
     .camp-note-time {
@@ -1499,7 +1503,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.21";
+      const APP_VERSION = "v1.18.22";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
