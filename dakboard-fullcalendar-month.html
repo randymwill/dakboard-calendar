@@ -1503,7 +1503,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.22";
+      const APP_VERSION = "v1.18.24";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1518,6 +1518,7 @@ v1.17.0 traffic alerts update:
       const HOME_LAT = 38.654398639984805;
       const HOME_LON = -90.45877499401288;
       const TRAFFIC_STATUS_URL = "https://traffic-watch.randywilliams-us.workers.dev/";
+      const FEED_CACHE_BUST_MINUTES = 15;
 
       const AUTO_REFRESH_MINUTES = 10;
       const WEATHER_REFRESH_MINUTES = 10;
@@ -1644,6 +1645,12 @@ v1.17.0 traffic alerts update:
         return dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       }
 
+      function cacheBustedUrl(url, bucketMinutes = FEED_CACHE_BUST_MINUTES) {
+        const sep = url.includes("?") ? "&" : "?";
+        const bucket = Math.floor(Date.now() / (bucketMinutes * 60 * 1000));
+        return `${url}${sep}v=${encodeURIComponent(APP_VERSION)}&t=${bucket}`;
+      }
+
       function escapeHtml(value) {
         return String(value ?? "")
           .replace(/&/g, "&amp;")
@@ -1655,13 +1662,13 @@ v1.17.0 traffic alerts update:
 
       function classifyEvent(title) {
         const t = title || "";
-        if (rules.randy.test(t)) return { category: "randy", icon: "" };
-        if (rules.leslie.test(t)) return { category: "leslie", icon: "" };
-        if (rules.maryJean.test(t)) return { category: "mary-jean", icon: "" };
         if (rules.basketball.test(t)) return { category: "sports", icon: "🏀", sport: "basketball" };
         if (rules.soccer.test(t)) {
           return { category: "sports", icon: rules.rainbowUnicorns.test(t) ? "🌈🦄⚽" : "⚽", sport: "soccer" };
         }
+        if (rules.randy.test(t)) return { category: "randy", icon: "" };
+        if (rules.leslie.test(t)) return { category: "leslie", icon: "" };
+        if (rules.maryJean.test(t)) return { category: "mary-jean", icon: "" };
         if (rules.school.test(t)) return { category: "school", icon: "🐎" };
         return { category: "other", icon: "" };
       }
@@ -2844,6 +2851,13 @@ v1.17.0 traffic alerts update:
           next.title = vettaTitle;
         }
 
+        const littleDribblersTitle = normalizeLittleDribblersTitle(next.title || "");
+        if (sourceKey === "williams" && littleDribblersTitle) {
+          next.extendedProps.rawTitle = next.extendedProps.rawTitle || next.title;
+          next.extendedProps.isLittleDribblers = true;
+          next.title = littleDribblersTitle;
+        }
+
         return next;
       }
 
@@ -2877,6 +2891,14 @@ v1.17.0 traffic alerts update:
         if (!opponent) return "";
 
         return `Rainbow Unicorns vs. ${opponent}`;
+      }
+
+      function normalizeLittleDribblersTitle(title) {
+        const text = cleanText(title);
+        if (!/^Little Dribblers Basketball\s*-\s*/i.test(text)) return "";
+        if (/skills training/i.test(text)) return "Little Dribblers Skills";
+        if (/\bgames?\b/i.test(text)) return "Little Dribblers Game";
+        return "Little Dribblers Basketball";
       }
 
       function extractSoccerTeamName(side) {
@@ -2934,7 +2956,7 @@ v1.17.0 traffic alerts update:
         if (!els.calendarUpdates) return;
 
         try {
-          const response = await fetch(WILLIAMS_ICS_URL, { cache: "no-store" });
+          const response = await fetch(cacheBustedUrl(WILLIAMS_ICS_URL), { cache: "no-store" });
           if (!response.ok) throw new Error(`Calendar HTTP ${response.status}`);
           const updates = calendarUpdatesFromIcs(await response.text());
           renderCalendarUpdates(updates);
@@ -3090,9 +3112,9 @@ v1.17.0 traffic alerts update:
           return { start, end: addDays(start, 28) };
         },
         eventSources: [
-          { url: ICS_URL, format: "ics", eventDataTransform: makeCalendarEventTransform("main") },
-          { url: WILLIAMS_ICS_URL, format: "ics", eventDataTransform: makeCalendarEventTransform("williams") },
-          { url: NOTES_ICS_URL, format: "ics", eventDataTransform: makeCalendarEventTransform("notes") }
+          { url: cacheBustedUrl(ICS_URL), format: "ics", eventDataTransform: makeCalendarEventTransform("main") },
+          { url: cacheBustedUrl(WILLIAMS_ICS_URL), format: "ics", eventDataTransform: makeCalendarEventTransform("williams") },
+          { url: cacheBustedUrl(NOTES_ICS_URL), format: "ics", eventDataTransform: makeCalendarEventTransform("notes") }
         ],
         dayCellDidMount(info) {
           const date = startOfDay(info.date);

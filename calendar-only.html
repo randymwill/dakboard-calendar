@@ -442,6 +442,7 @@ v1.19.0 phone calendar view:
       const WILLIAMS_ICS_URL = "https://randymwill.github.io/williams-family-calendar/calendar.ics";
       const NOTES_ICS_URL = "https://family-dashboard-notes-calendar.randywilliams-us.workers.dev/";
       const CALENDAR_MAX_SCROLL_WEEKS = 52;
+      const FEED_CACHE_BUST_MINUTES = 15;
 
       const els = {
         calendar: document.getElementById("calendar"),
@@ -505,15 +506,21 @@ v1.19.0 phone calendar view:
 
       function classifyEvent(title) {
         const t = title || "";
-        if (rules.randy.test(t)) return { category: "randy", icon: "" };
-        if (rules.leslie.test(t)) return { category: "leslie", icon: "" };
-        if (rules.maryJean.test(t)) return { category: "mary-jean", icon: "" };
         if (rules.basketball.test(t)) return { category: "sports", icon: "🏀", sport: "basketball" };
         if (rules.soccer.test(t)) {
           return { category: "sports", icon: rules.rainbowUnicorns.test(t) ? "🌈🦄⚽" : "⚽", sport: "soccer" };
         }
+        if (rules.randy.test(t)) return { category: "randy", icon: "" };
+        if (rules.leslie.test(t)) return { category: "leslie", icon: "" };
+        if (rules.maryJean.test(t)) return { category: "mary-jean", icon: "" };
         if (rules.school.test(t)) return { category: "school", icon: "🐎" };
         return { category: "other", icon: "" };
+      }
+
+      function cacheBustedUrl(url, bucketMinutes = FEED_CACHE_BUST_MINUTES) {
+        const sep = url.includes("?") ? "&" : "?";
+        const bucket = Math.floor(Date.now() / (bucketMinutes * 60 * 1000));
+        return `${url}${sep}t=${bucket}`;
       }
 
       function isCancelledEventData(eventData) {
@@ -523,6 +530,14 @@ v1.19.0 phone calendar view:
         return /^cancel(?:ed|led)\b/i.test(title) ||
           /^cancel(?:ed|led)$/i.test(status) ||
           /^cancel(?:ed|led)$/i.test(extendedStatus);
+      }
+
+      function normalizeLittleDribblersTitle(title) {
+        const text = cleanText(title);
+        if (!/^Little Dribblers Basketball\s*-\s*/i.test(text)) return "";
+        if (/skills training/i.test(text)) return "Little Dribblers Skills";
+        if (/\bgames?\b/i.test(text)) return "Little Dribblers Game";
+        return "Little Dribblers Basketball";
       }
 
       function calendarEventTransform(eventData) {
@@ -550,6 +565,13 @@ v1.19.0 phone calendar view:
           next.extendedProps.rawTitle = next.title;
           next.extendedProps.isVettaSports = true;
           next.title = vettaTitle;
+        }
+
+        const littleDribblersTitle = normalizeLittleDribblersTitle(next.title || "");
+        if (sourceKey === "williams" && littleDribblersTitle) {
+          next.extendedProps.rawTitle = next.extendedProps.rawTitle || next.title;
+          next.extendedProps.isLittleDribblers = true;
+          next.title = littleDribblersTitle;
         }
 
         return next;
@@ -767,9 +789,9 @@ v1.19.0 phone calendar view:
           return { start, end: addDays(start, visibleWeeks() * 7) };
         },
         eventSources: [
-          { url: ICS_URL, format: "ics", eventDataTransform: makeCalendarEventTransform("main") },
-          { url: WILLIAMS_ICS_URL, format: "ics", eventDataTransform: makeCalendarEventTransform("williams") },
-          { url: NOTES_ICS_URL, format: "ics", eventDataTransform: makeCalendarEventTransform("notes") }
+          { url: cacheBustedUrl(ICS_URL), format: "ics", eventDataTransform: makeCalendarEventTransform("main") },
+          { url: cacheBustedUrl(WILLIAMS_ICS_URL), format: "ics", eventDataTransform: makeCalendarEventTransform("williams") },
+          { url: cacheBustedUrl(NOTES_ICS_URL), format: "ics", eventDataTransform: makeCalendarEventTransform("notes") }
         ],
         eventClassNames(arg) {
           const classes = [`event-${classifyEvent(arg.event.title || "").category}`];
