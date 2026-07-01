@@ -540,6 +540,21 @@ v1.19.0 phone calendar view:
         return "Little Dribblers Basketball";
       }
 
+      function applyLittleDribblersTiming(next) {
+        const rawTitle = String(next && next.title || "");
+        const description = String(next && next.extendedProps && next.extendedProps.description || "");
+        if (!/Little Dribblers Basketball/i.test(rawTitle) || !/skills training/i.test(rawTitle) || !next.start) return;
+        if (!/7-8PM 2nd grade/i.test(description)) return;
+
+        const start = new Date(next.start);
+        start.setHours(19, 0, 0, 0);
+        const end = new Date(start);
+        end.setHours(20, 0, 0, 0);
+
+        next.start = start;
+        next.end = end;
+      }
+
       function calendarEventTransform(eventData) {
         return calendarEventTransformForSource(eventData, "main");
       }
@@ -571,6 +586,7 @@ v1.19.0 phone calendar view:
         if (sourceKey === "williams" && littleDribblersTitle) {
           next.extendedProps.rawTitle = next.extendedProps.rawTitle || next.title;
           next.extendedProps.isLittleDribblers = true;
+          applyLittleDribblersTiming(next);
           next.title = littleDribblersTitle;
         }
 

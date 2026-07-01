@@ -1503,7 +1503,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.24";
+      const APP_VERSION = "v1.18.25";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -2855,6 +2855,7 @@ v1.17.0 traffic alerts update:
         if (sourceKey === "williams" && littleDribblersTitle) {
           next.extendedProps.rawTitle = next.extendedProps.rawTitle || next.title;
           next.extendedProps.isLittleDribblers = true;
+          applyLittleDribblersTiming(next);
           next.title = littleDribblersTitle;
         }
 
@@ -2899,6 +2900,21 @@ v1.17.0 traffic alerts update:
         if (/skills training/i.test(text)) return "Little Dribblers Skills";
         if (/\bgames?\b/i.test(text)) return "Little Dribblers Game";
         return "Little Dribblers Basketball";
+      }
+
+      function applyLittleDribblersTiming(next) {
+        const rawTitle = String(next && next.title || "");
+        const description = String(next && next.extendedProps && next.extendedProps.description || "");
+        if (!/Little Dribblers Basketball/i.test(rawTitle) || !/skills training/i.test(rawTitle) || !next.start) return;
+        if (!/7-8PM 2nd grade/i.test(description)) return;
+
+        const start = new Date(next.start);
+        start.setHours(19, 0, 0, 0);
+        const end = new Date(start);
+        end.setHours(20, 0, 0, 0);
+
+        next.start = start;
+        next.end = end;
       }
 
       function extractSoccerTeamName(side) {
