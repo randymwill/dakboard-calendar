@@ -1,7 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.23
+Version: v1.18.29
+
+v1.18.29 upcoming image preview:
+- loads the first generated Upcoming Events image into the dashboard panel
+- keeps the simplified image-only panel for previewing artwork
 
 v1.18.23 tv calendar density rebalance:
 - tightens event chip sizing so the 4-week TV view stays closer to the previous layout
@@ -1146,189 +1150,50 @@ v1.17.0 traffic alerts update:
       background: linear-gradient(90deg, #22c55e, #facc15, #ef4444);
     }
 
-    .camp-tabs {
-      display: flex;
-      gap: 6px;
-      min-height: 38px;
+    .upcoming-image-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      position: relative;
       overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.045);
-    }
-
-    .camp-tabs:empty {
-      display: none;
-    }
-
-    .camp-tab {
-      flex: 1 1 0;
-      min-width: 0;
-      padding: 9px 8px;
-      border: 0;
-      border-radius: 6px;
-      background: transparent;
-      color: rgba(255,255,255,0.68);
-      font: inherit;
-      font-size: 0.76em;
-      font-weight: 900;
-      letter-spacing: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      cursor: pointer;
-    }
-
-    .camp-tab.active {
-      background: linear-gradient(180deg, rgba(125,211,252,0.24), rgba(56,189,248,0.13));
-      color: rgba(255,255,255,0.96);
-      box-shadow: inset 0 -2px 0 rgba(125,211,252,0.86);
-    }
-
-    .camp-summary {
-      padding: 10px 11px;
-      border: 1px solid rgba(125,211,252,0.16);
-      border-radius: 8px;
-      background: rgba(0,0,0,0.14);
-    }
-
-    .camp-name {
-      color: rgba(255,255,255,0.96);
-      font-size: 1.05em;
-      font-weight: 950;
-      line-height: 1.1;
-    }
-
-    .camp-date-range {
-      margin-top: 4px;
-      color: rgba(255,255,255,0.68);
-      font-size: 0.78em;
-      font-weight: 820;
-    }
-
-    .camp-summary .camp-detail {
-      margin-top: 7px;
-      color: rgba(255,255,255,0.74);
-      font-size: 0.78em;
-      font-weight: 760;
-      line-height: 1.2;
-    }
-
-    .camp-info-card {
-      display: grid;
-      gap: 7px;
-      padding: 10px 11px;
-      border: 1px solid rgba(45,212,191,0.26);
-      border-radius: 8px;
-      background: linear-gradient(180deg, rgba(20,184,166,0.16), rgba(15,118,110,0.10));
-    }
-
-    .camp-info-title {
-      color: rgba(255,255,255,0.96);
-      font-size: 0.92em;
-      font-weight: 950;
-      line-height: 1.1;
-    }
-
-    .camp-info-list {
-      display: grid;
-      gap: 5px;
-    }
-
-    .camp-info-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      align-items: center;
-      min-width: 0;
-      color: rgba(255,255,255,0.78);
-      font-size: 0.74em;
-      font-weight: 800;
-      line-height: 1.14;
-    }
-
-    .camp-info-row span:first-child {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .camp-info-pill {
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(8,47,73,0.72);
-      color: rgba(255,255,255,0.90);
-      font-size: 0.90em;
-      white-space: nowrap;
-    }
-
-    .camp-info-note {
-      margin-top: -2px;
-      color: rgba(255,255,255,0.58);
-      font-size: 0.68em;
-      font-weight: 740;
-      line-height: 1.15;
-    }
-
-    .camp-notes-card {
-      display: grid;
-      gap: 7px;
-      padding: 10px 11px;
-      border: 1px solid rgba(236,72,153,0.28);
-      border-radius: 8px;
-      background: linear-gradient(180deg, rgba(236,72,153,0.14), rgba(14,22,36,0.22));
-    }
-
-    .camp-notes-title {
-      color: rgba(255,255,255,0.96);
-      font-size: 0.9em;
-      font-weight: 950;
-      line-height: 1.1;
-    }
-
-    .camp-note {
-      color: rgba(255,255,255,0.80);
-      font-size: 0.76em;
-      font-weight: 780;
-      line-height: 1.18;
-      white-space: pre-line;
-    }
-
-    .camp-note-time {
-      margin-top: 2px;
-      color: rgba(255,255,255,0.50);
-      font-size: 0.84em;
-      font-weight: 740;
-    }
-
-    .camp-hours-card {
-      display: grid;
-      gap: 6px;
-      padding: 10px 11px;
       border: 1px solid rgba(125,211,252,0.18);
       border-radius: 8px;
-      background: rgba(255,255,255,0.045);
+      background:
+        radial-gradient(125% 135% at 0% 0%, rgba(34,211,238,0.10), transparent 46%),
+        linear-gradient(180deg, rgba(8,21,36,0.92), rgba(5,13,24,0.96));
     }
 
-    .camp-hours-title {
-      color: rgba(255,255,255,0.92);
-      font-size: 0.88em;
-      font-weight: 950;
+    .upcoming-image-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), transparent 34%);
     }
 
-    .camp-hours-row {
+    .upcoming-image-wrap > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .upcoming-image {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .upcoming-image-placeholder {
+      position: absolute;
+      inset: 0;
       display: grid;
-      grid-template-columns: 88px 1fr;
-      gap: 8px;
-      color: rgba(255,255,255,0.76);
-      font-size: 0.75em;
-      font-weight: 820;
-      line-height: 1.12;
-    }
-
-    .camp-hours-row span:last-child {
-      color: rgba(255,255,255,0.90);
-      text-align: right;
+      place-items: center;
+      padding: 24px;
+      color: rgba(255,255,255,0.48);
+      font-size: 0.86em;
+      font-weight: 760;
+      text-align: center;
+      line-height: 1.35;
     }
 
     .mini-list {
@@ -1476,14 +1341,14 @@ v1.17.0 traffic alerts update:
       </section>
 
       <div id="center-stack">
-        <section class="bottom-panel" id="camp-panel" aria-label="Mary-Jean camp schedule">
+        <section class="bottom-panel" id="camp-panel" aria-label="Upcoming image panel">
           <div class="panel-head">
             <div class="panel-title">Upcoming Events</div>
-            <div class="panel-chip" id="camp-count">Loading</div>
+            <div class="panel-chip" id="camp-count">Image</div>
           </div>
-          <div class="camp-tabs" id="camp-tabs" role="tablist" aria-label="Camp list"></div>
-          <div class="mini-list" id="camp-list">
-            <div class="load-note">Looking for upcoming camp details…</div>
+          <div class="upcoming-image-wrap" id="camp-list">
+            <img class="upcoming-image" id="upcoming-image" alt="" hidden />
+            <div class="upcoming-image-placeholder" id="upcoming-image-placeholder">Generated image goes here</div>
           </div>
         </section>
 
@@ -1516,7 +1381,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.26";
+      const APP_VERSION = "v1.18.29";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1527,6 +1392,7 @@ v1.17.0 traffic alerts update:
       const WILLIAMS_ICS_URL = "https://randymwill.github.io/williams-family-calendar/calendar.ics";
       const NOTES_ICS_URL = "https://family-dashboard-notes-calendar.randywilliams-us.workers.dev/";
       const UPCOMING_NOTES_URL = "https://script.google.com/macros/s/AKfycbySI44rTuR1AqJNblZE4mQZP8EWgmmBfjNJPnS-6UymSvmJmBJygmmaKVjIlvXmVl97/exec";
+      const UPCOMING_IMAGE_SRC = "assets/upcoming-events-v1.png";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
       const HOME_LAT = 38.654398639984805;
       const HOME_LON = -90.45877499401288;
@@ -1558,8 +1424,9 @@ v1.17.0 traffic alerts update:
         calendarWeekNext: document.getElementById("calendar-week-next"),
         calendarUpdates: document.getElementById("calendar-updates"),
         campList: document.getElementById("camp-list"),
-        campTabs: document.getElementById("camp-tabs"),
         campCount: document.getElementById("camp-count"),
+        upcomingImage: document.getElementById("upcoming-image"),
+        upcomingImagePlaceholder: document.getElementById("upcoming-image-placeholder"),
         trafficUpdated: document.getElementById("traffic-updated"),
         trafficStatusCard: document.getElementById("traffic-status-card"),
         trafficLevel: document.getElementById("traffic-level"),
@@ -1568,7 +1435,6 @@ v1.17.0 traffic alerts update:
         trafficSegments: document.getElementById("traffic-segments")
       };
 
-      let activeCampKey = "";
       let calendarWeekControls = null;
       let upcomingEventNotes = {};
       let futureUpcomingEvents = [];
@@ -2499,66 +2365,6 @@ v1.17.0 traffic alerts update:
         }
       }
 
-      function renderScienceCenterCampInfo() {
-        const perks = [
-          "Free OMNIMAX Theater Tickets",
-          "Free Planetarium Star Show Tickets",
-          "Free Discovery Room Tickets",
-          "Discounted Special Exhibition Tickets",
-          "Discounted feature-length film tickets"
-        ];
-
-        els.campList.insertAdjacentHTML("beforeend", `
-          <div class="camp-info-card">
-            <div class="camp-info-title">Family &amp; Friends membership</div>
-            <div class="camp-info-list">
-              ${perks.map(perk => `
-                <div class="camp-info-row">
-                  <span>${escapeHtml(perk)}</span>
-                  <span class="camp-info-pill">6 per visit</span>
-                </div>
-                ${perk === "Free OMNIMAX Theater Tickets" ? '<div class="camp-info-note">Does not apply to feature-length films</div>' : ''}`).join("")}
-            </div>
-          </div>`);
-      }
-
-      function renderScienceCenterHours() {
-        const hours = [
-          ["Sunday", "11:00 AM - 4:30 PM"],
-          ["Monday", "9:30 AM - 4:30 PM"],
-          ["Tuesday", "Closed"],
-          ["Wednesday", "Closed"],
-          ["Thursday", "9:30 AM - 4:30 PM"],
-          ["Friday", "9:30 AM - 4:30 PM"],
-          ["Saturday", "9:30 AM - 4:30 PM"]
-        ];
-
-        els.campList.insertAdjacentHTML("beforeend", `
-          <div class="camp-hours-card">
-            <div class="camp-hours-title">Science Center Hours</div>
-            ${hours.map(([day, time]) => `
-              <div class="camp-hours-row">
-                <span>${escapeHtml(day)}</span>
-                <span>${escapeHtml(time)}</span>
-              </div>`).join("")}
-          </div>`);
-      }
-
-      function renderUpcomingEventNotes(group) {
-        const notes = upcomingNotesForGroup(group);
-        if (!notes.length) return;
-
-        els.campList.insertAdjacentHTML("beforeend", `
-          <div class="camp-notes-card">
-            <div class="camp-notes-title">Notes</div>
-            ${notes.map(note => `
-              <div class="camp-note">
-                ${escapeHtml(note.text || "")}
-                ${note.createdAt ? `<div class="camp-note-time">${escapeHtml(formatNoteTime(note.createdAt))}</div>` : ""}
-              </div>`).join("")}
-          </div>`);
-      }
-
       function formatNoteTime(value) {
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return "";
@@ -2610,77 +2416,19 @@ v1.17.0 traffic alerts update:
 
       function renderCampPanel(calendar) {
         if (!els.campList) return;
-
-        const now = new Date();
-        const rangeStart = startOfDay(now);
-        const rangeEnd = addMonths(rangeStart, EVENT_STATUS_LOOKAHEAD_MONTHS);
-        const visibleCampEvents = calendar.getEvents()
-          .filter(event => isEventStatusEvent(event, rangeStart, rangeEnd))
-          .sort((a, b) => a.start - b.start);
-        const lookaheadCampEvents = futureUpcomingEvents
-          .filter(event => isEventStatusEvent(event, rangeStart, rangeEnd));
-        const campEvents = combineUpcomingEventSources(visibleCampEvents, lookaheadCampEvents);
-        const campGroups = campGroupsFromEvents(campEvents);
-
-        if (els.campCount) {
-          els.campCount.textContent = campGroups.length
-            ? `${campGroups.length} ${campGroups.length === 1 ? "event" : "events"}`
-            : "No upcoming";
+        const imageSrc = UPCOMING_IMAGE_SRC ? cacheBustedUrl(UPCOMING_IMAGE_SRC, 60 * 24) : "";
+        if (els.campCount) els.campCount.textContent = imageSrc ? "Live" : "Image";
+        if (els.upcomingImage) {
+          if (imageSrc) {
+            els.upcomingImage.src = imageSrc;
+            els.upcomingImage.hidden = false;
+          } else {
+            els.upcomingImage.hidden = true;
+            els.upcomingImage.removeAttribute("src");
+          }
         }
-
-        if (els.campTabs) els.campTabs.innerHTML = "";
-        els.campList.innerHTML = "";
-        if (!campGroups.length) {
-          els.campList.innerHTML = `
-            <div class="mini-item">
-              <div class="mini-date">Events</div>
-              <div>
-                <div class="mini-title">No upcoming events found</div>
-                <div class="mini-detail">Upcoming events will appear here when they are in the calendar feed.</div>
-              </div>
-            </div>`;
-          return;
-        }
-
-        if (!activeCampKey || !campGroups.some(group => group.key === activeCampKey)) {
-          activeCampKey = campGroups[0].key;
-        }
-
-        for (const group of campGroups) {
-          if (!els.campTabs) continue;
-          els.campTabs.insertAdjacentHTML("beforeend", `
-            <button class="camp-tab ${group.key === activeCampKey ? "active" : ""}" type="button" role="tab" aria-selected="${group.key === activeCampKey ? "true" : "false"}" data-camp-key="${escapeHtml(group.key)}" title="${escapeHtml(group.name)}">
-              ${escapeHtml(group.name)}
-            </button>`);
-        }
-
-        const activeGroup = campGroups.find(group => group.key === activeCampKey) || campGroups[0];
-        const featuredDetail = campGroupDetailText(activeGroup);
-        els.campList.insertAdjacentHTML("beforeend", `
-          <div class="camp-summary">
-            <div class="camp-name">${escapeHtml(activeGroup.name)}</div>
-            <div class="camp-date-range">${escapeHtml(campDateRange(activeGroup.events))}</div>
-            ${featuredDetail ? `<div class="camp-detail">${escapeHtml(featuredDetail)}</div>` : ""}
-          </div>`);
-
-        if (activeGroup.key === "science-center") {
-          renderScienceCenterHours();
-          renderScienceCenterCampInfo();
-        }
-
-        renderUpcomingEventNotes(activeGroup);
-
-        for (const event of activeGroup.events.filter(event => !isDuplicateCampRow(event, activeGroup)).slice(0, 5)) {
-          const dateLabel = campDateLabel(event);
-          const detail = eventDetailText(event) || "Details in calendar";
-          els.campList.insertAdjacentHTML("beforeend", `
-            <div class="mini-item">
-              <div class="mini-date">${escapeHtml(dateLabel)}</div>
-              <div>
-                <div class="mini-title">${escapeHtml(event.title)}</div>
-                <div class="mini-detail">${escapeHtml(detail)}</div>
-              </div>
-            </div>`);
+        if (els.upcomingImagePlaceholder) {
+          els.upcomingImagePlaceholder.hidden = Boolean(imageSrc);
         }
       }
 
@@ -3190,15 +2938,6 @@ v1.17.0 traffic alerts update:
           scheduleMealsLock();
         }
       });
-
-      if (els.campTabs) {
-        els.campTabs.addEventListener("click", event => {
-          const tab = event.target.closest(".camp-tab");
-          if (!tab || !tab.dataset.campKey) return;
-          activeCampKey = tab.dataset.campKey;
-          renderCampPanel(calendar);
-        });
-      }
 
       installCalendarWeekControls(calendar);
       calendar.render();
