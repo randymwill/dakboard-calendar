@@ -1,11 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.30
+Version: v1.18.31
 
-v1.18.30 upcoming image fit:
-- removes the Upcoming Events header row so the artwork gets the full panel height
-- switches the artwork to fit within the full panel instead of cropping
+v1.18.31 upcoming image full panel:
+- removes all remaining image-panel padding so the artwork gets the former header space too
+- preserves the whole square artwork for an honest scale preview in the wide dashboard slot
 
 v1.18.23 tv calendar density rebalance:
 - tightens event chip sizing so the 4-week TV view stays closer to the previous layout
@@ -1075,8 +1075,7 @@ v1.17.0 traffic alerts update:
       font-weight: 720;
     }
 
-    #traffic-alert-panel,
-    #camp-panel {
+    #traffic-alert-panel {
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -1084,6 +1083,14 @@ v1.17.0 traffic alerts update:
       background:
         radial-gradient(105% 90% at 18% 0%, rgba(34,211,238,0.16), transparent 58%),
         linear-gradient(180deg, rgba(13,26,43,0.96), rgba(7,16,28,0.97));
+    }
+
+    #camp-panel {
+      padding: 0;
+      display: flex;
+      min-width: 0;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(13,26,43,0.96), rgba(7,16,28,0.97));
     }
 
     .panel-head {
@@ -1152,11 +1159,12 @@ v1.17.0 traffic alerts update:
 
     .upcoming-image-wrap {
       flex: 1 1 auto;
+      width: 100%;
       min-height: 0;
       position: relative;
       overflow: hidden;
-      border: 1px solid rgba(125,211,252,0.18);
-      border-radius: 8px;
+      border: 0;
+      border-radius: 6px;
       background:
         radial-gradient(125% 135% at 0% 0%, rgba(34,211,238,0.10), transparent 46%),
         linear-gradient(180deg, rgba(8,21,36,0.92), rgba(5,13,24,0.96));
@@ -1377,7 +1385,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.30";
+      const APP_VERSION = "v1.18.31";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
