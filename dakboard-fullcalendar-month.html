@@ -1,11 +1,11 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.29
+Version: v1.18.30
 
-v1.18.29 upcoming image preview:
-- loads the first generated Upcoming Events image into the dashboard panel
-- keeps the simplified image-only panel for previewing artwork
+v1.18.30 upcoming image fit:
+- removes the Upcoming Events header row so the artwork gets the full panel height
+- switches the artwork to fit within the full panel instead of cropping
 
 v1.18.23 tv calendar density rebalance:
 - tightens event chip sizing so the 4-week TV view stays closer to the previous layout
@@ -1179,7 +1179,7 @@ v1.17.0 traffic alerts update:
       width: 100%;
       height: 100%;
       display: block;
-      object-fit: cover;
+      object-fit: contain;
       object-position: center;
     }
 
@@ -1342,10 +1342,6 @@ v1.17.0 traffic alerts update:
 
       <div id="center-stack">
         <section class="bottom-panel" id="camp-panel" aria-label="Upcoming image panel">
-          <div class="panel-head">
-            <div class="panel-title">Upcoming Events</div>
-            <div class="panel-chip" id="camp-count">Image</div>
-          </div>
           <div class="upcoming-image-wrap" id="camp-list">
             <img class="upcoming-image" id="upcoming-image" alt="" hidden />
             <div class="upcoming-image-placeholder" id="upcoming-image-placeholder">Generated image goes here</div>
@@ -1381,7 +1377,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.29";
+      const APP_VERSION = "v1.18.30";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = true;
@@ -1424,7 +1420,6 @@ v1.17.0 traffic alerts update:
         calendarWeekNext: document.getElementById("calendar-week-next"),
         calendarUpdates: document.getElementById("calendar-updates"),
         campList: document.getElementById("camp-list"),
-        campCount: document.getElementById("camp-count"),
         upcomingImage: document.getElementById("upcoming-image"),
         upcomingImagePlaceholder: document.getElementById("upcoming-image-placeholder"),
         trafficUpdated: document.getElementById("traffic-updated"),
@@ -2417,7 +2412,6 @@ v1.17.0 traffic alerts update:
       function renderCampPanel(calendar) {
         if (!els.campList) return;
         const imageSrc = UPCOMING_IMAGE_SRC ? cacheBustedUrl(UPCOMING_IMAGE_SRC, 60 * 24) : "";
-        if (els.campCount) els.campCount.textContent = imageSrc ? "Live" : "Image";
         if (els.upcomingImage) {
           if (imageSrc) {
             els.upcomingImage.src = imageSrc;
