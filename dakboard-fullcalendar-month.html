@@ -1,10 +1,10 @@
 <!doctype html>
 <!--
 DAKboard Family Dashboard
-Version: v1.18.32
+Version: v1.18.33
 
-v1.18.32 Mary-Jean sports artwork:
-- replaces the square preview artwork with a wide sports schedule graphic sized for the dashboard panel
+v1.18.33 calendar game badges:
+- removes the in-calendar "Game in X days" countdown badges while keeping game events and sidebar details
 
 v1.18.23 tv calendar density rebalance:
 - tightens event chip sizing so the 4-week TV view stays closer to the previous layout
@@ -1384,10 +1384,10 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.32";
+      const APP_VERSION = "v1.18.33";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
-      const ENABLE_GAME_COUNTDOWN_CHIPS = true;
+      const ENABLE_GAME_COUNTDOWN_CHIPS = false;
       const LOWER_STRIP_MODE = "meals"; // options: "notes", "meals", "hidden"
       const AUTO_HIDE_MEALS_FOOTER = false;
 
