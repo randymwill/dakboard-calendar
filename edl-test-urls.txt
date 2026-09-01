@@ -1,0 +1,10 @@
+yahoo.com
+bbc.com
+example.com
+www.example.com/path
+wikipedia.org
+cnn.com
+weather.com
+nytimes.com
+reddit.com
+github.com
