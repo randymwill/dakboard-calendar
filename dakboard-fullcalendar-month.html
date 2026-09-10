@@ -1384,7 +1384,7 @@ v1.17.0 traffic alerts update:
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const APP_VERSION = "v1.18.33";
+      const APP_VERSION = "v1.18.34";
       const ENABLE_HOLIDAY_MODE = false;
       const ENABLE_MAJOR_DATE_COUNTDOWN = true;
       const ENABLE_GAME_COUNTDOWN_CHIPS = false;
@@ -1397,6 +1397,11 @@ v1.17.0 traffic alerts update:
       const UPCOMING_NOTES_URL = "https://script.google.com/macros/s/AKfycbySI44rTuR1AqJNblZE4mQZP8EWgmmBfjNJPnS-6UymSvmJmBJygmmaKVjIlvXmVl97/exec";
       const UPCOMING_IMAGE_SRC = "assets/mary-jean-sports-v2.png";
       const MENU_URL = "https://cool-lake-2804.randywilliams-us.workers.dev/";
+      const SCHOOL_MENU_API_URL = "https://api.schoolnutritionandfitness.com/graphql";
+      const SCHOOL_MENU_IDS = {
+        breakfast: "6a8774bad279fd706c4bbd61",
+        lunch: "6a919e973a1c5d484749d42a"
+      };
       const HOME_LAT = 38.654398639984805;
       const HOME_LON = -90.45877499401288;
       const TRAFFIC_STATUS_URL = "https://traffic-watch.randywilliams-us.workers.dev/";
@@ -1822,6 +1827,129 @@ v1.17.0 traffic alerts update:
         return { items, sides };
       }
 
+      function emptyMealsByDate() {
+        return {};
+      }
+
+      function mealInfoForDate(mealsByDate, key) {
+        if (!mealsByDate[key]) {
+          mealsByDate[key] = { breakfastItems: [], lunchEntrees: [], lunchSides: "" };
+        }
+        return mealsByDate[key];
+      }
+
+      function mealsFromLegacyEvents(events) {
+        const byDate = emptyMealsByDate();
+
+        for (const event of events) {
+          const key = menuDateKey(event && event.start);
+          const meal = event && event.extendedProps && event.extendedProps.meal;
+          if (!key || (meal !== "breakfast" && meal !== "lunch")) continue;
+
+          const parsed = parseMenuTitleParts(event.title);
+          const info = mealInfoForDate(byDate, key);
+          if (meal === "breakfast") {
+            info.breakfastItems = parsed.items.slice(0, BREAKFAST_MAX_ITEMS);
+          } else {
+            info.lunchEntrees = parsed.items.slice(0, LUNCH_MAX_ENTREES);
+            info.lunchSides = parsed.sides || "";
+          }
+        }
+
+        return byDate;
+      }
+
+      async function fetchSchoolMenu(menuId) {
+        const query = `{
+          menu(id: "${menuId}") {
+            id
+            month
+            year
+            nextMonthPublished { id }
+            items {
+              day
+              hidden
+              product { name category }
+            }
+          }
+        }`;
+        const response = await fetch(SCHOOL_MENU_API_URL, {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query })
+        });
+        if (!response.ok) throw new Error(`School menus HTTP ${response.status}`);
+        const payload = await response.json();
+        if (payload.errors && payload.errors.length) throw new Error(payload.errors[0].message || "School menu query failed");
+        if (!payload.data || !payload.data.menu) throw new Error("School menu response was empty");
+        return payload.data.menu;
+      }
+
+      async function fetchSchoolMenuForMonth(menuId, year, month) {
+        let currentId = menuId;
+        for (let attempt = 0; attempt < 3 && currentId; attempt++) {
+          const menu = await fetchSchoolMenu(currentId);
+          if (menu.year === year && menu.month === month) return menu;
+
+          const menuBeforeTarget = menu.year < year || (menu.year === year && menu.month < month);
+          currentId = menuBeforeTarget && menu.nextMonthPublished ? menu.nextMonthPublished.id : "";
+        }
+        return null;
+      }
+
+      function visibleMenuItemsForDay(menu, day) {
+        return (menu && menu.items ? menu.items : [])
+          .filter(item => item && item.day === day && !item.hidden && item.product && item.product.name)
+          .map(item => ({
+            name: String(item.product.name).trim(),
+            category: String(item.product.category || "").trim().toLowerCase()
+          }));
+      }
+
+      async function mealsFromSchoolMenu(weekStart) {
+        const menuCache = new Map();
+        const getMenu = (meal, date) => {
+          const cacheKey = `${meal}-${date.getFullYear()}-${date.getMonth()}`;
+          if (!menuCache.has(cacheKey)) {
+            menuCache.set(cacheKey, fetchSchoolMenuForMonth(
+              SCHOOL_MENU_IDS[meal],
+              date.getFullYear(),
+              date.getMonth()
+            ));
+          }
+          return menuCache.get(cacheKey);
+        };
+
+        const byDate = emptyMealsByDate();
+        for (let i = 0; i < 7; i++) {
+          const date = addDays(weekStart, i);
+          const key = toYYYYMMDD(date);
+          const [breakfastMenu, lunchMenu] = await Promise.all([
+            getMenu("breakfast", date),
+            getMenu("lunch", date)
+          ]);
+          const breakfast = visibleMenuItemsForDay(breakfastMenu, date.getDate());
+          const lunch = visibleMenuItemsForDay(lunchMenu, date.getDate());
+          const info = mealInfoForDate(byDate, key);
+
+          info.breakfastItems = breakfast
+            .filter(item => item.category === "entrees")
+            .map(item => item.name)
+            .slice(0, BREAKFAST_MAX_ITEMS);
+          info.lunchEntrees = lunch
+            .filter(item => item.category === "entrees")
+            .map(item => item.name)
+            .slice(0, LUNCH_MAX_ENTREES);
+          info.lunchSides = lunch
+            .filter(item => !["entrees", "milk", "condiment"].includes(item.category))
+            .map(item => item.name)
+            .slice(0, 3)
+            .join(" / ");
+        }
+        return byDate;
+      }
+
       function shouldShowMealsFooter(mealsByDate) {
         if (!AUTO_HIDE_MEALS_FOOTER) return true;
         return Object.values(mealsByDate || {}).some(info => {
@@ -1957,27 +2085,17 @@ v1.17.0 traffic alerts update:
         if (LOWER_STRIP_MODE !== "meals") return;
         const weekStart = startOfCurrentWeekSunday(new Date());
         const weekEnd = addDays(weekStart, 7);
-        const url = `${MENU_URL}?start=${encodeURIComponent(toYYYYMMDD(weekStart))}&end=${encodeURIComponent(toYYYYMMDD(weekEnd))}`;
-        const response = await fetch(url, { cache: "no-store" });
-        if (!response.ok) throw new Error(`Meals HTTP ${response.status}`);
-        const data = await response.json();
-        if (!Array.isArray(data)) throw new Error("Meals feed did not return an array");
-
-        const byDate = {};
-        for (const event of data) {
-          const key = menuDateKey(event && event.start);
-          const meal = event && event.extendedProps && event.extendedProps.meal;
-          if (!key || (meal !== "breakfast" && meal !== "lunch")) continue;
-
-          const parsed = parseMenuTitleParts(event.title);
-          if (!byDate[key]) byDate[key] = { breakfastItems: [], lunchEntrees: [], lunchSides: "" };
-
-          if (meal === "breakfast") {
-            byDate[key].breakfastItems = parsed.items.slice(0, BREAKFAST_MAX_ITEMS);
-          } else {
-            byDate[key].lunchEntrees = parsed.items.slice(0, LUNCH_MAX_ENTREES);
-            byDate[key].lunchSides = parsed.sides || "";
-          }
+        let byDate;
+        try {
+          byDate = await mealsFromSchoolMenu(weekStart);
+        } catch (schoolMenuError) {
+          console.warn("School menu API error; using legacy menu worker:", schoolMenuError);
+          const url = `${MENU_URL}?start=${encodeURIComponent(toYYYYMMDD(weekStart))}&end=${encodeURIComponent(toYYYYMMDD(weekEnd))}`;
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Meals HTTP ${response.status}`);
+          const data = await response.json();
+          if (!Array.isArray(data)) throw new Error("Meals feed did not return an array");
+          byDate = mealsFromLegacyEvents(data);
         }
 
         setMealsFooterVisible(shouldShowMealsFooter(byDate));
