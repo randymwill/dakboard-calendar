@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Williams Family Classic Week Preview</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 960px; min-height: 540px; overflow: hidden; background: #04111d; color: #eff7ff; font-family: Arial, Helvetica, sans-serif; }
+    .dashboard { height: 100vh; padding: 1.05vh 1.15vw; display: grid; grid-template-rows: 5.4vh 14.6vh minmax(0, 1fr) 22vh; gap: .85vh; background: #061827; }
+    .surface { background: #0b1d2e; border: 1px solid #2b485d; border-radius: 6px; overflow: hidden; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 0 1.1vw; }
+    .brand { font-size: clamp(17px, 1.38vw, 27px); font-weight: 700; }
+    .brand span { margin-left: .55vw; color: #99b3c8; font-size: .54em; font-weight: 500; }
+    .pages { display: flex; gap: .35vw; font-size: clamp(11px, .8vw, 16px); }
+    .pages b, .pages span { padding: .58vh .7vw; border-radius: 4px; }
+    .pages b { background: #1d5874; color: #fff; }
+    .pages span { color: #abc1d2; }
+    .weather { display: grid; grid-template-columns: 19% 1fr; }
+    .weather-now { display: flex; align-items: center; gap: 1vw; padding: 1.25vh 1.15vw; background: #164864; }
+    .weather-now i { width: clamp(32px, 3.1vw, 58px); height: clamp(32px, 3.1vw, 58px); color: #edf8ff; }
+    .weather-temp { font-size: clamp(32px, 3.8vw, 67px); line-height: .85; font-weight: 700; }
+    .weather-now strong { display: block; font-size: clamp(12px, 1vw, 19px); }
+    .weather-now small { color: #c2dce9; font-size: clamp(9px, .65vw, 13px); }
+    .hourly { display: grid; grid-template-columns: repeat(6, 1fr); }
+    .hour { min-width: 0; padding: 1.25vh .5vw .7vh; text-align: center; border-left: 1px solid #2c4d62; }
+    .hour time { display: block; color: #a2bbcd; font-size: clamp(10px, .68vw, 13px); }
+    .hour i { display: block; width: clamp(18px, 1.7vw, 31px); height: clamp(18px, 1.7vw, 31px); margin: .55vh auto; color: #92e2fc; }
+    .hour b { font-size: clamp(12px, 1vw, 19px); }
+    .week { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid #2b495e; border-left: 1px solid #2b495e; }
+    .day { min-width: 0; padding: .85vh .65vw; border-right: 1px solid #2b495e; background: #091a2a; }
+    .day.today { background: #10384d; box-shadow: inset 0 4px #6edffc; }
+    .day h2 { display: flex; justify-content: space-between; gap: .3vw; margin: 0 0 1.15vh; color: #c9d9e6; font-size: clamp(11px, .82vw, 16px); }
+    .day h2 span { color: #809db1; font-weight: 500; }
+    .event { margin-bottom: .65vh; padding: .55vh .4vw; border-left: 4px solid #54cdf0; background: #102b3e; color: #e4f4fc; font-size: clamp(10px, .72vw, 14px); line-height: 1.22; }
+    .event.pink { border-left-color: #f36dbb; background: #2d1c32; }
+    .event.green { border-left-color: #4cdb8d; background: #153226; }
+    .event b { display: block; font-size: .9em; }
+    .event small { color: #abc2d2; font-size: .85em; }
+    .footer { display: grid; grid-template-columns: 1.65fr .9fr; gap: .85vw; }
+    .meals-title, .forecast-title { padding: 1vh 1vw .6vh; }
+    .title { font-size: clamp(12px, .9vw, 17px); font-weight: 700; }
+    .caption { color: #9eb7c9; font-size: clamp(9px, .63vw, 12px); }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th { padding: .55vh .55vw; color: #a8c3d5; text-align: left; border-top: 1px solid #29495e; border-bottom: 1px solid #29495e; font-size: clamp(9px, .65vw, 13px); }
+    td { padding: .6vh .55vw; vertical-align: top; border-right: 1px solid #29495e; color: #dceaf3; font-size: clamp(9px, .67vw, 13px); line-height: 1.25; }
+    td:last-child { border-right: 0; }
+    td b { display: block; margin-bottom: .18vh; color: #8eb4cb; font-size: .9em; }
+    .right-column { display: grid; grid-template-rows: 1fr .64fr; gap: .85vh; }
+    .forecast { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid #29495e; }
+    .forecast-day { min-width: 0; padding: .75vh .3vw; text-align: center; border-right: 1px solid #29495e; }
+    .forecast-day:last-child { border-right: 0; }
+    .forecast-day time { display: block; color: #a7c0d0; font-size: clamp(8px, .57vw, 11px); }
+    .forecast-day i { display: block; width: clamp(15px, 1.35vw, 25px); height: clamp(15px, 1.35vw, 25px); margin: .45vh auto; color: #9ce5ff; }
+    .forecast-day b { font-size: clamp(10px, .72vw, 14px); }
+    .forecast-day small { display: block; color: #b2c8d7; font-size: clamp(7px, .52vw, 10px); }
+    .lawn { display: flex; align-items: center; gap: .7vw; padding: 1vh 1vw; background: #153c2a; border: 1px solid #2b5b42; border-radius: 6px; color: #d8f1e0; }
+    .lawn i { width: clamp(18px, 1.7vw, 30px); height: clamp(18px, 1.7vw, 30px); }
+    .lawn b { display: block; font-size: clamp(11px, .82vw, 15px); }
+    .lawn small { color: #b5dfc5; font-size: clamp(9px, .62vw, 12px); }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <header class="surface header">
+      <div class="brand">Williams Family <span>Monday, September 28</span></div>
+      <div class="pages"><b>Home board</b><span>Month view</span></div>
+    </header>
+
+    <section class="surface weather" aria-label="Current weather and hourly forecast">
+      <div class="weather-now"><i data-lucide="cloud-sun" aria-hidden="true"></i><div><div class="weather-temp">74&deg;</div><strong>Overcast</strong><small>Wind 5 mph &middot; Rain 23%</small></div></div>
+      <div class="hourly">
+        <div class="hour"><time>Now</time><i data-lucide="cloud-sun" aria-hidden="true"></i><b>74&deg;</b></div>
+        <div class="hour"><time>12 PM</time><i data-lucide="cloud" aria-hidden="true"></i><b>76&deg;</b></div>
+        <div class="hour"><time>3 PM</time><i data-lucide="cloud-sun" aria-hidden="true"></i><b>78&deg;</b></div>
+        <div class="hour"><time>6 PM</time><i data-lucide="cloud-sun" aria-hidden="true"></i><b>75&deg;</b></div>
+        <div class="hour"><time>9 PM</time><i data-lucide="moon" aria-hidden="true"></i><b>68&deg;</b></div>
+        <div class="hour"><time>12 AM</time><i data-lucide="moon" aria-hidden="true"></i><b>65&deg;</b></div>
+      </div>
+    </section>
+
+    <section class="surface week" aria-label="Next seven days">
+      <article class="day today"><h2>MON <span>28</span></h2><div class="event"><b>7:30 AM</b>Breakfast Club</div><div class="event"><b>5:00 PM</b>West Ham Practice<small>Soccer Park Road</small></div><div class="event pink"><b>6:00 PM</b>Knights Basketball</div></article>
+      <article class="day"><h2>TUE <span>29</span></h2><div class="event pink"><b>6:00 PM</b>CYC Soccer Practice</div></article>
+      <article class="day"><h2>WED <span>30</span></h2><div class="event"><b>5:00 PM</b>West Ham Practice</div></article>
+      <article class="day"><h2>THU <span>OCT 1</span></h2><div class="event green"><b>6:15 PM</b>Volleyball Practice</div></article>
+      <article class="day"><h2>FRI <span>2</span></h2><div class="event"><b>6:30 PM</b>West Ham Game</div></article>
+      <article class="day"><h2>SAT <span>3</span></h2><div class="event pink"><b>9:00 AM</b>Knights Basketball</div><div class="event green"><b>12:00 PM</b>CYC Soccer Game</div></article>
+      <article class="day"><h2>SUN <span>4</span></h2><div class="caption">Family day</div></article>
+    </section>
+
+    <footer class="footer">
+      <section class="surface">
+        <div class="meals-title"><div class="title">School meals this week</div><div class="caption">Breakfast and lunch, Monday through Friday</div></div>
+        <table aria-label="School meals for the current week"><thead><tr><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th></tr></thead><tbody><tr><td><b>Breakfast</b>Mini pancakes, fruit<br><b>Lunch</b>Chicken sandwich</td><td><b>Breakfast</b>Cereal, fruit<br><b>Lunch</b>Walking taco</td><td><b>Breakfast</b>Bagel, yogurt<br><b>Lunch</b>Pasta bake</td><td><b>Breakfast</b>French toast<br><b>Lunch</b>Chicken bowl</td><td><b>Breakfast</b>Muffin, fruit<br><b>Lunch</b>Pizza</td></tr></tbody></table>
+      </section>
+      <aside class="right-column">
+        <section class="surface"><div class="forecast-title"><div class="title">Week forecast</div></div><div class="forecast"><div class="forecast-day"><time>Tue</time><i data-lucide="cloud-sun"></i><b>78&deg;</b><small>Cloudy</small></div><div class="forecast-day"><time>Wed</time><i data-lucide="sun"></i><b>81&deg;</b><small>Sunny</small></div><div class="forecast-day"><time>Thu</time><i data-lucide="cloud-rain"></i><b>72&deg;</b><small>Rain</small></div><div class="forecast-day"><time>Fri</time><i data-lucide="cloud-sun"></i><b>76&deg;</b><small>Clearer</small></div><div class="forecast-day"><time>Sat</time><i data-lucide="wind"></i><b>69&deg;</b><small>Windy</small></div></div></section>
+        <section class="lawn"><i data-lucide="sprout" aria-hidden="true"></i><div><b>Lawn</b><small>Seed after Thursday rain passes.</small></div></section>
+      </aside>
+    </footer>
+  </div>
+  <script>lucide.createIcons({attrs:{'stroke-width':1.8}});</script>
+</body>
+</html>
