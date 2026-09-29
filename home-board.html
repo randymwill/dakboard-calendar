@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Williams Family Home Board</title>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+  <script src="https://unpkg.com/ical.js/dist/ical.es5.min.cjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.19/index.global.min.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; overflow: hidden; background: #06121f; color: #f4f8fb; font-family: Arial, Helvetica, sans-serif; }
+    .board { min-height: 100vh; padding: 1.25vw; display: grid; grid-template-rows: 8.5vh 18vh 1fr 20vh; gap: 1.05vw; background: linear-gradient(135deg, #071827, #081321); }
+    .surface { min-width: 0; overflow: hidden; border: 1px solid #375570; border-radius: 0.45vw; background: #0c2031; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 1.7vw; background: #102b40; }
+    .family { font-size: clamp(22px, 1.55vw, 60px); font-weight: 800; }
+    .today-date { margin-left: 0.7vw; color: #a8c4d7; font-size: clamp(14px, 0.85vw, 33px); font-weight: 500; }
+    .mode { padding: 0.55vw 0.9vw; border: 1px solid #397c9f; border-radius: 0.35vw; color: #9fe4ff; font-size: clamp(13px, 0.75vw, 29px); font-weight: 700; }
+    .weather { display: grid; grid-template-columns: 23% 1fr; }
+    .now { display: flex; align-items: center; gap: 1vw; padding: 1.35vw; background: #164e6b; }
+    .weather-icon { font-size: clamp(42px, 3.9vw, 150px); line-height: 1; }
+    .temperature { font-size: clamp(48px, 5vw, 195px); font-weight: 800; line-height: 0.85; }
+    .condition { margin-top: 0.35vw; font-size: clamp(17px, 1.05vw, 40px); font-weight: 700; }
+    .weather-meta { margin-top: 0.28vw; color: #c7e1ee; font-size: clamp(13px, 0.75vw, 29px); }
+    .hours { display: grid; grid-template-columns: repeat(6, 1fr); }
+    .hour { display: grid; place-items: center; align-content: center; gap: 0.25vw; border-left: 1px solid #3b5a70; text-align: center; }
+    .hour time { color: #b1cad9; font-size: clamp(14px, 0.75vw, 29px); font-weight: 700; }
+    .hour .symbol { font-size: clamp(25px, 2vw, 77px); line-height: 1; }
+    .hour b { font-size: clamp(20px, 1.25vw, 48px); }
+    .schedule { display: grid; grid-template-columns: 34% 1fr; gap: 1.05vw; min-height: 0; }
+    .today { padding: 1.45vw; background: linear-gradient(145deg, #102b40, #0b1b2a); }
+    .eyebrow { color: #89ddfa; font-size: clamp(14px, 0.76vw, 29px); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { margin: 0.2vw 0 1vw; font-size: clamp(40px, 3.1vw, 120px); line-height: 0.95; }
+    .today-events { height: calc(100% - 6vw); overflow: hidden; }
+    .today-event { display: grid; grid-template-columns: 23% 1fr; align-items: center; min-height: 24%; border-top: 1px solid #3a5870; }
+    .today-event:first-child { border-top: 0; }
+    .event-time { color: #7ee4ff; font-size: clamp(22px, 1.45vw, 56px); font-weight: 800; }
+    .event-name { font-size: clamp(20px, 1.2vw, 46px); font-weight: 800; line-height: 1.07; }
+    .event-place { margin-top: 0.3vw; color: #b9d0dd; font-size: clamp(14px, 0.77vw, 30px); }
+    .empty { color: #abc2d0; font-size: clamp(17px, 0.95vw, 36px); line-height: 1.3; }
+    .week { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 0.8vw; }
+    .day { position: relative; padding: 1.1vw; border: 1px solid #35546b; border-radius: 0.4vw; background: #0d2132; }
+    .day-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.6vw; border-bottom: 1px solid #35546b; }
+    .day-name { font-size: clamp(19px, 1.25vw, 48px); font-weight: 800; }
+    .day-weather { color: #bce8fa; font-size: clamp(15px, 0.85vw, 33px); font-weight: 700; }
+    .day-events { padding-top: 0.6vw; }
+    .day-event { margin-top: 0.45vw; font-size: clamp(15px, 0.87vw, 34px); font-weight: 700; line-height: 1.15; }
+    .day-event:first-child { margin-top: 0; }
+    .day-event time { display: inline-block; min-width: 3.5vw; color: #84e0fa; }
+    .day-event.sport { color: #ffaddd; }
+    .day-event.open { color: #a9c0cd; font-weight: 500; }
+    .more { color: #9bcce1; font-size: clamp(12px, 0.7vw, 27px); font-weight: 700; }
+    .meals { display: grid; grid-template-columns: 18% repeat(5, 1fr); }
+    .meal-intro { padding: 1.15vw 1.35vw; background: #15354c; }
+    .meal-intro h2 { font-size: clamp(19px, 1.2vw, 46px); line-height: 1.05; }
+    .meal-intro p { margin-top: 0.5vw; color: #c0d9e6; font-size: clamp(13px, 0.73vw, 28px); line-height: 1.22; }
+    .meal-day { padding: 1.05vw; border-left: 1px solid #35546b; }
+    .meal-day h3 { color: #9bdcf6; font-size: clamp(15px, 0.84vw, 32px); }
+    .meal { margin-top: 0.45vw; font-size: clamp(13px, 0.72vw, 28px); line-height: 1.2; }
+    .meal b { display: block; margin-bottom: 0.1vw; color: #93b5c8; font-size: 0.88em; letter-spacing: 0.05em; text-transform: uppercase; }
+    #calendar-source { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <main class="board">
+    <header class="surface topbar"><div class="family">Williams Family <span class="today-date" id="date-label">Loading...</span></div><div class="mode">Home Board</div></header>
+    <section class="surface weather" aria-label="Today's weather"><div class="now"><div class="weather-icon" id="weather-icon">&#9729;&#65039;</div><div><div class="temperature" id="weather-temp">--&deg;</div><div class="condition" id="weather-condition">Loading weather</div><div class="weather-meta" id="weather-meta">Saint Louis</div></div></div><div class="hours" id="hours"></div></section>
+    <section class="schedule"><section class="surface today"><div class="eyebrow">Today</div><h1 id="today-heading">Today</h1><div class="today-events" id="today-events"><div class="empty">Loading the family calendar...</div></div></section><section class="week" id="week" aria-label="Next six days"></section></section>
+    <section class="surface meals" aria-label="School meals this week"><div class="meal-intro"><h2>School Meals</h2><p>Breakfast and lunch<br>Monday through Friday</p></div><div class="meal-day"><h3>Monday</h3><div class="meal">Loading...</div></div><div class="meal-day"><h3>Tuesday</h3></div><div class="meal-day"><h3>Wednesday</h3></div><div class="meal-day"><h3>Thursday</h3></div><div class="meal-day"><h3>Friday</h3></div></section>
+  </main>
+  <div id="calendar-source" aria-hidden="true"></div>
+  <script>
+    (() => {
+      const APP_VERSION = "home-1";
+      const ICS_URL = "https://snowy-silence-6676.randywilliams-us.workers.dev/";
+      const WILLIAMS_ICS_URL = "https://randymwill.github.io/williams-family-calendar/calendar.ics";
+      const NOTES_ICS_URL = "https://family-dashboard-notes-calendar.randywilliams-us.workers.dev/";
+      const SCHOOL_MENU_API_URL = "https://api.schoolnutritionandfitness.com/graphql";
+      const SCHOOL_MENU_IDS = { breakfast: "6a8774bad279fd706c4bbd61", lunch: "6a919e973a1c5d484749d42a" };
+      const HOME_LAT = 38.654398639984805;
+      const HOME_LON = -90.45877499401288;
+      const REFRESH_MINUTES = 10;
+
+      const $ = id => document.getElementById(id);
+      const addDays = (date, days) => { const copy = new Date(date); copy.setDate(copy.getDate() + days); return copy; };
+      const startOfDay = date => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const dateKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const escapeHtml = value => String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      const cacheUrl = url => `${url}${url.includes("?") ? "&" : "?"}v=${APP_VERSION}&t=${Math.floor(Date.now() / 900000)}`;
+      const isSport = title => /soccer|basketball|bball|volleyball|west ham|mustang|knights|\bcyc\b/i.test(title || "");
+      const clean = value => String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+      const eventEnd = event => event.end || (event.allDay ? addDays(startOfDay(event.start), 1) : new Date(event.start.getTime() + 3600000));
+      const overlapsDay = (event, date) => event.start < addDays(startOfDay(date), 1) && eventEnd(event) > startOfDay(date);
+      const eventTime = event => event.allDay ? "All day" : event.start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(":00", "");
+      const eventDetail = event => clean(event.extendedProps && event.extendedProps.location) || (event.allDay ? "All day" : "Scheduled event");
+
+      function weatherEmoji(code, isDay = true) {
+        const c = Number(code);
+        if (c === 0) return isDay ? "☀️" : "🌙";
+        if ([1, 2].includes(c)) return isDay ? "🌤️" : "☁️";
+        if (c === 3) return "☁️";
+        if ([45, 48].includes(c)) return "🌫️";
+        if ([51, 53, 55, 56, 57].includes(c)) return "🌦️";
+        if ([61, 63, 65, 66, 67, 80, 81, 82].includes(c)) return "🌧️";
+        if ([71, 73, 75, 77, 85, 86].includes(c)) return "❄️";
+        if ([95, 96, 99].includes(c)) return "⛈️";
+        return "☁️";
+      }
+
+      function weatherText(code) {
+        return ({ 0: "Clear", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Fog", 51: "Light drizzle", 53: "Drizzle", 55: "Drizzle", 61: "Light rain", 63: "Rain", 65: "Heavy rain", 80: "Rain showers", 81: "Rain showers", 82: "Heavy showers", 95: "Thunderstorm" })[Number(code)] || "Weather";
+      }
+
+      async function loadWeather() {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${HOME_LAT}&longitude=${HOME_LON}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto&forecast_days=8`;
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) throw new Error("Weather unavailable");
+          renderWeather(await response.json());
+        } catch (error) { $("weather-condition").textContent = "Weather unavailable"; }
+      }
+
+      function renderWeather(data) {
+        const current = data.current || {};
+        const daily = data.daily || {};
+        $("weather-temp").textContent = Number.isFinite(current.temperature_2m) ? `${Math.round(current.temperature_2m)}°` : "--°";
+        $("weather-icon").textContent = weatherEmoji(current.weather_code, current.is_day !== 0);
+        $("weather-condition").textContent = weatherText(current.weather_code);
+        $("weather-meta").textContent = `Feels ${Math.round(current.apparent_temperature || current.temperature_2m || 0)}° · Wind ${Math.round(current.wind_speed_10m || 0)} mph`;
+        const times = data.hourly && data.hourly.time || [];
+        const temps = data.hourly && data.hourly.temperature_2m || [];
+        const codes = data.hourly && data.hourly.weather_code || [];
+        let index = times.findIndex(time => new Date(time) >= new Date());
+        if (index < 0) index = 0;
+        $("hours").innerHTML = Array.from({ length: 6 }, (_, slot) => {
+          const point = index + slot * 3;
+          if (!times[point]) return "";
+          const time = new Date(times[point]);
+          return `<div class="hour"><time>${escapeHtml(time.toLocaleTimeString([], { hour: "numeric" }))}</time><span class="symbol">${weatherEmoji(codes[point], true)}</span><b>${Number.isFinite(temps[point]) ? Math.round(temps[point]) : "--"}°</b></div>`;
+        }).join("");
+        window.dashboardWeather = daily;
+        if (window.dashboardEvents) renderSchedule(window.dashboardEvents);
+      }
+
+      function dailyLabel(date) { return date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }); }
+      function weatherForDay(date) {
+        const daily = window.dashboardWeather || {};
+        const index = (daily.time || []).indexOf(dateKey(date));
+        if (index < 0) return "";
+        const high = Math.round((daily.temperature_2m_max || [])[index]);
+        return `${weatherEmoji((daily.weather_code || [])[index], true)} ${Number.isFinite(high) ? `${high}°` : ""}`;
+      }
+
+      function renderSchedule(events) {
+        const now = new Date();
+        const today = startOfDay(now);
+        $("date-label").textContent = now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+        $("today-heading").textContent = now.toLocaleDateString([], { weekday: "long" });
+        const unique = new Map();
+        events.filter(event => event.start && eventEnd(event) >= now).forEach(event => {
+          const key = `${event.title}|${event.start.getTime()}|${event.allDay}`;
+          if (!unique.has(key)) unique.set(key, event);
+        });
+        const sorted = Array.from(unique.values()).sort((a, b) => a.start - b.start);
+        const todays = sorted.filter(event => overlapsDay(event, today));
+        $("today-events").innerHTML = todays.length ? todays.slice(0, 4).map(event => `<div class="today-event"><div class="event-time">${escapeHtml(eventTime(event))}</div><div><div class="event-name">${escapeHtml(event.title)}</div><div class="event-place">${escapeHtml(eventDetail(event))}</div></div></div>`).join("") : '<div class="empty">Nothing else is scheduled today.</div>';
+        $("week").innerHTML = Array.from({ length: 6 }, (_, index) => {
+          const date = addDays(today, index + 1);
+          const dayEvents = sorted.filter(event => overlapsDay(event, date));
+          const visible = dayEvents.slice(0, 3);
+          const items = visible.length ? visible.map(event => `<div class="day-event${isSport(event.title) ? " sport" : ""}"><time>${escapeHtml(eventTime(event))}</time>${escapeHtml(event.title)}</div>`).join("") : '<div class="day-event open">Open day</div>';
+          const more = dayEvents.length > visible.length ? `<div class="more">+${dayEvents.length - visible.length} more</div>` : "";
+          return `<article class="day"><div class="day-header"><div class="day-name">${escapeHtml(dailyLabel(date))}</div><div class="day-weather">${weatherForDay(date)}</div></div><div class="day-events">${items}${more}</div></article>`;
+        }).join("");
+      }
+
+      async function fetchMenu(menuId) {
+        const query = `{ menu(id: "${menuId}") { month year nextMonthPublished { id } items { day hidden product { name category } } } }`;
+        const response = await fetch(SCHOOL_MENU_API_URL, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query }) });
+        const data = await response.json();
+        if (!response.ok || !data.data || !data.data.menu) throw new Error("School menu unavailable");
+        return data.data.menu;
+      }
+
+      async function fetchMenuForMonth(menuId, year, month) {
+        let id = menuId;
+        for (let attempt = 0; attempt < 3 && id; attempt += 1) {
+          const menu = await fetchMenu(id);
+          if (menu.year === year && menu.month === month) return menu;
+          id = menu.nextMonthPublished && menu.nextMonthPublished.id;
+        }
+        return null;
+      }
+
+      function menuItems(menu, day, category) {
+        return (menu && menu.items || []).filter(item => item && item.day === day && !item.hidden && item.product && String(item.product.category || "").toLowerCase() === category).map(item => item.product.name).slice(0, 2);
+      }
+
+      async function loadMeals() {
+        const now = new Date();
+        const monday = addDays(startOfDay(now), (now.getDay() + 6) % 7 * -1);
+        const menus = new Map();
+        const get = async (kind, date) => {
+          const key = `${kind}-${date.getFullYear()}-${date.getMonth()}`;
+          if (!menus.has(key)) menus.set(key, fetchMenuForMonth(SCHOOL_MENU_IDS[kind], date.getFullYear(), date.getMonth()));
+          return menus.get(key);
+        };
+        const nodes = Array.from(document.querySelectorAll(".meal-day"));
+        await Promise.all(nodes.map(async (node, index) => {
+          const date = addDays(monday, index);
+          const [breakfastMenu, lunchMenu] = await Promise.all([get("breakfast", date), get("lunch", date)]);
+          const breakfast = menuItems(breakfastMenu, date.getDate(), "entrees");
+          const lunch = menuItems(lunchMenu, date.getDate(), "entrees");
+          node.innerHTML = `<h3>${escapeHtml(date.toLocaleDateString([], { weekday: "long" }))}</h3><div class="meal"><b>Breakfast</b>${escapeHtml(breakfast.join(" / ") || "—")}</div><div class="meal"><b>Lunch</b>${escapeHtml(lunch.join(" / ") || "—")}</div>`;
+        }));
+      }
+
+      const calendar = new FullCalendar.Calendar($("calendar-source"), {
+        initialView: "dayGridMonth",
+        eventSources: [
+          { url: cacheUrl(ICS_URL), format: "ics" },
+          { url: cacheUrl(WILLIAMS_ICS_URL), format: "ics" },
+          { url: cacheUrl(NOTES_ICS_URL), format: "ics" }
+        ],
+        eventsSet(events) { window.dashboardEvents = events; renderSchedule(events); }
+      });
+      calendar.render();
+      loadWeather();
+      loadMeals().catch(() => { document.querySelectorAll(".meal-day .meal").forEach(node => { node.textContent = "Menu unavailable"; }); });
+      setInterval(() => { calendar.refetchEvents(); loadWeather(); loadMeals(); }, REFRESH_MINUTES * 60 * 1000);
+    })();
+  </script>
+</body>
+</html>
