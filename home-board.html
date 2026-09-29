@@ -28,7 +28,7 @@
     .hour time { color: #b1cad9; font-size: clamp(14px, 0.75vw, 29px); font-weight: 700; }
     .hour .symbol { font-size: clamp(25px, 2vw, 77px); line-height: 1; }
     .hour b { font-size: clamp(20px, 1.25vw, 48px); }
-    .schedule { display: grid; grid-template-columns: 34% 1fr; gap: 1.05vw; min-height: 0; }
+    .schedule { display: grid; grid-template-columns: 27% 1fr; gap: 1.05vw; min-height: 0; }
     .today { padding: 1.45vw; background: linear-gradient(145deg, #102b40, #0b1b2a); }
     .eyebrow { color: #89ddfa; font-size: clamp(14px, 0.76vw, 29px); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
     h1, h2, h3, p { margin: 0; }
@@ -37,7 +37,7 @@
     .today-event { display: grid; grid-template-columns: 23% 1fr; align-items: center; min-height: 24%; border-top: 1px solid #3a5870; }
     .today-event:first-child { border-top: 0; }
     .event-time { color: #7ee4ff; font-size: clamp(22px, 1.45vw, 56px); font-weight: 800; }
-    .event-name { font-size: clamp(20px, 1.2vw, 46px); font-weight: 800; line-height: 1.07; }
+    .event-name { overflow: hidden; font-size: clamp(20px, 1.2vw, 46px); font-weight: 800; line-height: 1.07; text-overflow: ellipsis; white-space: nowrap; }
     .event-place { margin-top: 0.3vw; color: #b9d0dd; font-size: clamp(14px, 0.77vw, 30px); }
     .empty { color: #abc2d0; font-size: clamp(17px, 0.95vw, 36px); line-height: 1.3; }
     .week { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 0.8vw; }
@@ -46,9 +46,9 @@
     .day-name { font-size: clamp(19px, 1.25vw, 48px); font-weight: 800; }
     .day-weather { color: #bce8fa; font-size: clamp(15px, 0.85vw, 33px); font-weight: 700; }
     .day-events { padding-top: 0.6vw; }
-    .day-event { margin-top: 0.45vw; font-size: clamp(15px, 0.87vw, 34px); font-weight: 700; line-height: 1.15; }
+    .day-event { overflow: hidden; margin-top: 0.45vw; font-size: clamp(15px, 0.87vw, 34px); font-weight: 700; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
     .day-event:first-child { margin-top: 0; }
-    .day-event time { display: inline-block; min-width: 3.5vw; color: #84e0fa; }
+    .day-event time { display: inline-block; min-width: 2.65vw; color: #84e0fa; }
     .day-event.sport { color: #ffaddd; }
     .day-event.open { color: #a9c0cd; font-weight: 500; }
     .day.dense .day-event { margin-top: 0.3vw; font-size: clamp(12px, 0.72vw, 28px); line-height: 1.08; }
