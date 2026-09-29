@@ -51,7 +51,7 @@
     .day-event time { display: inline-block; min-width: 3.5vw; color: #84e0fa; }
     .day-event.sport { color: #ffaddd; }
     .day-event.open { color: #a9c0cd; font-weight: 500; }
-    .more { color: #9bcce1; font-size: clamp(12px, 0.7vw, 27px); font-weight: 700; }
+    .day.dense .day-event { margin-top: 0.3vw; font-size: clamp(12px, 0.72vw, 28px); line-height: 1.08; }
     .meals { display: grid; grid-template-columns: 18% repeat(5, 1fr); }
     .meal-intro { padding: 1.15vw 1.35vw; background: #15354c; }
     .meal-intro h2 { font-size: clamp(19px, 1.2vw, 46px); line-height: 1.05; }
@@ -95,6 +95,10 @@
       const overlapsDay = (event, date) => event.start < addDays(startOfDay(date), 1) && eventEnd(event) > startOfDay(date);
       const eventTime = event => event.allDay ? "All day" : event.start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(":00", "");
       const eventDetail = event => clean(event.extendedProps && event.extendedProps.location) || (event.allDay ? "All day" : "Scheduled event");
+      const displayTitle = title => {
+        const match = String(title || "").match(/West Ham Mo Tech Training\s*(#\d+)?/i);
+        return match ? `West Ham Mo Tech Training${match[1] ? ` ${match[1]}` : ""}` : title;
+      };
 
       function weatherEmoji(code, isDay = true) {
         const c = Number(code);
@@ -165,14 +169,12 @@
         });
         const sorted = Array.from(unique.values()).sort((a, b) => a.start - b.start);
         const todays = sorted.filter(event => overlapsDay(event, today));
-        $("today-events").innerHTML = todays.length ? todays.slice(0, 4).map(event => `<div class="today-event"><div class="event-time">${escapeHtml(eventTime(event))}</div><div><div class="event-name">${escapeHtml(event.title)}</div><div class="event-place">${escapeHtml(eventDetail(event))}</div></div></div>`).join("") : '<div class="empty">Nothing else is scheduled today.</div>';
+        $("today-events").innerHTML = todays.length ? todays.map(event => `<div class="today-event"><div class="event-time">${escapeHtml(eventTime(event))}</div><div><div class="event-name">${escapeHtml(displayTitle(event.title))}</div><div class="event-place">${escapeHtml(eventDetail(event))}</div></div></div>`).join("") : '<div class="empty">Nothing else is scheduled today.</div>';
         $("week").innerHTML = Array.from({ length: 6 }, (_, index) => {
           const date = addDays(today, index + 1);
           const dayEvents = sorted.filter(event => overlapsDay(event, date));
-          const visible = dayEvents.slice(0, 3);
-          const items = visible.length ? visible.map(event => `<div class="day-event${isSport(event.title) ? " sport" : ""}"><time>${escapeHtml(eventTime(event))}</time>${escapeHtml(event.title)}</div>`).join("") : '<div class="day-event open">Open day</div>';
-          const more = dayEvents.length > visible.length ? `<div class="more">+${dayEvents.length - visible.length} more</div>` : "";
-          return `<article class="day"><div class="day-header"><div class="day-name">${escapeHtml(dailyLabel(date))}</div><div class="day-weather">${weatherForDay(date)}</div></div><div class="day-events">${items}${more}</div></article>`;
+          const items = dayEvents.length ? dayEvents.map(event => `<div class="day-event${isSport(event.title) ? " sport" : ""}"><time>${escapeHtml(eventTime(event))}</time>${escapeHtml(displayTitle(event.title))}</div>`).join("") : '<div class="day-event open">Open day</div>';
+          return `<article class="day${dayEvents.length > 3 ? " dense" : ""}"><div class="day-header"><div class="day-name">${escapeHtml(dailyLabel(date))}</div><div class="day-weather">${weatherForDay(date)}</div></div><div class="day-events">${items}</div></article>`;
         }).join("");
       }
 
